@@ -66,3 +66,12 @@ test-results/
 *.pem
 .vercel
 .netlify
+
+# ─── Database (SQLite) ──────────────────────────────────────
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite3
+*.sqlite-shm
+*.sqlite-wal
