@@ -1,0 +1,18 @@
+{
+  "name": "money-tracker",
+  "version": "1.0.0",
+  "description": "Money tracking web app",
+  "license": "ISC",
+  "author": "SBI",
+  "type": "commonjs",
+  "main": "backend/server/app.js",
+  "scripts": {
+    "test": "test"
+  },
+  "dependencies": {
+    "better-sqlite3": "^12.6.2",
+    "chalk": "^4.1.2",
+    "express": "^5.2.1",
+    "yahoo-finance2": "^3.13.2"
+  }
+}

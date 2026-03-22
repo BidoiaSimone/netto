@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Money Tracking Application</title>
+    <link rel="stylesheet" href="../CSS/stylesheet.css">
+</head>
+<body>
+
+<div id="top-bar">
+
+  <div id="net-worth">
+    <text>Total Net Worth: </text>
+
+  </div>
+</div>
+
+<div class="line"></div>
+
+<div class="bottom-bar">
+<button id="refreshToggle">Auto Refresh: OFF</button>
+</div>
+<script>
+  let refreshInterval = null;
+  const button = document.getElementById("refreshToggle");
+
+  function startAutoRefresh() {
+    refreshInterval = setInterval(() => {
+      location.reload();
+    }, 3000);
+    button.textContent = "Auto Refresh: ON";
+    localStorage.setItem("autoRefresh", "on");
+  }
+
+  function stopAutoRefresh() {
+    clearInterval(refreshInterval);
+    refreshInterval = null;
+    button.textContent = "Auto Refresh: OFF";
+    localStorage.setItem("autoRefresh", "off");
+  }
+
+  // Restore state on page load
+  if (localStorage.getItem("autoRefresh") === "on") {
+    startAutoRefresh();
+  }
+
+  button.addEventListener("click", () => {
+    if (localStorage.getItem("autoRefresh") === "on") {
+      stopAutoRefresh();
+    } else {
+      startAutoRefresh();
+    }
+  });
+</script>
+</body>
+</html>
