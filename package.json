@@ -7,12 +7,17 @@
   "type": "commonjs",
   "main": "backend/server/app.js",
   "scripts": {
-    "test": "test"
+    "test": "test",
+    "start": "node backend/server/app.js",
+    "dev": "nodemon"
   },
   "dependencies": {
     "better-sqlite3": "^12.6.2",
     "chalk": "^4.1.2",
     "express": "^5.2.1",
     "yahoo-finance2": "^3.13.2"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.14"
   }
 }

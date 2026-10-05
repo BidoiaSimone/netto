@@ -1,56 +1,80 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>Money Tracking Application</title>
-    <link rel="stylesheet" href="../CSS/stylesheet.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Money Tracking Application</title>
+  <link rel="icon" href="../Images/1x.jpg">
+  <link rel="stylesheet" href="../CSS/stylesheet.css">
 </head>
 <body>
 
 <div id="top-bar">
-
-  <div id="net-worth">
-    <text>Total Net Worth: </text>
-
-  </div>
+  <select id="account-select">
+    <option value="">All accounts</option>
+  </select>
+  <div id="net-worth">Total Net Worth: <span id="net-worth-value">…</span></div>
 </div>
 
 <div class="line"></div>
 
+<main>
+  <p id="error" role="alert"></p>
+
+  <section>
+    <h2>Accounts</h2>
+    <table>
+      <thead><tr><th>Name</th><th>Balance</th><th>Opened</th></tr></thead>
+      <tbody id="accounts-body"></tbody>
+    </table>
+    <form id="account-form">
+      <input name="name" placeholder="Name" required>
+      <input name="amount" type="number" step="0.01" placeholder="Starting balance" required>
+      <button>Add account</button>
+    </form>
+  </section>
+
+  <section>
+    <h2>Transactions</h2>
+    <table>
+      <thead><tr><th>Date</th><th>Type</th><th>From</th><th>To</th><th>Amount</th><th>Description</th></tr></thead>
+      <tbody id="transactions-body"></tbody>
+    </table>
+    <form id="tx-form">
+      <select name="type" id="tx-type">
+        <option value="expense">Expense</option>
+        <option value="income">Income</option>
+        <option value="movement">Movement</option>
+      </select>
+      <select name="from_account" id="tx-from"></select>
+      <select name="to_account" id="tx-to"></select>
+      <input name="amount" type="number" step="0.01" min="0.01" placeholder="Amount" required>
+      <input name="description" placeholder="Description">
+      <button>Add transaction</button>
+    </form>
+  </section>
+
+  <section>
+    <h2>Investments</h2>
+    <table>
+      <thead>
+        <tr><th>Ticker</th><th>Shares</th><th>Avg price</th><th>Invested</th><th>Value</th><th>Gain</th><th>Gain %</th><th></th></tr>
+      </thead>
+      <tbody id="investments-body"></tbody>
+    </table>
+    <form id="inv-form">
+      <input name="ticker" placeholder="Ticker (e.g. VWCE.MI)" required>
+      <input name="shares" type="number" step="any" min="0" placeholder="Shares" required>
+      <input name="average_purchase_price" type="number" step="any" min="0" placeholder="Avg price (EUR)" required>
+      <button>Add investment</button>
+    </form>
+  </section>
+</main>
+
 <div class="bottom-bar">
-<button id="refreshToggle">Auto Refresh: OFF</button>
+  <button id="refreshToggle">Auto Refresh: OFF</button>
 </div>
-<script>
-  let refreshInterval = null;
-  const button = document.getElementById("refreshToggle");
 
-  function startAutoRefresh() {
-    refreshInterval = setInterval(() => {
-      location.reload();
-    }, 3000);
-    button.textContent = "Auto Refresh: ON";
-    localStorage.setItem("autoRefresh", "on");
-  }
-
-  function stopAutoRefresh() {
-    clearInterval(refreshInterval);
-    refreshInterval = null;
-    button.textContent = "Auto Refresh: OFF";
-    localStorage.setItem("autoRefresh", "off");
-  }
-
-  // Restore state on page load
-  if (localStorage.getItem("autoRefresh") === "on") {
-    startAutoRefresh();
-  }
-
-  button.addEventListener("click", () => {
-    if (localStorage.getItem("autoRefresh") === "on") {
-      stopAutoRefresh();
-    } else {
-      startAutoRefresh();
-    }
-  });
-</script>
+<script src="../JS/home.js"></script>
 </body>
 </html>

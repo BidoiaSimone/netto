@@ -1,101 +1,31 @@
-/* TESTS DATABASE CONNECTION AND VARIOUS QUERIES */
+/* PRINTS THE CONTENT OF EVERY TABLE. Uncomment the .run() lines below to insert sample rows first. */
 
-// Dependencies 
 const db = require("./database.js");
 
-// DTO
-const test_transaction = {
-  $from_account: "Cash",
-  $type: "expense",
-  $amount: 10,
-  $description: "Pranzo sushi",
-  $date: new Date().toISOString().substring(0, 10) // will come from user input
-}
+// With better-sqlite3 the object keys have no "$" prefix, only the SQL placeholders do
+const today = new Date().toISOString().substring(0, 10);
 
-// DTO
-const test_account = {
-  $name: "Cash",
-  $amount: 9089.98,
-  $open_date: "2024-12-24"
-}
+const test_account = { name: "Cash", amount: 100, open_date: today };
+const test_transaction = { from_account: "Cash", to_account: null, type: "expense", amount: 10, description: "Lunch", date: today };
+const test_investment = { ticker: "VWCE.MI", amount_invested: 5000, average_purchase_price: 125, shares: 40 };
 
-// DTO 
-const test_investment = {
-  $ticker: "VWCE",
-  $amount_invested: 5490.23,
-  $average_purchase_price: 149.12,
-  $shares: 35
-}
-
-// DTO
-const test_movement = {
-  $from_account: "BCC",
-  $to_account: "VWCE",
-  $type: "movement",
-  $amount: 3000,
-  $description: "Liquidità",
-  $date: new Date().toISOString().substring(0, 10) // will come from user input
-}
-
-// Preparing the db query prevents SQL injections
-const push_transaction_query = db.prepare(`
-  INSERT INTO transactions (from_account, type, amount, description, date)
-  VALUES ($from_account, $type, $amount, $description, $date)
+const push_account = db.prepare(`
+  INSERT INTO accounts (name, amount, open_date) VALUES ($name, $amount, $open_date)
 `);
-
-const push_mevement_query = db.prepare(`
+const push_transaction = db.prepare(`
   INSERT INTO transactions (from_account, to_account, type, amount, description, date)
   VALUES ($from_account, $to_account, $type, $amount, $description, $date)
 `);
-
-const push_investment_query = db.prepare(`
+const push_investment = db.prepare(`
   INSERT INTO investments (ticker, amount_invested, average_purchase_price, shares)
   VALUES ($ticker, $amount_invested, $average_purchase_price, $shares)
 `);
 
-const push_account_query = db.prepare(`
-  INSERT INTO accounts (name, amount, open_date)
-  VALUES ($name, $amount, $open_date)
-`);
+// push_account.run(test_account);
+// push_transaction.run(test_transaction);
+// push_investment.run(test_investment);
 
-// If the values in the prepared query are named with $value then I can run directly with the objet
-//push_transaction_query.run(test_transaction);
-
-//push_mevement_query.run(test_movement);
-
-//push_investment_query.run(test_investment);
-
-//push_account_query.run(test_account);
-
-db.serialize(() => {
-  db.all(`SELECT * FROM transactions`, [], (err, rows) => {
-    if (err) {
-      throw err;
-    }
-    console.log("┌────────────────────────────────┐");
-    console.log("│========= Transactions =========│");
-    console.log("└────────────────────────────────┘");
-    console.table(rows);
-  });
-
-  db.all(`SELECT * FROM investments`, [], (err, rows) => {
-    if (err) {
-      throw err;
-    }
-    console.log("┌───────────────────────────────┐");
-    console.log("│========= Investments =========│");
-    console.log("└───────────────────────────────┘");
-    console.table(rows);
-  });
-
-  db.all(`SELECT * FROM accounts`, [], (err, rows) => {
-    if (err) {
-      throw err;
-    }
-    console.log("┌────────────────────────────┐");
-    console.log("│========= Accounts =========│");
-    console.log("└────────────────────────────┘");
-    console.table(rows);
-  });
-});
-
+for (const table of ["transactions", "investments", "accounts"]) {
+  console.log(`\n========= ${table} =========`);
+  console.table(db.prepare(`SELECT * FROM ${table}`).all());
+}

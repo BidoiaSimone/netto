@@ -1,25 +1,6 @@
 {
-  "restartable": "rs",
-  "script": "backend/server/app.js",
-  "ignore": [
-    ".git",
-    "node_modules/**/node_modules"
-  ],
-  "verbose": true,
-  "execMap": {
-    "js": "node --harmony"
-  },
-  "events": {
-    "restart": "osascript -e 'display notification \"App restarted due to:\n'$FILENAME'\" with title \"nodemon\"'"
-  },
-  "watch": [
-    "backend/db/",
-    "backend/server/",
-    "backend/server/routes",
-    "frontend"
-  ],
-  "env": {
-    "NODE_ENV": "development"
-  },
-  "ext": "js,json,CSS,HTML"
+  "watch": ["backend"],
+  "ext": "js,json",
+  "ignore": ["backend/db/*.db*"],
+  "env": { "NODE_ENV": "development" }
 }

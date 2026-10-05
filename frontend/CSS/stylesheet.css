@@ -1,10 +1,12 @@
 body {
     font-family: Arial;
     background-color: rgb(50, 50, 50);
+    color: #eee;
 }
 
 #account-select {
     background-color: rgb(50, 50, 50);
+    color: #eee;
     border-color: transparent;
     font-size: 50px;
     font-weight: bold;
@@ -58,10 +60,68 @@ body {
 
 #top-bar {
     display: flex;
+    align-items: center;
+    justify-content: space-between;
 }
 
 #net-worth {
     font-size: 25px;
     padding: 15px;
     font-weight: bold;
+}
+
+/* ---- content ---- */
+main {
+    padding: 30px 2.5% 90px;
+}
+
+section {
+    margin-bottom: 40px;
+}
+
+h2 {
+    margin: 0 0 10px;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 12px;
+}
+
+th, td {
+    text-align: left;
+    padding: 8px 10px;
+    border-bottom: 1px solid rgb(80, 80, 80);
+}
+
+th {
+    color: #aaa;
+    font-weight: normal;
+}
+
+form {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+input, select, form button, td button {
+    padding: 8px 10px;
+    border: none;
+    border-radius: 5px;
+    font-size: 14px;
+}
+
+form button, td button {
+    cursor: pointer;
+}
+
+select:disabled {
+    opacity: 0.4;
+}
+
+#error {
+    color: #ff8080;
+    min-height: 1.2em;
 }

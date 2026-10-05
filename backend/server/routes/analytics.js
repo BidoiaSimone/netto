@@ -1,15 +1,34 @@
 const express = require("express");
 const db = require("../../db/database.js");
+const { getPriceInEur } = require("../services/market.js");
 
 const router = express.Router();
 
+router.get("/net-worth", async function (req, res) {
+  try {
+    const accountsValue = db.prepare(`SELECT COALESCE(SUM(amount), 0) AS total FROM accounts`).get().total;
+    const holdings = db.prepare(`SELECT ticker, shares FROM investments`).all();
 
-// INSERT ALSO INVESTMENTS IN THE NET-WORTH
-router.get('/net-worth', function (req, res) {
+    // One failing ticker must not hide the whole net worth, so it is reported instead
+    const rates = new Map();
+    const prices = await Promise.allSettled(holdings.map((h) => getPriceInEur(h.ticker, rates)));
 
-    const rows = db.prepare(`SELECT SUM(amount) AS net_worth FROM accounts`).all();
+    let investmentsValue = 0;
+    const failedTickers = [];
+    prices.forEach((p, i) => {
+      if (p.status === "fulfilled") investmentsValue += holdings[i].shares * p.value;
+      else failedTickers.push(holdings[i].ticker);
+    });
 
-    res.json(rows);
+    res.json({
+      net_worth: accountsValue + investmentsValue,
+      accounts_value: accountsValue,
+      investments_value: investmentsValue,
+      failed_tickers: failedTickers, // not included in the totals above
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 });
 
 module.exports = router;

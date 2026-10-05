@@ -1,22 +1,18 @@
-/* DROPS EVERY TABLE IN THE DATABASE AND THEN RUNS THE TABLES CREATIONS AGAIN */
+/* DROPS EVERY TABLE AND CREATES THEM AGAIN EMPTY.  Usage: node backend/db/clear-db.js --yes */
 
-// Dependencies
-const sqlite3 = require("sqlite3").verbose();
-const path = require("path");
-const dbPath = path.join(__dirname, "money.db");
+if (!process.argv.includes("--yes")) {
+  console.log("This deletes ALL data in money.db. Run again with --yes to confirm.");
+  process.exit(1);
+}
 
-// Database instantiation
-const db = new sqlite3.Database(dbPath, (err) => {
-  if (err) {
-    console.error("Failed to connect to database", err);
-  } else {
-    console.log("Connected to SQLite database from 'clear-db.js'");
-  }
-});
+const db = require("./database.js");
+const { createTables } = require("./schema.js");
 
-// Serialize waits for every db operation before starting the next one
-db.serialize(() => {
-    db.run(`DROP TABLE transactions`);
-    db.run(`DROP TABLE investments`);
-    db.run(`DROP TABLE accounts`, () => require('./database.js'));
-});
+db.exec(`
+  DROP TABLE IF EXISTS transactions;
+  DROP TABLE IF EXISTS investments;
+  DROP TABLE IF EXISTS accounts;
+`);
+createTables(db);
+
+console.log("Database cleared.");
