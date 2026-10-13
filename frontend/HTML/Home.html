@@ -3,77 +3,266 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Money Tracking Application</title>
-  <link rel="icon" href="../Images/1x.jpg">
+  <title>netto</title>
+  <link rel="icon" href="../Images/logo/netto-app-icon.svg">
+  <!-- standalone app (Safari "Add to Dock"): name, Dock icon and window color -->
+  <link rel="manifest" href="/Images/icons/site.webmanifest">
+  <link rel="apple-touch-icon" href="/Images/icons/apple-touch-icon.png">
+  <meta name="apple-mobile-web-app-title" content="netto">
+  <meta name="theme-color" content="#0a0f0c">
   <link rel="stylesheet" href="../CSS/stylesheet.css">
 </head>
 <body>
 
-<div id="top-bar">
-  <select id="account-select">
-    <option value="">All accounts</option>
-  </select>
-  <div id="net-worth">Total Net Worth: <span id="net-worth-value">…</span></div>
-</div>
-
-<div class="line"></div>
+<nav id="sidebar">
+  <div class="brand"><img src="../Images/logo/netto-logo-dark-bg.svg" alt="netto" width="100"></div>
+  <a href="#home">Home</a>
+  <a href="#assets">Assets</a>
+  <a href="#transactions">Transactions</a>
+  <a href="#categories">Categories</a>
+  <a href="#investments">Investments</a>
+  <a href="#insights">Insights</a>
+  <a href="#settings">Settings</a>
+  <a href="#nextUp">Next up</a>
+  <div id="side-networth">Net worth<strong id="net-worth-value">…</strong>
+    <label class="switch"><input type="checkbox" id="privacy-toggle"><i></i>Hide amounts <kbd>P</kbd></label>
+  </div>
+</nav>
 
 <main>
   <p id="error" role="alert"></p>
 
-  <section>
-    <h2>Accounts</h2>
+  <section data-page="home">
+    <div class="page-head">
+      <h2>Home</h2>
+      <button type="button" class="add-btn" data-open="tx-dialog">+ Add transaction <kbd>N</kbd></button>
+    </div>
+    <div class="cards">
+      <div class="card hero">Net worth<strong id="h-net">…</strong></div>
+      <div class="card">Assets &amp; accounts<strong id="h-acc">…</strong></div>
+      <div class="card">Investments<strong id="h-inv">…</strong></div>
+    </div>
+    <div class="alloc">
+      <div class="bar"><span id="bar-acc"></span><span id="bar-inv"></span></div>
+      <small><i class="dot a"></i>Assets &amp; accounts <i class="dot i"></i>Investments</small>
+    </div>
+    <p id="stale"></p>
+    <h3>Latest transactions</h3>
     <table>
-      <thead><tr><th>Name</th><th>Balance</th><th>Opened</th></tr></thead>
-      <tbody id="accounts-body"></tbody>
+      <thead><tr><th>Date</th><th>Type</th><th>Amount</th><th>Description</th></tr></thead>
+      <tbody id="recent-body"></tbody>
     </table>
-    <form id="account-form">
-      <input name="name" placeholder="Name" required>
-      <input name="amount" type="number" step="0.01" placeholder="Starting balance" required>
-      <button>Add account</button>
-    </form>
   </section>
 
-  <section>
-    <h2>Transactions</h2>
+  <section data-page="assets">
+    <div class="page-head">
+      <h2>Assets</h2>
+      <button type="button" class="add-btn" data-open="account-dialog">+ Add account or asset</button>
+    </div>
+    <!-- two columns: the pie stays still on the left, only the list on the right scrolls -->
+    <div class="assets-split">
+      <aside class="panel assets-chart">
+        <h3>Total assets</h3>
+        <strong id="assets-total" class="assets-total">…</strong>
+        <div id="assets-pie" class="pie"></div>
+        <ul id="assets-legend" class="pie-legend"></ul>
+        <p id="assets-pie-note" class="hint small"></p>
+      </aside>
+      <div class="assets-list">
+        <p class="hint">Recount: type what you really have in an account. Leave a field empty to keep the recorded amount (e.g. money in the safe you can't check now).</p>
+        <table>
+          <thead><tr><th>Name</th><th>Kind</th><th>Recorded</th><th>Last verified</th><th>Counted</th><th>Difference</th></tr></thead>
+          <tbody id="assets-body"></tbody>
+        </table>
+        <p id="recount-summary"></p>
+        <button id="recount-apply">Apply recount</button>
+      </div>
+    </div>
+  </section>
+
+  <section data-page="transactions">
+    <div class="page-head">
+      <h2>Transactions</h2>
+      <button type="button" class="add-btn" data-open="tx-dialog">+ Add transaction <kbd>N</kbd></button>
+    </div>
+    <div class="filters">
+      <input id="f-search" type="search" placeholder="Search description or category">
+      <select id="account-select"><option value="">All accounts</option></select>
+      <select id="f-type">
+        <option value="">All types</option><option value="income">Income</option><option value="expense">Expense</option>
+        <option value="movement">Movement</option><option value="adjustment">Recount</option>
+      </select>
+      <select id="f-category"><option value="">All categories</option></select>
+      <label>From <input id="f-from" type="date"></label>
+      <label>To <input id="f-to" type="date"></label>
+      <input id="f-min" type="number" step="0.01" min="0" placeholder="Min €">
+      <input id="f-max" type="number" step="0.01" min="0" placeholder="Max €">
+      <div class="chips">
+        <button type="button" class="ghost" data-range="today">Today</button>
+        <button type="button" class="ghost" data-range="week">Last 7 days</button>
+        <button type="button" class="ghost" data-range="month">This month</button>
+        <button type="button" class="ghost" id="f-reset">Clear</button>
+      </div>
+    </div>
+    <p id="tx-summary"></p>
     <table>
-      <thead><tr><th>Date</th><th>Type</th><th>From</th><th>To</th><th>Amount</th><th>Description</th></tr></thead>
+      <thead><tr><th>Date</th><th>Type</th><th>From</th><th>To</th><th>Amount</th><th>Category</th><th>Description</th></tr></thead>
       <tbody id="transactions-body"></tbody>
     </table>
-    <form id="tx-form">
-      <select name="type" id="tx-type">
-        <option value="expense">Expense</option>
-        <option value="income">Income</option>
-        <option value="movement">Movement</option>
-      </select>
-      <select name="from_account" id="tx-from"></select>
-      <select name="to_account" id="tx-to"></select>
-      <input name="amount" type="number" step="0.01" min="0.01" placeholder="Amount" required>
-      <input name="description" placeholder="Description">
-      <button>Add transaction</button>
-    </form>
   </section>
 
-  <section>
-    <h2>Investments</h2>
+  <section data-page="categories">
+    <div class="page-head"><h2>Categories</h2></div>
+    <p class="hint">The list you pick from when adding a transaction. Click a name to rename it: every transaction follows.
+      Renaming to a name that already exists merges the two.</p>
+    <form id="category-form" class="cat-add">
+      <input name="name" placeholder="New category (e.g. Coffee)" required>
+      <button>Add category</button>
+    </form>
     <table>
-      <thead>
-        <tr><th>Ticker</th><th>Shares</th><th>Avg price</th><th>Invested</th><th>Value</th><th>Gain</th><th>Gain %</th><th></th></tr>
-      </thead>
+      <thead><tr><th>Name</th><th>Used by</th><th></th></tr></thead>
+      <tbody id="categories-body"></tbody>
+    </table>
+  </section>
+
+  <section data-page="investments">
+    <div class="page-head">
+      <h2>Investments</h2>
+      <button type="button" class="add-btn" data-open="inv-dialog">+ Add investment</button>
+    </div>
+
+    <div class="cards">
+      <div class="card hero">Portfolio value<strong id="inv-value">…</strong></div>
+      <div class="card">Invested<strong id="inv-invested">…</strong></div>
+      <div class="card">Total gain<strong id="inv-gain">…</strong><small id="inv-gain-pct"></small></div>
+    </div>
+
+    <div class="chart-head">
+      <h3>How your funds are doing</h3>
+      <div class="chips" id="inv-range">
+        <button type="button" class="ghost" data-inv-range="1m">1M</button>
+        <button type="button" class="ghost" data-inv-range="6m">6M</button>
+        <button type="button" class="ghost" data-inv-range="1y">1Y</button>
+        <button type="button" class="ghost" data-inv-range="5y">5Y</button>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="chips ticker-chips" id="inv-tickers"></div>
+      <p class="chart-sub" id="inv-period-summary"></p>
+      <div id="inv-line" class="line-chart"></div>
+      <p class="hint small">Market price of one share, in euros. The dashed line is your average purchase price: above it you're in profit on that fund.</p>
+    </div>
+
+    <div class="chart-grid">
+      <div class="panel">
+        <h3>Allocation</h3>
+        <div id="inv-alloc" class="hbars"></div>
+      </div>
+      <div class="panel">
+        <h3>Gain since purchase</h3>
+        <div id="inv-gains" class="hbars"></div>
+      </div>
+      <div class="panel">
+        <h3 id="inv-period-title">Change over the period</h3>
+        <div id="inv-period" class="hbars"></div>
+      </div>
+    </div>
+
+    <h3>Holdings</h3>
+    <table>
+      <thead><tr><th>Ticker</th><th>Shares</th><th>Avg price</th><th>Invested</th><th>Value</th><th>Gain</th><th>Gain %</th><th></th></tr></thead>
       <tbody id="investments-body"></tbody>
     </table>
-    <form id="inv-form">
-      <input name="ticker" placeholder="Ticker (e.g. VWCE.MI)" required>
-      <input name="shares" type="number" step="any" min="0" placeholder="Shares" required>
-      <input name="average_purchase_price" type="number" step="any" min="0" placeholder="Avg price (EUR)" required>
-      <button>Add investment</button>
-    </form>
+  </section>
+
+  <section data-page="insights">
+    <div class="page-head"><h2>Insights</h2></div>
+    <h3>Last months</h3>
+    <table>
+      <thead><tr><th>Month</th><th>Income</th><th>Expenses</th><th>Saved</th></tr></thead>
+      <tbody id="months-body"></tbody>
+    </table>
+    <h3>Spending by category (this month)</h3>
+    <table>
+      <thead><tr><th>Category</th><th>Spent</th></tr></thead>
+      <tbody id="cats-body"></tbody>
+    </table>
+  </section>
+
+  <section data-page="settings">
+    <div class="page-head"><h2>Settings</h2></div>
+    <p><button id="refreshToggle">Auto Refresh: OFF</button></p>
+    <p><a class="button" href="/export">Download backup (JSON)</a></p>
+    <p>
+      <button id="importBtn">Restore backup (JSON)…</button>
+      <input type="file" id="importFile" accept=".json,application/json" hidden>
+    </p>
+  </section>
+
+  <section data-page="nextUp">
+    <div class="page-head"><h2>Next up</h2></div>
+
+    <div class="todo-add">
+      <input type="text" id="todoInput" placeholder="New task...">
+      <button id="todoAddBtn">+</button>
+    </div>
+
+    <ul id="todoList" class="todo-list">
+    </ul>
+
+    <h3>Done</h3>
+    <ul id="doneList" class="todo-list done"></ul>
   </section>
 </main>
 
-<div class="bottom-bar">
-  <button id="refreshToggle">Auto Refresh: OFF</button>
-</div>
+<dialog id="tx-dialog">
+  <h3>New transaction</h3>
+  <form id="tx-form">
+    <select name="type" id="tx-type">
+      <option value="expense">Expense</option><option value="income">Income</option><option value="movement">Movement</option>
+    </select>
+    <select name="from_account_id" id="tx-from"></select>
+    <select name="to_account_id" id="tx-to"></select>
+    <input name="amount" type="number" step="0.01" min="0.01" placeholder="Amount" required>
+    <input name="date" id="tx-date" type="date" title="Date (empty = today)">
+    <select name="category_id" id="tx-category"><option value="">— no category —</option></select>
+    <input name="description" placeholder="Description">
+    <div class="actions">
+      <a href="#categories" class="manage-link" data-close>Manage categories</a>
+      <button type="button" class="ghost" data-close>Cancel</button>
+      <button>Add transaction</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="account-dialog">
+  <h3>New account or asset</h3>
+  <form id="account-form">
+    <input name="name" placeholder="Name (e.g. Cash, Car)" required>
+    <select name="kind">
+      <option value="cash">Cash</option><option value="bank">Bank</option>
+      <option value="savings">Savings</option><option value="asset">Other asset</option>
+    </select>
+    <input name="opening_balance" type="number" step="0.01" placeholder="What it holds today" required>
+    <div class="actions">
+      <button type="button" class="ghost" data-close>Cancel</button>
+      <button>Add</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="inv-dialog">
+  <h3>New investment</h3>
+  <form id="inv-form">
+    <input name="ticker" placeholder="Ticker (e.g. VWCE.MI)" required>
+    <input name="shares" type="number" step="any" min="0" placeholder="Shares" required>
+    <input name="average_purchase_price" type="number" step="any" min="0" placeholder="Avg price (EUR)" required>
+    <div class="actions">
+      <button type="button" class="ghost" data-close>Cancel</button>
+      <button>Add investment</button>
+    </div>
+  </form>
+</dialog>
 
 <script src="../JS/home.js"></script>
 </body>

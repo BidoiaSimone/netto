@@ -1,6 +1,6 @@
 const express = require("express");
 const db = require("../../db/database.js");
-const { getPriceInEur } = require("../services/market.js");
+const { getPriceInEur, getHistoryInEur } = require("../services/market.js");
 
 const router = express.Router();
 
@@ -56,6 +56,53 @@ router.get("/investments", async function (req, res) {
         r.status === "fulfilled" ? r.value : { ...rows[i], price_error: r.reason.message }
       )
     );
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Price history of every holding (how each fund / index has moved), in EUR.
+// Declared before /investments/:ticker so "history" isn't read as a ticker.
+const RANGES = {
+  "1m": { days: 31, interval: "1d" },
+  "6m": { days: 183, interval: "1d" },
+  "1y": { days: 366, interval: "1d" },
+  "5y": { days: 1827, interval: "1wk" },
+};
+const HISTORY_TTL_MS = 15 * 60 * 1000;
+const historyCache = new Map(); // "range|holdings" -> { at, data }
+
+router.get("/investments/history", async function (req, res) {
+  const range = RANGES[req.query.range] ? req.query.range : "1y";
+  try {
+    const rows = db.prepare(`SELECT * FROM investments ORDER BY ticker`).all();
+    const key = range + "|" + JSON.stringify(rows);
+    const hit = historyCache.get(key);
+    if (hit && Date.now() - hit.at < HISTORY_TTL_MS) return res.json(hit.data);
+
+    const { days, interval } = RANGES[range];
+    const period1 = new Date(Date.now() - days * 864e5);
+    const fx = new Map();
+    const results = await Promise.allSettled(rows.map((r) => getHistoryInEur(r.ticker, period1, interval, fx)));
+
+    const ok = [], failed = [];
+    results.forEach((r, i) => (r.status === "fulfilled" && r.value.length ? ok.push({ row: rows[i], hist: r.value }) : failed.push(rows[i].ticker)));
+
+    const holdings = ok.map(({ row, hist }) => {
+      const first = hist[0], end = hist[hist.length - 1];
+      return {
+        ticker: row.ticker,
+        average_purchase_price: row.average_purchase_price,
+        dates: hist.map((p) => p.date),
+        prices: hist.map((p) => p.price),
+        change_pct: ((end.price - first.price) / first.price) * 100,
+        change: (end.price - first.price) * row.shares, // what that move meant for your shares
+      };
+    });
+
+    const data = { range, holdings, failed_tickers: failed };
+    historyCache.set(key, { at: Date.now(), data });
+    res.json(data);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

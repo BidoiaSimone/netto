@@ -7,6 +7,7 @@ const router = express.Router();
 // Connect routes from tables routes
 router.use(require("./accounts.js"));
 router.use(require("./transactions.js"));
+router.use(require("./categories.js"));
 router.use(require("./investments.js"));
 router.use(require("./databaseQueries.js"));
 router.use(require("./analytics.js"));
