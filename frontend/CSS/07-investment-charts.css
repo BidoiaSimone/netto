@@ -1,0 +1,53 @@
+/* Investments page: line chart and horizontal bars.
+   One of the numbered files in this folder: Home.html loads them in number order, and later files
+   win over earlier ones when two rules are equally specific, so keep that order when adding files. */
+
+/* ---- investments charts ---- */
+.card small { display: block; margin-top: 4px; font-size: 14px; letter-spacing: 0; text-transform: none; }
+.card strong.pos, .card small.pos { color: var(--accent-text); }
+.card strong.neg, .card small.neg { color: var(--neg); }
+
+.panel { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 16px 18px; margin-bottom: 16px; min-width: 0; }
+.panel h3 { margin: 0 0 14px; }
+.chart-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin: 32px 0 10px; }
+.chart-head h3 { margin: 0; }
+.chart-head .chips button.active, .ticker-chips button.active, .theme-chips button.active, .option-chips button.active, .accent-chips button.active { color: var(--accent-2); border-color: var(--accent); background: rgba(var(--accent-rgb), 0.12); }
+.ticker-chips { margin-bottom: 12px; }
+.chart-sub { margin: 0 0 8px; color: var(--muted); }
+.chart-sub strong { color: var(--text); font-size: 22px; margin-right: 10px; }
+.hint.small { font-size: 12px; margin: 8px 0 0; }
+.chart-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
+.chart-grid .panel { margin-bottom: 0; }
+.chart-empty { color: var(--muted); padding: 30px 0; text-align: center; }
+
+/* line chart (SVG drawn by JS/charts/lineChart.js) */
+.line-chart { position: relative; height: 260px; }
+.line-chart svg { display: block; width: 100%; height: 100%; overflow: visible; }
+.line-chart .grid { stroke: var(--border); stroke-width: 1; }
+.line-chart .axis { fill: var(--muted); font-size: 11px; }
+.line-chart .line { fill: none; stroke: var(--accent); stroke-width: 2; stroke-linejoin: round; }
+.line-chart .area { fill: url(#inv-fill); }
+.line-chart .ref { stroke: var(--muted); stroke-width: 1.5; stroke-dasharray: 5 4; }
+.line-chart .ref-label { fill: var(--muted); font-size: 11px; paint-order: stroke; stroke: var(--surface); stroke-width: 4px; }
+.line-chart .cross { stroke: var(--muted); stroke-width: 1; }
+.line-chart .hover-dot { fill: var(--accent); stroke: var(--surface); stroke-width: 2; }
+.tip {
+    position: absolute; top: 0; pointer-events: none; white-space: nowrap;
+    background: var(--surface-2); border: 1px solid var(--border); border-radius: 10px;
+    padding: 8px 10px; font-size: 12px; color: var(--muted); box-shadow: var(--tooltip-shadow);
+}
+.tip strong { display: block; color: var(--text); font-size: 14px; }
+
+/* horizontal bars (HTML): name | track | value */
+/* one shared grid for all rows, so every bar starts and scales from the same x */
+.hbars { display: grid; grid-template-columns: max-content minmax(40px, 1fr) max-content; align-items: center; gap: 8px 10px; font-size: 13px; }
+.hbars .chart-empty { grid-column: 1 / -1; }
+.hbar { display: contents; }
+.hbar .name { color: var(--text); font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 96px; }
+.hbar .val { color: var(--muted); white-space: nowrap; font-variant-numeric: tabular-nums; text-align: right; }
+.hbar .track { position: relative; height: 22px; min-width: 40px; }
+.hbar .fill { position: absolute; top: 3px; height: 16px; border-radius: 4px; transition: width 0.6s cubic-bezier(.2, .8, .2, 1), left 0.6s cubic-bezier(.2, .8, .2, 1); }
+.hbar .fill.pos { background: var(--accent); }
+.hbar .fill.neg { background: var(--neg); }
+.hbar .fill.share { background: var(--accent-2); opacity: 0.75; }
+.hbar .zero { position: absolute; top: 0; bottom: 0; width: 1px; background: var(--muted); opacity: 0.6; }

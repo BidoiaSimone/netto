@@ -1,0 +1,31 @@
+/* Insights > Liquidity: the three cards, the bar and the table of liquidity classes.
+   One of the numbered files in this folder: Home.html loads them in number order, and later files
+   win over earlier ones when two rules are equally specific, so keep that order when adding files. */
+
+/* one fixed colour per class (from the Assets pie palette, checked for colour-blind separation),
+   not the accent colour, which you can change in Settings */
+.liq-cash_and_equivalents { --liq-color: #199e70; }
+.liq-restricted { --liq-color: #c98500; }
+.liq-investments { --liq-color: #3987e5; }
+.liq-personal_use { --liq-color: #9085e9; }
+
+.liq-title { margin-top: 0; }
+.liquidity-cards { grid-template-columns: repeat(3, 1fr); margin-bottom: 16px; }
+.liquidity-cards small { display: block; margin-top: 8px; font-size: 12px; letter-spacing: 0; text-transform: none; line-height: 1.4; }
+
+.liquidity-bar { margin: 4px 0 14px; gap: 2px; background: transparent; }
+.liquidity-bar span { background: var(--liq-color); }
+.liquidity-bar span[style*="width: 0%"] { display: none; } /* an empty class leaves no gap */
+
+.liq-class { display: inline-flex; align-items: center; gap: 8px; white-space: nowrap; }
+.liq-class .swatch { width: 10px; height: 10px; border-radius: 3px; background: var(--liq-color); flex: none; }
+.liq-contents small { display: block; margin-top: 2px; font-size: 12px; }
+.liquidity-panel td:nth-child(3), .liquidity-panel td:nth-child(4),
+.liquidity-panel th:nth-child(3), .liquidity-panel th:nth-child(4) { text-align: right; white-space: nowrap; }
+
+@media (max-width: 800px) {
+    .liquidity-cards { grid-template-columns: 1fr; }
+}
+
+/* "This month" uses the same cards; its note sits right under them */
+.month-hint { margin: -6px 0 0; }

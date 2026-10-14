@@ -2,5 +2,5 @@
   "watch": ["backend"],
   "ext": "js,json",
   "ignore": ["backend/db/*.db*"],
-  "env": { "NODE_ENV": "development" }
+  "env": { "NODE_ENV": "development", "PORT": "3001" }
 }

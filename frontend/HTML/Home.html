@@ -10,18 +10,41 @@
   <link rel="apple-touch-icon" href="/Images/icons/apple-touch-icon.png">
   <meta name="apple-mobile-web-app-title" content="netto">
   <meta name="theme-color" content="#0a0f0c">
-  <link rel="stylesheet" href="../CSS/stylesheet.css">
+  <!-- applies the saved theme and colour before anything is drawn (a light theme never flashes dark first) -->
+  <script src="../JS/themeBeforeFirstPaint.js"></script>
+  <!-- styles, split by topic; the order matters (later files win), see the comment at the top of each -->
+  <link rel="stylesheet" href="../CSS/01-theme-colors.css">
+  <link rel="stylesheet" href="../CSS/02-page-layout.css">
+  <link rel="stylesheet" href="../CSS/03-tables-and-forms.css">
+  <link rel="stylesheet" href="../CSS/04-privacy-mode.css">
+  <link rel="stylesheet" href="../CSS/05-transaction-filters.css">
+  <link rel="stylesheet" href="../CSS/06-next-up-list.css">
+  <link rel="stylesheet" href="../CSS/07-investment-charts.css">
+  <link rel="stylesheet" href="../CSS/08-assets-page.css">
+  <link rel="stylesheet" href="../CSS/09-categories-page.css">
+  <link rel="stylesheet" href="../CSS/10-editable-rows-and-accounts.css">
+  <link rel="stylesheet" href="../CSS/11-trade-and-reconcile-dialogs.css">
+  <link rel="stylesheet" href="../CSS/12-settings-page.css">
+  <link rel="stylesheet" href="../CSS/13-net-worth-chart.css">
+  <link rel="stylesheet" href="../CSS/14-recurring-page.css">
+  <link rel="stylesheet" href="../CSS/15-liquidity-insights.css">
+  <link rel="stylesheet" href="../CSS/16-statements-page.css">
 </head>
 <body>
 
 <nav id="sidebar">
-  <div class="brand"><img src="../Images/logo/netto-logo-dark-bg.svg" alt="netto" width="100"></div>
+  <div class="brand">
+    <img class="logo-dark" src="../Images/logo/netto-logo-dark-bg.svg" alt="netto" width="100">
+    <img class="logo-light" src="../Images/logo/netto-logo-light-bg.svg" alt="netto" width="100">
+  </div>
   <a href="#home">Home</a>
   <a href="#assets">Assets</a>
   <a href="#transactions">Transactions</a>
+  <a href="#recurring">Recurring</a>
   <a href="#categories">Categories</a>
   <a href="#investments">Investments</a>
   <a href="#insights">Insights</a>
+  <a href="#statements">Statements</a>
   <a href="#settings">Settings</a>
   <a href="#nextUp">Next up</a>
   <div id="side-networth">Net worth<strong id="net-worth-value">…</strong>
@@ -61,21 +84,24 @@
     </div>
     <!-- two columns: the pie stays still on the left, only the list on the right scrolls -->
     <div class="assets-split">
-      <aside class="panel assets-chart">
-        <h3>Total assets</h3>
-        <strong id="assets-total" class="assets-total">…</strong>
-        <div id="assets-pie" class="pie"></div>
-        <ul id="assets-legend" class="pie-legend"></ul>
-        <p id="assets-pie-note" class="hint small"></p>
-      </aside>
+      <div class="assets-side">
+        <aside class="panel assets-chart">
+          <h3>Total assets</h3>
+          <strong id="assets-total" class="assets-total">…</strong>
+          <div id="assets-pie" class="pie"></div>
+          <ul id="assets-legend" class="pie-legend"></ul>
+          <p id="assets-pie-note" class="hint small"></p>
+        </aside>
+        <button type="button" id="reconcile-apply" class="reconcile-apply">Reconcile</button>
+      </div>
       <div class="assets-list">
-        <p class="hint">Recount: type what you really have in an account. Leave a field empty to keep the recorded amount (e.g. money in the safe you can't check now).</p>
+        <p class="hint">Click an account's name to edit or close it. Reconcile: type what you really have in an account. Leave a field empty to keep the recorded amount (e.g. money in the safe you can't check now).</p>
         <table>
           <thead><tr><th>Name</th><th>Kind</th><th>Recorded</th><th>Last verified</th><th>Counted</th><th>Difference</th></tr></thead>
           <tbody id="assets-body"></tbody>
         </table>
-        <p id="recount-summary"></p>
-        <button id="recount-apply">Apply recount</button>
+        <button type="button" id="show-closed" class="ghost show-closed" hidden></button>
+        <p id="reconcile-summary"></p>
       </div>
     </div>
   </section>
@@ -90,7 +116,8 @@
       <select id="account-select"><option value="">All accounts</option></select>
       <select id="f-type">
         <option value="">All types</option><option value="income">Income</option><option value="expense">Expense</option>
-        <option value="movement">Movement</option><option value="adjustment">Recount</option>
+        <option value="movement">Movement</option><option value="adjustment">Reconciliation</option>
+        <option value="investment">Investment</option>
       </select>
       <select id="f-category"><option value="">All categories</option></select>
       <label>From <input id="f-from" type="date"></label>
@@ -111,24 +138,56 @@
     </table>
   </section>
 
+  <section data-page="recurring">
+    <div class="page-head">
+      <h2>Recurring</h2>
+      <button type="button" class="add-btn" data-open="recurring-dialog">+ Add recurring</button>
+    </div>
+    <p class="hint">Rent, salary, subscriptions… On each date the transaction is added by itself, like one you typed in
+      (if the app was off that day, as soon as it's on again). Click one to change, pause or delete it.</p>
+    <p id="recurring-summary" class="recurring-summary"></p>
+    <table>
+      <thead><tr><th>Description</th><th>Type</th><th>Amount</th><th>Account</th><th>Repeats</th><th>Next</th></tr></thead>
+      <tbody id="recurring-body"></tbody>
+    </table>
+    <p id="recurring-empty" class="chart-empty" hidden>No recurring transactions yet: add your rent, salary or a subscription.</p>
+  </section>
+
   <section data-page="categories">
     <div class="page-head"><h2>Categories</h2></div>
-    <p class="hint">The list you pick from when adding a transaction. Click a name to rename it: every transaction follows.
-      Renaming to a name that already exists merges the two.</p>
-    <form id="category-form" class="cat-add">
-      <input name="name" placeholder="New category (e.g. Coffee)" required>
-      <button>Add category</button>
-    </form>
-    <table>
-      <thead><tr><th>Name</th><th>Used by</th><th></th></tr></thead>
-      <tbody id="categories-body"></tbody>
-    </table>
+    <p class="hint">The lists you pick from when adding a transaction: an expense uses an expense category, an income an
+      income one. Click a name to rename it: every transaction follows. Renaming to a name that already exists in the
+      same list merges the two. "→ income" / "→ expense" moves a category to the other list.</p>
+    <div class="categories-columns">
+      <div class="categories-list">
+        <h3>Expense categories</h3>
+        <form class="cat-add category-add-form" data-kind="expense">
+          <input name="name" placeholder="New expense category (e.g. Coffee)" required>
+          <button>Add</button>
+        </form>
+        <table>
+          <thead><tr><th>Name</th><th>Used by</th><th></th></tr></thead>
+          <tbody id="expense-categories-body"></tbody>
+        </table>
+      </div>
+      <div class="categories-list">
+        <h3>Income categories</h3>
+        <form class="cat-add category-add-form" data-kind="income">
+          <input name="name" placeholder="New income category (e.g. Salary)" required>
+          <button>Add</button>
+        </form>
+        <table>
+          <thead><tr><th>Name</th><th>Used by</th><th></th></tr></thead>
+          <tbody id="income-categories-body"></tbody>
+        </table>
+      </div>
+    </div>
   </section>
 
   <section data-page="investments">
     <div class="page-head">
       <h2>Investments</h2>
-      <button type="button" class="add-btn" data-open="inv-dialog">+ Add investment</button>
+      <button type="button" class="add-btn" id="trade-new">+ Buy / Sell</button>
     </div>
 
     <div class="cards">
@@ -173,26 +232,176 @@
       <thead><tr><th>Ticker</th><th>Shares</th><th>Avg price</th><th>Invested</th><th>Value</th><th>Gain</th><th>Gain %</th><th></th></tr></thead>
       <tbody id="investments-body"></tbody>
     </table>
+
+    <h3>Trades</h3>
+    <p class="hint small">Every buy and sell. Click one to change or delete it: the holding is recalculated and the money moves back.</p>
+    <table>
+      <thead><tr><th>Date</th><th>Type</th><th>Ticker</th><th>Shares</th><th>Price</th><th>Fees</th><th>Total</th><th>Account</th><th>Realized</th></tr></thead>
+      <tbody id="trades-body"></tbody>
+    </table>
   </section>
 
   <section data-page="insights">
     <div class="page-head"><h2>Insights</h2></div>
+    <!-- filled by JS/pages/monthProjection.js -->
+    <h3 class="liq-title">This month</h3>
+    <div class="cards liquidity-cards">
+      <div class="card">Spent so far<strong id="month-spent">…</strong><small id="month-spent-detail"></small></div>
+      <div class="card">Projected spending<strong id="month-projected-spending">…</strong><small id="month-projected-spending-detail"></small></div>
+      <div class="card">Projected savings<strong id="month-projected-savings">…</strong><small id="month-projected-savings-detail"></small></div>
+    </div>
+    <p class="hint small month-hint">Recurring expenses come from the Recurring page (also the ones still due); the rest is projected at this month's daily pace.</p>
+    <!-- filled by JS/pages/liquidityInsights.js -->
+    <h3>Liquidity</h3>
+    <div class="cards liquidity-cards">
+      <div class="card">Invested vs liquid<strong id="liq-invested-share">…</strong><small id="liq-invested-detail"></small></div>
+      <div class="card">Liquid net worth<strong id="liq-net-worth">…</strong><small id="liq-net-worth-detail"></small></div>
+      <div class="card">Emergency fund<strong id="liq-months">…</strong><small id="liq-months-detail"></small></div>
+    </div>
+    <div class="panel liquidity-panel">
+      <div class="bar liquidity-bar" id="liq-bar"></div>
+      <table>
+        <thead><tr><th>Class</th><th>What's in it</th><th>Value</th><th>Of net worth</th></tr></thead>
+        <tbody id="liq-body"></tbody>
+      </table>
+      <p class="hint small">From most to least liquid. "Invested vs liquid" compares investments with cash &amp; cash equivalents only.
+        Personal-use assets (like a car) count in your net worth at the value you gave them, but only become money once sold.
+        An account's class comes from its kind: change it on the Assets page.</p>
+      <p id="liq-note" class="hint small"></p>
+    </div>
+    <div class="chart-head nw-head">
+      <h3>Net worth over time</h3>
+      <div class="chips" id="nw-range">
+        <button type="button" class="ghost" data-value="1m">1M</button>
+        <button type="button" class="ghost" data-value="6m">6M</button>
+        <button type="button" class="ghost" data-value="1y">1Y</button>
+        <button type="button" class="ghost" data-value="all">All</button>
+      </div>
+    </div>
+    <div class="panel">
+      <p class="chart-sub" id="nw-summary"></p>
+      <div id="nw-chart" class="line-chart stacked-area-chart"></div>
+      <p class="chart-legend"><i class="swatch accounts"></i>Accounts <i class="swatch investments"></i>Investments <i class="swatch total"></i>Net worth</p>
+      <p class="hint small">Rebuilt from your transactions and trades: accounts at what they held each day, investments at that day's market price.</p>
+      <p id="nw-note" class="hint small"></p>
+    </div>
     <h3>Last months</h3>
     <table>
-      <thead><tr><th>Month</th><th>Income</th><th>Expenses</th><th>Saved</th></tr></thead>
+      <thead><tr><th>Month</th><th>Income</th><th>Expenses</th><th>Saved</th><th>Savings rate</th></tr></thead>
       <tbody id="months-body"></tbody>
     </table>
-    <h3>Spending by category (this month)</h3>
-    <table>
-      <thead><tr><th>Category</th><th>Spent</th></tr></thead>
-      <tbody id="cats-body"></tbody>
+    <div class="insights-columns">
+      <div>
+        <h3>Spending by category (this month)</h3>
+        <table>
+          <thead><tr><th>Category</th><th>Spent</th></tr></thead>
+          <tbody id="cats-body"></tbody>
+        </table>
+      </div>
+      <div>
+        <h3>Income by category (this month)</h3>
+        <table>
+          <thead><tr><th>Category</th><th>Received</th></tr></thead>
+          <tbody id="income-cats-body"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- filled by JS/pages/statementsPage.js -->
+  <section data-page="statements">
+    <div class="page-head"><h2>Statements</h2></div>
+    <div class="st-period-row">
+      <div class="chips" id="st-period">
+        <button type="button" class="ghost" data-value="this-month">This month</button>
+        <button type="button" class="ghost" data-value="last-month">Last month</button>
+        <button type="button" class="ghost" data-value="this-quarter">This quarter</button>
+        <button type="button" class="ghost" data-value="this-year">This year</button>
+        <button type="button" class="ghost" data-value="last-12-months">Last 12 months</button>
+        <button type="button" class="ghost" data-value="all">All time</button>
+      </div>
+      <div class="st-dates" id="st-custom">
+        <input type="date" id="st-from" aria-label="From"> – <input type="date" id="st-to" aria-label="To">
+      </div>
+    </div>
+    <p id="st-period-summary" class="hint small"></p>
+
+    <h3>Net worth bridge</h3>
+    <div class="panel">
+      <p class="chart-sub" id="st-bridge-summary"></p>
+      <div id="st-bridge-chart" class="waterfall-chart"></div>
+      <table class="st-bridge-table">
+        <tbody id="st-bridge-body"></tbody>
+      </table>
+      <p class="hint small">How the net worth at the start became the one at the end. <b>Investment results</b>: what your
+        investments' value changed beyond the money you put in or took out (market moves, fees included).
+        <b>Reconciliations</b>: differences found when counting an account. <b>Starting balances added</b>: money that
+        entered netto without a transaction, like a new account's opening balance or shares recorded without a payment.
+        Moving money between your own accounts changes nothing.</p>
+      <p id="st-bridge-note" class="hint small"></p>
+    </div>
+
+    <h3>Income statement</h3>
+    <div class="insights-columns">
+      <div>
+        <table>
+          <thead><tr><th>Income</th><th>Amount</th><th>Share</th></tr></thead>
+          <tbody id="st-income-body"></tbody>
+          <tfoot><tr><td>Total income</td><td id="st-income-total"></td><td></td></tr></tfoot>
+        </table>
+      </div>
+      <div>
+        <table>
+          <thead><tr><th>Expenses</th><th>Amount</th><th>Share</th></tr></thead>
+          <tbody id="st-expenses-body"></tbody>
+          <tfoot><tr><td>Total expenses</td><td id="st-expenses-total"></td><td></td></tr></tfoot>
+        </table>
+      </div>
+    </div>
+    <p class="st-net-line">Net savings <strong id="st-net-savings"></strong> · savings rate <strong id="st-savings-rate"></strong></p>
+
+    <h3>Balance sheet</h3>
+    <table class="st-balance-table">
+      <thead><tr><th>Account</th><th id="st-opening-head">Start</th><th id="st-closing-head">End</th><th>Change</th></tr></thead>
+      <tbody id="st-balance-body"></tbody>
     </table>
+    <p class="hint small">Start = the end of the day before the period. Investments are valued at each day's closing
+      price (today: the live price). Personal-use assets at the value you gave them.</p>
   </section>
 
   <section data-page="settings">
     <div class="page-head"><h2>Settings</h2></div>
+    <p class="setting-row">
+      <span>Theme</span>
+      <span id="theme-chips" class="chips theme-chips">
+        <button type="button" class="ghost" data-value="system">System</button>
+        <button type="button" class="ghost" data-value="light">Light</button>
+        <button type="button" class="ghost" data-value="dark">Dark</button>
+      </span>
+    </p>
+    <p class="setting-row">
+      <span>Color</span>
+      <span id="accent-chips" class="chips accent-chips">
+        <button type="button" class="ghost" data-value="green"><i class="swatch" style="background:#22c55e"></i>Green</button>
+        <button type="button" class="ghost" data-value="blue"><i class="swatch" style="background:#3b82f6"></i>Blue</button>
+        <button type="button" class="ghost" data-value="violet"><i class="swatch" style="background:#8b5cf6"></i>Violet</button>
+        <button type="button" class="ghost" data-value="orange"><i class="swatch" style="background:#f97316"></i>Orange</button>
+        <button type="button" class="ghost" data-value="pink"><i class="swatch" style="background:#ec4899"></i>Pink</button>
+      </span>
+    </p>
+    <p class="setting-row">
+      <span>Hide amounts</span>
+      <span id="privacy-chips" class="chips option-chips">
+        <button type="button" class="ghost" data-value="always" title="Amounts are hidden after every reload">On every load</button>
+        <button type="button" class="ghost" data-value="open" title="Reloads keep the current state; amounts are hidden when you open the app again">Only when opening the app</button>
+      </span>
+    </p>
     <p><button id="refreshToggle">Auto Refresh: OFF</button></p>
-    <p><a class="button" href="/export">Download backup (JSON)</a></p>
+    <p class="backup-buttons">
+      <a class="button" href="/export" download>Download backup (JSON)</a>
+      <button type="button" id="open-backups" class="ghost">Open backups folder</button>
+    </p>
+    <p id="backup-status" class="hint small"></p>
     <p>
       <button id="importBtn">Restore backup (JSON)…</button>
       <input type="file" id="importFile" accept=".json,application/json" hidden>
@@ -216,10 +425,13 @@
 </main>
 
 <dialog id="tx-dialog">
-  <h3>New transaction</h3>
+  <!-- one dialog for adding and editing: openTransactionEditor() in JS/dialogs/transactionDialog.js switches it to edit mode -->
+  <h3 id="tx-title">New transaction</h3>
   <form id="tx-form">
     <select name="type" id="tx-type">
       <option value="expense">Expense</option><option value="income">Income</option><option value="movement">Movement</option>
+      <option value="adjustment" disabled hidden>Reconciliation</option>
+      <option value="investment" disabled hidden>Investment</option>
     </select>
     <select name="from_account_id" id="tx-from"></select>
     <select name="to_account_id" id="tx-to"></select>
@@ -227,43 +439,151 @@
     <input name="date" id="tx-date" type="date" title="Date (empty = today)">
     <select name="category_id" id="tx-category"><option value="">— no category —</option></select>
     <input name="description" placeholder="Description">
+    <p id="tx-adjust-note" class="hint small" hidden>This is a reconciliation: its amount is the difference you found when you counted, so only the date, category and description can change. Delete it to undo the reconciliation.</p>
+    <p id="tx-recurring-note" class="hint small" hidden>Added by a recurring transaction. Changing it here changes only this one; the schedule is on the <a href="#recurring" data-close>Recurring</a> page.</p>
+    <p id="tx-invest-note" class="hint small" hidden>This is the money side of an investment trade. Change or delete the trade on the <a href="#investments" data-close>Investments</a> page and this follows.</p>
+    <p id="tx-error" class="dialog-error" role="alert"></p>
     <div class="actions">
+      <button type="button" id="tx-delete" class="danger" hidden>Delete</button>
       <a href="#categories" class="manage-link" data-close>Manage categories</a>
       <button type="button" class="ghost" data-close>Cancel</button>
-      <button>Add transaction</button>
+      <button id="tx-submit">Add transaction</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="recurring-dialog">
+  <!-- adding a recurring transaction, or editing one: openRecurringTransactionEditor() in JS/dialogs/recurringTransactionDialog.js -->
+  <h3 id="recurring-title">New recurring transaction</h3>
+  <form id="recurring-form">
+    <label class="field"><span>Type</span>
+      <select name="type" id="rec-type">
+        <option value="expense">Expense</option><option value="income">Income</option><option value="movement">Movement</option>
+      </select></label>
+    <label class="field"><span>Amount (€)</span>
+      <input name="amount" type="number" step="0.01" min="0.01" placeholder="0,00" required></label>
+    <label class="field"><span>From</span>
+      <select name="from_account_id" id="rec-from"></select></label>
+    <label class="field"><span>To</span>
+      <select name="to_account_id" id="rec-to"></select></label>
+    <label class="field"><span>Category</span>
+      <select name="category_id" id="rec-category"><option value="">— no category —</option></select></label>
+    <label class="field"><span>Description</span>
+      <input name="description" placeholder="e.g. Rent"></label>
+    <div class="field wide"><span>Repeat</span>
+      <div class="repeat-row">
+        <span class="repeat-every">Every</span>
+        <input name="repeat_interval" type="number" min="1" max="120" step="1" required aria-label="Repeat every">
+        <select name="repeat_unit" id="rec-unit" aria-label="Unit">
+          <option value="week">week</option><option value="month">month</option><option value="year">year</option>
+        </select>
+      </div>
+      <div class="chips repeat-presets" id="rec-presets">
+        <button type="button" class="ghost" data-unit="week" data-interval="1">Weekly</button>
+        <button type="button" class="ghost" data-unit="week" data-interval="2">Every 2 weeks</button>
+        <button type="button" class="ghost" data-unit="month" data-interval="1">Monthly</button>
+        <button type="button" class="ghost" data-unit="month" data-interval="2">Every 2 months</button>
+        <button type="button" class="ghost" data-unit="month" data-interval="3">Every 3 months</button>
+        <button type="button" class="ghost" data-unit="month" data-interval="6">Every 6 months</button>
+        <button type="button" class="ghost" data-unit="year" data-interval="1">Yearly</button>
+      </div>
+    </div>
+    <label class="field"><span>Starts on</span>
+      <input name="start_date" type="date" required></label>
+    <label class="field"><span>Ends on (optional)</span>
+      <input name="end_date" type="date"></label>
+    <label class="check-field" id="recurring-paused-field" hidden><input type="checkbox" name="paused">
+      Paused: add nothing until I resume it (the dates missed meanwhile are skipped)</label>
+    <p id="recurring-preview" class="trade-total"></p>
+    <p class="hint small recurring-edit-note">Changes apply to the next dates; transactions already added stay as they are.</p>
+    <p id="recurring-error" class="dialog-error" role="alert"></p>
+    <div class="actions">
+      <button type="button" id="recurring-delete" class="danger" hidden>Delete</button>
+      <button type="button" class="ghost" data-close>Cancel</button>
+      <button id="recurring-submit">Add</button>
     </div>
   </form>
 </dialog>
 
 <dialog id="account-dialog">
-  <h3>New account or asset</h3>
+  <!-- adding an account, or editing one: openAccountEditor() in JS/dialogs/accountDialog.js switches it to edit mode -->
+  <h3 id="account-title">New account or asset</h3>
   <form id="account-form">
-    <input name="name" placeholder="Name (e.g. Cash, Car)" required>
-    <select name="kind">
-      <option value="cash">Cash</option><option value="bank">Bank</option>
-      <option value="savings">Savings</option><option value="asset">Other asset</option>
-    </select>
-    <input name="opening_balance" type="number" step="0.01" placeholder="What it holds today" required>
+    <label class="field"><span>Name</span>
+      <input name="name" placeholder="e.g. Cash, Car" required></label>
+    <label class="field"><span>Kind</span>
+      <!-- grouped by liquidity class; same kinds and labels as JS/core/accountKinds.js -->
+      <select name="kind">
+        <optgroup label="Cash &amp; cash equivalents">
+          <option value="cash">Cash</option><option value="bank">Current account</option><option value="savings">Savings account</option>
+        </optgroup>
+        <optgroup label="Restricted cash">
+          <option value="restricted">Restricted (vouchers)</option>
+        </optgroup>
+        <optgroup label="Personal-use assets (estimated value)">
+          <option value="asset">Personal-use asset</option>
+        </optgroup>
+      </select></label>
+    <label class="field wide"><span id="account-opening-label">What it holds today (€)</span>
+      <input name="opening_balance" type="number" step="0.01" placeholder="0,00" required></label>
+    <p id="account-info" class="hint small" hidden></p>
+    <p id="account-error" class="dialog-error" role="alert"></p>
     <div class="actions">
+      <button type="button" id="account-remove" class="danger" hidden>Delete</button>
       <button type="button" class="ghost" data-close>Cancel</button>
-      <button>Add</button>
+      <button id="account-submit">Add</button>
     </div>
   </form>
 </dialog>
 
-<dialog id="inv-dialog">
-  <h3>New investment</h3>
-  <form id="inv-form">
-    <input name="ticker" placeholder="Ticker (e.g. VWCE.MI)" required>
-    <input name="shares" type="number" step="any" min="0" placeholder="Shares" required>
-    <input name="average_purchase_price" type="number" step="any" min="0" placeholder="Avg price (EUR)" required>
+<dialog id="trade-dialog">
+  <!-- buying or selling shares; openTradeDialog() in JS/dialogs/tradeDialog.js also opens it to edit a trade -->
+  <h3 id="trade-title">Buy or sell</h3>
+  <form id="trade-form">
+    <label class="field"><span>Type</span>
+      <select name="side" id="trade-side"><option value="buy">Buy</option><option value="sell">Sell</option></select></label>
+    <label class="field"><span>Ticker</span>
+      <input name="ticker" id="trade-ticker" list="ticker-list" placeholder="e.g. VWCE.MI" required autocomplete="off"></label>
+    <datalist id="ticker-list"></datalist>
+    <label class="field"><span>Shares</span>
+      <input name="shares" type="number" step="any" min="0" placeholder="0" required></label>
+    <label class="field"><span>Price per share (€)</span>
+      <input name="price" type="number" step="any" min="0" placeholder="0,00" required></label>
+    <label class="field"><span>Fees (€)</span>
+      <input name="fees" type="number" step="0.01" min="0" placeholder="optional"></label>
+    <label class="field"><span>Date</span>
+      <input name="date" id="trade-date" type="date"></label>
+    <label class="field wide"><span id="trade-account-label">Paid from</span>
+      <select name="account_id" id="trade-account"></select></label>
+    <label class="field wide"><span>Note</span>
+      <input name="note" placeholder="optional"></label>
+    <p id="trade-total" class="trade-total"></p>
+    <p id="trade-error" class="dialog-error" role="alert"></p>
     <div class="actions">
+      <button type="button" id="trade-delete" class="danger" hidden>Delete</button>
       <button type="button" class="ghost" data-close>Cancel</button>
-      <button>Add investment</button>
+      <button id="trade-submit">Buy</button>
     </div>
   </form>
 </dialog>
 
-<script src="../JS/home.js"></script>
+<dialog id="reconcile-dialog">
+  <h3>Confirm reconciliation</h3>
+  <form id="reconcile-form" method="dialog">
+    <p class="hint">These accounts will be set to the amount you counted. The difference is recorded as a reconciliation transaction.</p>
+    <table class="reconcile-table">
+      <thead><tr><th>Account</th><th>Recorded</th><th>Counted</th><th>Difference</th></tr></thead>
+      <tbody id="reconcile-confirm-body"></tbody>
+    </table>
+    <p id="reconcile-confirm-total"></p>
+    <div class="actions">
+      <button type="button" class="ghost" data-close>Cancel</button>
+      <button id="reconcile-confirm">Confirm</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- the page's code: main.js imports everything else (JS/core, JS/pages, JS/dialogs, ...) -->
+<script type="module" src="../JS/main.js"></script>
 </body>
 </html>

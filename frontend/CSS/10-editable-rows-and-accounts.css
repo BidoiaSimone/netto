@@ -1,0 +1,28 @@
+/* Rows that open an edit dialog, closed accounts.
+   One of the numbered files in this folder: Home.html loads them in number order, and later files
+   win over earlier ones when two rules are equally specific, so keep that order when adding files. */
+
+/* ---- editing transactions: rows open the edit dialog ---- */
+tr.clickable { cursor: pointer; }
+tr.clickable:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+button.danger { background: transparent; border-color: rgba(var(--neg-rgb), 0.5); color: var(--neg); margin-right: auto; }
+button.danger:hover { background: rgba(var(--neg-rgb), 0.12); box-shadow: none; }
+button.danger:not([hidden]) + .manage-link { margin-right: 0; }  /* Delete takes the left side instead */
+.dialog-error { width: 100%; margin: 0; color: var(--neg); font-size: 13px; }
+.dialog-error:empty { display: none; }
+#tx-adjust-note, #tx-invest-note { width: 100%; margin: 0; }
+
+/* ---- accounts: closed ones (Assets > Show closed accounts) ---- */
+.assets-list tr.closed td { opacity: 0.5; }
+.assets-list tr.closed td:first-child { opacity: 1; }
+.assets-list tr.closed .name-link { opacity: 0.5; }
+/* account names in the Assets table open the edit dialog */
+button.name-link { all: unset; position: relative; cursor: pointer; font-weight: 600; color: var(--text); border-radius: 4px; }
+/* the pencil sits just after the name without taking space, so it never wraps or shifts the row */
+button.name-link::after { content: "✎"; position: absolute; left: 100%; margin-left: 5px; color: var(--muted); font-weight: 400; opacity: 0; transition: opacity 0.15s; }
+button.name-link:hover { color: var(--accent-2); }
+button.name-link:hover::after, button.name-link:focus-visible::after { opacity: 1; }
+button.name-link:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+button.show-closed { padding: 6px 12px; font-size: 13px; margin-top: 4px; }
+#account-info { width: 100%; margin: 0; }
+.actions .reopen { margin-right: auto; }

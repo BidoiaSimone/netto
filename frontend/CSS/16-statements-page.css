@@ -1,0 +1,39 @@
+/* Statements page: period picker, net worth bridge (waterfall chart), income statement, balance sheet.
+   One of the numbered files in this folder: Home.html loads them in number order, and later files
+   win over earlier ones when two rules are equally specific, so keep that order when adding files. */
+
+/* ---- period ---- */
+.st-period-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; }
+#st-period button.active { color: var(--accent-2); border-color: var(--accent); background: rgba(var(--accent-rgb), 0.12); }
+.st-dates { display: flex; align-items: center; gap: 8px; color: var(--muted); }
+.st-dates input { width: auto; }
+
+/* ---- net worth bridge ---- */
+.waterfall-chart svg { display: block; width: 100%; height: auto; overflow: visible; }
+.waterfall-zero { stroke: var(--border); stroke-width: 1; }
+.waterfall-connector { stroke: var(--muted); stroke-width: 1; stroke-dasharray: 3 3; opacity: 0.6; }
+.waterfall-bar.total { fill: color-mix(in srgb, var(--accent) 35%, transparent); stroke: var(--accent); stroke-width: 1.5; }
+.waterfall-bar.up { fill: rgba(var(--pos-rgb), 0.75); }
+.waterfall-bar.down { fill: var(--neg); opacity: 0.8; }
+.waterfall-value, .waterfall-label { text-anchor: middle; font-size: 13px; }
+.waterfall-value { fill: var(--text); font-weight: 600; }
+.waterfall-value.up { fill: var(--accent-text, var(--accent)); }
+.waterfall-value.down { fill: var(--neg); }
+.waterfall-label { fill: var(--muted); }
+
+.st-bridge-table { margin-top: 14px; }
+.st-bridge-table td:last-child { text-align: right; white-space: nowrap; }
+
+/* ---- income statement ---- */
+[data-page="statements"] td:nth-child(2), [data-page="statements"] th:nth-child(2),
+[data-page="statements"] td:nth-child(3), [data-page="statements"] th:nth-child(3),
+[data-page="statements"] .st-balance-table td:nth-child(4), [data-page="statements"] .st-balance-table th:nth-child(4) { text-align: right; white-space: nowrap; }
+[data-page="statements"] tfoot td { font-weight: 600; color: var(--text); border-top: 1px solid var(--border); }
+.st-net-line { margin: 14px 0 0; color: var(--muted); }
+.st-net-line strong { font-size: 18px; margin-left: 4px; }
+
+/* ---- balance sheet ---- */
+.st-class-row td { background: var(--surface-2); font-weight: 600; }
+.st-item { display: inline-flex; flex-direction: column; padding-left: 18px; }
+.st-item small { font-size: 12px; }
+.st-total-row td { font-weight: 600; border-top: 1px solid var(--border); }

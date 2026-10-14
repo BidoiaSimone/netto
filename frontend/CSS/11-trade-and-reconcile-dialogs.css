@@ -1,0 +1,32 @@
+/* Buy / sell dialog and reconcile confirmation.
+   One of the numbered files in this folder: Home.html loads them in number order, and later files
+   win over earlier ones when two rules are equally specific, so keep that order when adding files. */
+
+/* ---- investments: buy / sell ---- */
+/* labelled fields: the label sits above its input, two per row (wide = full row) */
+dialog form .field { flex: 1 1 45%; display: flex; flex-direction: column; gap: 5px; font-size: 12px; color: var(--muted); }
+dialog form .field.wide { flex-basis: 100%; }
+dialog form .field > input, dialog form .field > select { flex: none; width: 100%; }
+/* Safari draws its own dropdowns and ignores their padding, so they came out shorter than the inputs.
+   Without the native look they size like everything else; the arrow is drawn here instead. */
+dialog form .field > select {
+    -webkit-appearance: none; appearance: none;
+    padding-right: 34px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5l5 5 5-5' fill='none' stroke='%238a948f' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: right 13px center;
+}
+dialog .hint a { color: var(--accent-2); }
+.trade-total { width: 100%; margin: 0; font-size: 14px; }
+.trade-total strong { font-variant-numeric: tabular-nums; }
+.trade-total:empty { display: none; }
+td .row-actions { display: flex; gap: 6px; justify-content: flex-end; }
+td .row-actions button { padding: 5px 12px; font-size: 13px; }
+td button.ghost { background: transparent; border-color: var(--border); color: var(--muted); }
+td button.ghost:hover { background: var(--surface-2); color: var(--text); }
+
+/* reconcile confirmation dialog */
+#reconcile-form { display: block; }
+#reconcile-form .hint { margin: 0 0 14px; }
+.reconcile-table { width: 100%; margin-bottom: 12px; }
+.reconcile-table td:not(:first-child), .reconcile-table th:not(:first-child) { text-align: right; font-variant-numeric: tabular-nums; }
+#reconcile-confirm-total { margin: 0 0 16px; }

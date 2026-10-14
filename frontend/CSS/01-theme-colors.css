@@ -1,0 +1,222 @@
+/* Colour variables for every theme and accent, and the logo that follows them.
+   One of the numbered files in this folder: Home.html loads them in number order, and later files
+   win over earlier ones when two rules are equally specific, so keep that order when adding files. */
+
+/* Colours come in two sets, dark (the default) and light: Settings > Theme sets <html data-theme="light|dark">.
+   On top of that, Settings > Color picks the accent: green is the base below, the others are the
+   [data-accent] blocks after it, each with a dark and a light version (see JS/themeBeforeFirstPaint.js).
+   Money in stays green and money out red whatever the colour: --accent-text / --pos-rgb and --neg. */
+:root, :root[data-theme="dark"] {
+    color-scheme: dark;                 /* native controls (date picker, scrollbars) follow the theme */
+    --bg: #0a0f0c;
+    --surface: #111a15;
+    --surface-2: #17231c;
+    --border: #1f3028;
+    --text: #e8f1ec;
+    --muted: #7f9488;
+    --accent: #22c55e;                  /* fills: buttons, bars, chart line */
+    --accent-rgb: 34, 197, 94;          /* same colour, for see-through tints: rgba(var(--accent-rgb), 0.1) */
+    --accent-2: #86efac;                /* highlighted text (active tab, selected chip) and secondary fills */
+    --accent-text: #22c55e;             /* positive amounts, income: green in every colour */
+    --pos-rgb: 34, 197, 94;             /* the same green, for tints */
+    --accent-hover: #86efac;            /* button background on hover */
+    --grad-from: #22c55e;               /* big gradient numbers (net worth, total assets) */
+    --grad-to: #86efac;
+    --on-accent: #04130a;               /* text on green buttons */
+    --neg: #f87171;
+    --neg-rgb: 248, 113, 113;
+    --warn: #fbbf24;
+    --warn-rgb: 251, 191, 36;
+    --info: #9db4ff;
+    --info-rgb: 125, 160, 255;
+    --sidebar-bg: rgba(17, 26, 21, 0.85);
+    --glow: 0 0 24px rgba(34, 197, 94, 0.25);
+    --dialog-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+    --backdrop: rgba(0, 0, 0, 0.6);
+    --tooltip-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
+}
+
+:root[data-theme="light"] {
+    color-scheme: light;
+    --bg: #f4f7f5;
+    --surface: #ffffff;
+    --surface-2: #eef3f0;
+    --border: #d8e2dc;
+    --text: #10201a;
+    --muted: #5b6e65;
+    --accent: #22c55e;
+    --accent-rgb: 34, 197, 94;
+    --accent-2: #15803d;                /* darker green: light green text is unreadable on white */
+    --accent-text: #15803d;
+    --pos-rgb: 34, 197, 94;
+    --accent-hover: #4ade80;
+    --grad-from: #16a34a;
+    --grad-to: #166534;
+    --on-accent: #04130a;
+    --neg: #dc2626;
+    --neg-rgb: 220, 38, 38;
+    --warn: #b45309;
+    --warn-rgb: 217, 119, 6;
+    --info: #3b5bdb;
+    --info-rgb: 59, 91, 219;
+    --sidebar-bg: rgba(255, 255, 255, 0.85);
+    --glow: 0 0 20px rgba(34, 197, 94, 0.22);
+    --dialog-shadow: 0 20px 60px rgba(16, 32, 26, 0.18);
+    --backdrop: rgba(16, 32, 26, 0.35);
+    --tooltip-shadow: 0 6px 20px rgba(16, 32, 26, 0.12);
+}
+
+/* ---- Settings > Color: the other accents (generated, same variables as above) ---- */
+:root[data-accent="blue"] {
+    --bg: #080a0f;
+    --surface: #10141b;
+    --surface-2: #171b24;
+    --border: #212733;
+    --text: #e8ebf3;
+    --muted: #808899;
+    --accent: #3b82f6;
+    --accent-rgb: 59, 130, 246;
+    --accent-2: #93c5fd;
+    --accent-hover: #93c5fd;
+    --grad-from: #3b82f6;
+    --grad-to: #93c5fd;
+    --on-accent: #06122b;
+    --info: #c4b5fd;
+    --info-rgb: 196, 181, 253;
+    --sidebar-bg: rgba(16, 20, 27, 0.85);
+    --glow: 0 0 24px rgba(59, 130, 246, 0.25);
+}
+:root[data-accent="blue"][data-theme="light"] {
+    --bg: #f4f5f8;
+    --surface: #ffffff;
+    --surface-2: #eff1f6;
+    --border: #d7dce4;
+    --text: #0e1420;
+    --muted: #5a606d;
+    --accent-2: #1d4ed8;
+    --accent-hover: #60a5fa;
+    --grad-from: #2563eb;
+    --grad-to: #1e40af;
+    --info: #7c3aed;
+    --info-rgb: 124, 58, 237;
+    --sidebar-bg: rgba(255, 255, 255, 0.85);
+    --glow: 0 0 20px rgba(59, 130, 246, 0.22);
+}
+
+:root[data-accent="violet"] {
+    --bg: #0b080f;
+    --surface: #14101b;
+    --surface-2: #1c1724;
+    --border: #282133;
+    --text: #ece8f3;
+    --muted: #898099;
+    --accent: #8b5cf6;
+    --accent-rgb: 139, 92, 246;
+    --accent-2: #c4b5fd;
+    --accent-hover: #c4b5fd;
+    --grad-from: #8b5cf6;
+    --grad-to: #c4b5fd;
+    --on-accent: #12072e;
+    --info: #9db4ff;
+    --info-rgb: 157, 180, 255;
+    --sidebar-bg: rgba(20, 16, 27, 0.85);
+    --glow: 0 0 24px rgba(139, 92, 246, 0.25);
+}
+:root[data-accent="violet"][data-theme="light"] {
+    --bg: #f5f4f8;
+    --surface: #ffffff;
+    --surface-2: #f1eff6;
+    --border: #dcd7e4;
+    --text: #150e20;
+    --muted: #615a6d;
+    --accent-2: #6d28d9;
+    --accent-hover: #a78bfa;
+    --grad-from: #7c3aed;
+    --grad-to: #5b21b6;
+    --info: #3b5bdb;
+    --info-rgb: 59, 91, 219;
+    --sidebar-bg: rgba(255, 255, 255, 0.85);
+    --glow: 0 0 20px rgba(139, 92, 246, 0.22);
+}
+
+:root[data-accent="orange"] {
+    --bg: #0f0b08;
+    --surface: #1b1510;
+    --surface-2: #241d17;
+    --border: #332921;
+    --text: #f3ede8;
+    --muted: #998b80;
+    --accent: #f97316;
+    --accent-rgb: 249, 115, 22;
+    --accent-2: #fdba74;
+    --accent-hover: #fdba74;
+    --grad-from: #f97316;
+    --grad-to: #fdba74;
+    --on-accent: #1f0b02;
+    --info: #9db4ff;
+    --info-rgb: 157, 180, 255;
+    --sidebar-bg: rgba(27, 21, 16, 0.85);
+    --glow: 0 0 24px rgba(249, 115, 22, 0.25);
+}
+:root[data-accent="orange"][data-theme="light"] {
+    --bg: #f8f6f4;
+    --surface: #ffffff;
+    --surface-2: #f6f2ef;
+    --border: #e4ddd7;
+    --text: #20160e;
+    --muted: #6d635a;
+    --accent-2: #c2410c;
+    --accent-hover: #fb923c;
+    --grad-from: #ea580c;
+    --grad-to: #9a3412;
+    --info: #3b5bdb;
+    --info-rgb: 59, 91, 219;
+    --sidebar-bg: rgba(255, 255, 255, 0.85);
+    --glow: 0 0 20px rgba(249, 115, 22, 0.22);
+}
+
+:root[data-accent="pink"] {
+    --bg: #0f080b;
+    --surface: #1b1016;
+    --surface-2: #24171d;
+    --border: #33212a;
+    --text: #f3e8ed;
+    --muted: #99808c;
+    --accent: #ec4899;
+    --accent-rgb: 236, 72, 153;
+    --accent-2: #f9a8d4;
+    --accent-hover: #f9a8d4;
+    --grad-from: #ec4899;
+    --grad-to: #f9a8d4;
+    --on-accent: #2a0618;
+    --info: #9db4ff;
+    --info-rgb: 157, 180, 255;
+    --sidebar-bg: rgba(27, 16, 22, 0.85);
+    --glow: 0 0 24px rgba(236, 72, 153, 0.25);
+}
+:root[data-accent="pink"][data-theme="light"] {
+    --bg: #f8f4f6;
+    --surface: #ffffff;
+    --surface-2: #f6eff2;
+    --border: #e4d7de;
+    --text: #200e17;
+    --muted: #6d5a63;
+    --accent-2: #be185d;
+    --accent-hover: #f472b6;
+    --grad-from: #db2777;
+    --grad-to: #9d174d;
+    --info: #3b5bdb;
+    --info-rgb: 59, 91, 219;
+    --sidebar-bg: rgba(255, 255, 255, 0.85);
+    --glow: 0 0 20px rgba(236, 72, 153, 0.22);
+}
+
+
+/* the logo is drawn in green: turned to the chosen colour */
+:root[data-accent="blue"] .brand img { filter: hue-rotate(68deg); }
+:root[data-accent="violet"] .brand img { filter: hue-rotate(110deg); }
+:root[data-accent="orange"] .brand img { filter: hue-rotate(-118deg) saturate(1.3); }
+:root[data-accent="pink"] .brand img { filter: hue-rotate(178deg); }
+
+/* the sidebar has a logo for each background; only the one for the current theme shows */
+:root[data-theme="light"] .logo-dark, :root:not([data-theme="light"]) .logo-light { display: none; }

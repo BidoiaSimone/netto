@@ -1,0 +1,22 @@
+/* Categories page.
+   One of the numbered files in this folder: Home.html loads them in number order, and later files
+   win over earlier ones when two rules are equally specific, so keep that order when adding files. */
+
+/* ---- categories page ---- */
+.cat-add { margin-bottom: 16px; }
+.cat-add input { flex: 1 1 240px; }
+.categories-list td input { width: 100%; max-width: 320px; }
+.categories-list td:nth-child(2) { color: var(--muted); }
+.categories-list td:last-child { text-align: right; }
+.categories-list td:first-child { min-width: 130px; }
+.category-actions { display: inline-flex; gap: 6px; }
+.category-actions button { padding: 6px 10px; white-space: nowrap; }
+.manage-link { margin-right: auto; align-self: center; color: var(--muted); font-size: 13px; }
+.manage-link:hover { color: var(--accent-2); }
+
+/* expense and income lists side by side; one under the other in a narrow window.
+   Also used by the two "by category" tables on Insights. */
+.categories-columns, .insights-columns { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 24px; align-items: start; }
+/* the category rows also hold two buttons, so the two lists need more room before sitting side by side */
+.categories-columns { grid-template-columns: repeat(auto-fit, minmax(470px, 1fr)); }
+.categories-list h3 { margin-top: 0; }

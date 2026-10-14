@@ -1,0 +1,77 @@
+/* Tables, form fields, buttons and page headers.
+   One of the numbered files in this folder: Home.html loads them in number order, and later files
+   win over earlier ones when two rules are equally specific, so keep that order when adding files. */
+
+/* ---- tables ---- */
+table { width: 100%; border-collapse: separate; border-spacing: 0; margin-bottom: 14px;
+        background: var(--surface); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; }
+th, td { text-align: left; padding: 11px 14px; }
+th { color: var(--muted); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; background: var(--surface-2); }
+td { border-top: 1px solid var(--border); }
+tbody tr { transition: background 0.15s; }
+tbody tr:hover { background: rgba(var(--accent-rgb), 0.07); }
+
+.pos { color: var(--accent-text); font-weight: 600; }
+.neg { color: var(--neg); font-weight: 600; }
+
+.badge { padding: 3px 10px; border-radius: 99px; font-size: 12px; text-transform: capitalize; background: var(--surface-2); color: var(--muted); }
+.badge.income { background: rgba(var(--pos-rgb), 0.15); color: var(--accent-text); }
+.badge.expense { background: rgba(var(--neg-rgb), 0.15); color: var(--neg); }
+.badge.movement { background: rgba(var(--info-rgb), 0.15); color: var(--info); }
+.badge.adjustment { background: rgba(var(--warn-rgb), 0.15); color: var(--warn); }
+.badge.investment, .badge.buy { background: rgba(var(--info-rgb), 0.15); color: var(--info); }
+.badge.sell { background: rgba(var(--pos-rgb), 0.15); color: var(--accent-text); }
+
+/* ---- forms ---- */
+form { display: flex; flex-wrap: wrap; gap: 10px; }
+
+input, select, button, a.button {
+    padding: 10px 14px; border-radius: 10px; font-size: 14px; font-family: inherit;
+    border: 1px solid var(--border); background: var(--surface-2); color: var(--text);
+    transition: border-color 0.2s, box-shadow 0.2s, transform 0.15s, background 0.2s;
+}
+input:focus, select:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.2); }
+input::placeholder { color: var(--muted); }
+select:disabled, input:disabled { opacity: 0.35; }
+td input { width: 130px; padding: 7px 10px; }
+
+button, a.button {
+    cursor: pointer; text-decoration: none; display: inline-block;
+    background: var(--accent); border-color: var(--accent); color: var(--on-accent); font-weight: 700;
+}
+button:hover, a.button:hover { box-shadow: var(--glow); transform: translateY(-1px); background: var(--accent-hover); }
+button:active { transform: translateY(0); }
+td button { background: transparent; border-color: rgba(var(--neg-rgb), 0.5); color: var(--neg); padding: 6px 12px; }
+td button:hover { background: rgba(var(--neg-rgb), 0.12); box-shadow: none; }
+
+#error { color: var(--neg); min-height: 1.2em; }
+
+@media (max-width: 800px) {
+    #sidebar { position: static; width: auto; flex-direction: row; flex-wrap: wrap; border-right: 0; }
+    #sidebar a.active::before, .brand { display: none; }
+    #side-networth { margin-top: 0; width: 100%; }
+    main { margin-left: 0; padding: 20px; }
+    .cards { grid-template-columns: 1fr; }
+}
+
+/* ---- quick add ---- */
+.add-btn { font-size: 15px; padding: 12px 20px; }
+kbd { margin-left: 8px; padding: 1px 7px; border-radius: 5px; background: rgba(0, 0, 0, 0.18); font: 12px monospace; }
+
+button.ghost { background: transparent; color: var(--muted); border-color: var(--border); font-weight: 500; }
+button.ghost:hover { background: var(--surface-2); box-shadow: none; color: var(--text); }
+
+dialog {
+    background: var(--surface); color: var(--text);
+    border: 1px solid var(--border); border-radius: 18px; padding: 24px 26px;
+    width: min(560px, 92vw); box-shadow: var(--dialog-shadow), var(--glow);
+}
+dialog[open] { animation: rise 0.25s ease both; }
+dialog::backdrop { background: var(--backdrop); backdrop-filter: blur(3px); }
+dialog h3 { margin: 0 0 16px; color: var(--text); font-size: 20px; text-transform: none; letter-spacing: 0; }
+dialog form input, dialog form select { flex: 1 1 45%; }
+dialog form .actions { display: flex; gap: 10px; justify-content: flex-end; width: 100%; margin-top: 6px; }
+
+/* ---- page header: title left, main action top right ---- */
+.page-head { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 22px; }
+.page-head h2 { margin: 0; }

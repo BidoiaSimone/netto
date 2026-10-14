@@ -1,0 +1,35 @@
+/* Recurring page and the recurring transaction dialog.
+   One of the numbered files in this folder: Home.html loads them in number order, and later files
+   win over earlier ones when two rules are equally specific, so keep that order when adding files. */
+
+/* ---- the list ---- */
+.recurring-summary { margin: 0 0 14px; color: var(--muted); }
+.recurring-summary:empty { display: none; }
+.recurring-summary strong { color: var(--text); }
+#recurring-body tr.inactive td { opacity: 0.55; }
+#recurring-body tr.inactive td:last-child { opacity: 1; }
+.status-pill { display: inline-block; padding: 2px 9px; border-radius: 99px; font-size: 12px; color: var(--muted); background: var(--surface-2); border: 1px solid var(--border); }
+.status-pill.warn { color: var(--warn); border-color: rgba(var(--warn-rgb), 0.45); background: rgba(var(--warn-rgb), 0.1); }
+.muted { color: var(--muted); }
+
+/* ↻ in front of a transaction a recurring transaction added (Transactions page) */
+.recurring-marker { color: var(--muted); margin-right: 6px; cursor: help; }
+
+/* ---- the dialog ---- */
+.repeat-row { display: flex; align-items: center; gap: 10px; }
+.repeat-row .repeat-every { color: var(--text); font-size: 14px; }
+dialog form .repeat-row > input { flex: 0 0 84px; width: 84px; }
+dialog form .repeat-row > select { flex: 1 1 auto; }
+.repeat-presets { margin-top: 4px; }
+.repeat-presets button { padding: 5px 10px; font-size: 12px; }
+.repeat-presets button.active { color: var(--accent-2); border-color: var(--accent); background: rgba(var(--accent-rgb), 0.12); }
+.check-field { width: 100%; display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); cursor: pointer; }
+dialog form .check-field > input { flex: none; width: auto; }
+#recurring-dialog .recurring-edit-note { width: 100%; margin: 0; }
+/* same custom dropdown as the other labelled fields (see 11-trade-and-reconcile-dialogs.css: Safari ignores padding otherwise) */
+dialog form .repeat-row > select {
+    -webkit-appearance: none; appearance: none;
+    padding-right: 34px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5l5 5 5-5' fill='none' stroke='%238a948f' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: right 13px center;
+}

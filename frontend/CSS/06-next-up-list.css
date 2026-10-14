@@ -1,0 +1,34 @@
+/* Next up page: the to do list.
+   One of the numbered files in this folder: Home.html loads them in number order, and later files
+   win over earlier ones when two rules are equally specific, so keep that order when adding files. */
+
+/* ---- to do list ---- */
+.todo-add { display: flex; gap: 10px; margin-bottom: 16px; }
+.todo-add input { flex: 1; }
+
+.todo-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 6px; }
+.todo-list li { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; transition: border-color 0.2s; }
+.todo-list li:hover { border-color: rgba(var(--accent-rgb), 0.5); }
+.todo-list label { display: flex; align-items: center; gap: 12px; padding: 10px 14px; cursor: pointer; }
+.todo-list input[type="checkbox"] { width: 16px; height: 16px; margin: 0; padding: 0; accent-color: var(--accent); cursor: pointer; }
+
+.todo-list.done li { background: transparent; }
+.todo-list.done span { color: var(--muted); text-decoration: line-through; }
+
+.todo-list li.leaving  { animation: todo-out 0.25s ease forwards; }
+.todo-list li.entering { animation: todo-in 0.3s ease both; }
+@keyframes todo-out { to   { opacity: 0; transform: translateX(24px); } }
+@keyframes todo-in  { from { opacity: 0; transform: translateY(-8px); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .todo-list li { animation: none !important; }
+}
+
+.todo-list li { display: flex; align-items: center; }
+.todo-list label { flex: 1; }
+.todo-del {
+  background: transparent; border: 0; color: var(--muted);
+  font-size: 18px; padding: 4px 12px; opacity: 0;
+}
+.todo-list li:hover .todo-del { opacity: 1; }
+.todo-del:hover { color: var(--neg); background: transparent; box-shadow: none; transform: none; }

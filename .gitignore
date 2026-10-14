@@ -75,3 +75,16 @@ test-results/
 *.sqlite3
 *.sqlite-shm
 *.sqlite-wal
+
+# ─── netto ────────────────────────────────────────────────
+# Database backups made by migrations and imports (also covered by *.db, kept explicit)
+backend/db/backups/
+# Downloaded "Download backup (JSON)" files: they hold ALL your financial data
+money-tracker-*.json
+# Stray SQLite test databases created without the .db extension
+foobar
+foobar-*
+# The brand kit is already unpacked in frontend/netto-brand-kit
+netto-brand-kit.zip
+# Copies of the files the refactor overwrote (delete the folder once you're happy with the new code)
+pre-refactor-backup/

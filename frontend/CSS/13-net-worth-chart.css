@@ -1,0 +1,24 @@
+/* Insights page: net worth over time (stacked areas drawn by JS/charts/stackedAreaChart.js).
+   One of the numbered files in this folder: Home.html loads them in number order, and later files
+   win over earlier ones when two rules are equally specific, so keep that order when adding files. */
+
+/* The same two colours as the Assets & accounts / Investments bar on Home, so they mean the same thing */
+.nw-head { margin-top: 8px; }
+.stacked-area-chart { height: 280px; }
+.stacked-area-chart .layer.accounts { fill: var(--accent); fill-opacity: 0.35; }
+.stacked-area-chart .layer.investments { fill: var(--accent-2); fill-opacity: 0.22; }
+.stacked-area-chart .layer-edge { fill: none; stroke-width: 1.5; stroke-linejoin: round; }
+.stacked-area-chart .layer-edge.accounts { stroke: var(--accent); }
+.stacked-area-chart .layer-edge.investments { stroke: none; } /* its top edge is the net worth line */
+.stacked-area-chart .total-line { fill: none; stroke: var(--text); stroke-width: 2; stroke-linejoin: round; }
+.stacked-area-chart .hover-dot { fill: var(--text); }
+
+/* legend under the chart and the rows of the tooltip: a swatch per part */
+.chart-legend { margin: 10px 0 0; font-size: 12px; color: var(--muted); display: flex; align-items: center; flex-wrap: wrap; gap: 6px; }
+.chart-legend .swatch { margin-left: 10px; }
+.chart-legend .swatch:first-child { margin-left: 0; }
+.stacked-area-chart .tip-row { display: flex; align-items: center; gap: 6px; margin-top: 2px; }
+.swatch.accounts, .swatch.investments, .swatch.total { display: inline-block; flex: none; width: 10px; height: 10px; border-radius: 3px; }
+.swatch.accounts { background: color-mix(in srgb, var(--accent) 35%, transparent); border: 1.5px solid var(--accent); }
+.swatch.investments { background: color-mix(in srgb, var(--accent-2) 22%, transparent); border: 1.5px solid var(--text); }
+.swatch.total { height: 2px; width: 14px; border-radius: 1px; background: var(--text); }

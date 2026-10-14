@@ -1,0 +1,85 @@
+/* Base styles, the sidebar and the content area.
+   One of the numbered files in this folder: Home.html loads them in number order, and later files
+   win over earlier ones when two rules are equally specific, so keep that order when adding files. */
+
+* { box-sizing: border-box; }
+
+body {
+    font-family: system-ui, -apple-system, "Segoe UI", Arial, sans-serif;
+    background: radial-gradient(1200px 600px at 80% -10%, rgba(var(--accent-rgb), 0.10), transparent 60%), var(--bg);
+    background-attachment: fixed;
+    color: var(--text);
+    margin: 0;
+}
+
+[hidden] { display: none !important; }
+
+@keyframes rise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+section:not([hidden]) { animation: rise 0.35s ease both; }
+
+/* ---- sidebar ---- */
+/* no backdrop-filter: nothing scrolls under the sidebar, and in Safari it makes the hidden net worth's blur look cut off */
+#sidebar {
+    position: fixed; top: 0; bottom: 0; left: 0; width: 210px;
+    padding: 24px 14px;
+    background: var(--sidebar-bg);
+    border-right: 1px solid var(--border);
+    display: flex; flex-direction: column; gap: 4px;
+}
+
+.brand { font-size: 26px; font-weight: 800; letter-spacing: -0.5px; margin: 0 0 22px 12px; }
+.brand span { color: var(--accent-text); }
+
+#sidebar a {
+    position: relative;
+    color: var(--muted); text-decoration: none;
+    padding: 11px 14px; border-radius: 10px;
+    transition: color 0.2s, background 0.2s, transform 0.2s;
+}
+#sidebar a:hover { color: var(--text); background: var(--surface-2); transform: translateX(3px); }
+#sidebar a.active { color: var(--accent-2); background: rgba(var(--accent-rgb), 0.12); font-weight: 600; }
+#sidebar a.active::before {
+    content: ""; position: absolute; left: -14px; top: 9px; bottom: 9px; width: 3px;
+    background: var(--accent); border-radius: 0 3px 3px 0; box-shadow: var(--glow);
+}
+
+#side-networth {
+    margin-top: auto; padding: 14px;
+    border: 1px solid var(--border); border-radius: 12px; background: var(--surface);
+    font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em;
+}
+#side-networth strong { display: block; font-size: 20px; margin-top: 6px; letter-spacing: 0; text-transform: none; color: var(--accent-2); }
+
+/* ---- content ---- */
+main { margin-left: 210px; padding: 36px 44px 70px; max-width: 1200px; }
+h2 { margin: 0 0 22px; font-size: 30px; letter-spacing: -0.5px; }
+h3 { margin: 32px 0 10px; color: var(--muted); font-size: 13px; text-transform: uppercase; letter-spacing: 0.1em; }
+.hint { color: var(--muted); }
+
+.cards { display: grid; grid-template-columns: 1.4fr 1fr 1fr; gap: 16px; }
+.card {
+    background: linear-gradient(160deg, var(--surface-2), var(--surface));
+    border: 1px solid var(--border); border-radius: 16px; padding: 20px 22px;
+    color: var(--muted); font-size: 13px; text-transform: uppercase; letter-spacing: 0.08em;
+    transition: transform 0.25s, border-color 0.25s, box-shadow 0.25s;
+}
+.card:hover { transform: translateY(-3px); border-color: rgba(var(--accent-rgb), 0.5); box-shadow: var(--glow); }
+.card strong { display: block; margin-top: 10px; font-size: 26px; letter-spacing: 0; text-transform: none; color: var(--text); }
+.card.hero strong {
+    font-size: 36px;
+    background: linear-gradient(90deg, var(--grad-from), var(--grad-to));
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+
+.alloc { margin: 18px 0 6px; }
+.bar { display: flex; height: 10px; border-radius: 99px; overflow: hidden; background: var(--surface-2); }
+.bar span { height: 100%; transition: width 0.8s cubic-bezier(.2, .8, .2, 1); }
+#bar-acc { background: var(--accent); }
+#bar-inv { background: var(--accent-2); opacity: 0.55; }
+.alloc small { display: block; margin-top: 8px; color: var(--muted); }
+.dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin: 0 4px 0 12px; }
+.dot:first-child { margin-left: 0; }
+.dot.a { background: var(--accent); }
+.dot.i { background: var(--accent-2); opacity: 0.55; }
+
+#stale { color: var(--warn); }

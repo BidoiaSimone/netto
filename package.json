@@ -9,7 +9,9 @@
   "scripts": {
     "test": "test",
     "start": "node backend/server/app.js",
-    "dev": "nodemon"
+    "dev": "nodemon",
+    "db:print": "node backend/db/tools/printDatabaseTables.js",
+    "db:clear": "node backend/db/tools/clearDatabase.js"
   },
   "dependencies": {
     "better-sqlite3": "^12.6.2",

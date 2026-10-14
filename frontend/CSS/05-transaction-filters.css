@@ -1,0 +1,18 @@
+/* Transactions page filters and check boxes.
+   One of the numbered files in this folder: Home.html loads them in number order, and later files
+   win over earlier ones when two rules are equally specific, so keep that order when adding files. */
+
+/* ---- transactions filters ---- */
+.filters { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-bottom: 12px; }
+.filters #f-search { flex: 1 1 240px; }
+.filters label { display: flex; align-items: center; gap: 6px; color: var(--muted); font-size: 13px; }
+.filters #f-min, .filters #f-max { width: 100px; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chips button { padding: 8px 12px; font-size: 13px; }
+#tx-summary { color: var(--muted); margin: 0 0 14px; }
+
+/* ---- check boxes ---- */
+input[type="checkbox"] {
+    width: 16px;
+    height: px;
+}

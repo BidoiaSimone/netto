@@ -1,0 +1,10 @@
+/* Settings page.
+   One of the numbered files in this folder: Home.html loads them in number order, and later files
+   win over earlier ones when two rules are equally specific, so keep that order when adding files. */
+
+/* ---- settings ---- */
+.backup-buttons { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.accent-chips button { display: inline-flex; align-items: center; gap: 7px; }
+.accent-chips .swatch { width: 11px; height: 11px; border-radius: 50%; flex: none; }
+.setting-row { display: flex; align-items: center; gap: 14px; }
+.setting-row > span { color: var(--muted); min-width: 60px; }
