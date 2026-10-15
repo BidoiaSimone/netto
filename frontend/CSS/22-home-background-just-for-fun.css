@@ -1,0 +1,15 @@
+/* JUST FOR FUN, TEMPORARY: the cover of Outlet Mestre's "5 proposte" reel (Instagram, 14 Oct 2026) as the
+   Home page background. TO UNDO: delete the <link> to this file in Home.html, this file, and the
+   Images/just-for-fun folder (the picture is the shop's, so .gitignore keeps it out of GitHub).
+
+   How it works: a layer fixed behind everything (z-index -1), shown only while the Home section is visible
+   (body:has(...), the same trick 08-assets-page.css uses). The picture is only 360 × 640, so it is blurred
+   (which also hides the low resolution) and covered by the page's own background colour at 75%, so the cards
+   stay readable in both themes. */
+body:has([data-page="home"]:not([hidden]))::before {
+    content: ""; position: fixed; inset: -20px; z-index: -1; pointer-events: none;
+    background:
+        linear-gradient(color-mix(in srgb, var(--bg) 72%, transparent), color-mix(in srgb, var(--bg) 72%, transparent)),
+        url("../Images/just-for-fun/outletmestre-5-proposte.jpg") center / cover no-repeat;
+    filter: blur(4px);
+}

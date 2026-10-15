@@ -1,9 +1,11 @@
 // ---- Categories page: expense and income categories, each list with its add / rename (or merge) / move / delete ----
 // Each name is an input: edit it and press Enter (or click away) to rename.
+// Expense categories also have a monthly budget field: type a limit, Enter (empty = no budget). PUT /categories/:id/budget
+// saves it from this month on, earlier months keep their own (migration 11).
 // The category lists also feed the transaction and recurring forms and the category filter.
 
 import { elementById, createElement, fillTableBody } from "../core/domHelpers.js";
-import { formatCount } from "../core/formatting.js";
+import { formatCount, euroFormatter } from "../core/formatting.js";
 import { callApi } from "../core/apiClient.js";
 import { appState } from "../core/appState.js";
 import { runThenReloadAllData } from "../core/dataRefresh.js";
@@ -28,10 +30,42 @@ function renderCategoriesPage() {
     const categoriesOfKind = appState.categories.filter((category) => category.kind === kind);
     fillTableBody(tableBodyIdForKind(kind), categoriesOfKind, (category) => [
       createCategoryNameInput(category),
+      ...(kind === "expense" ? [createBudgetInput(category)] : []),
       describeUse(category),
       createCategoryActions(category),
     ]);
   }
+  renderBudgetsTotal();
+}
+
+// "Budgets: 1.250,00 € a month across 4 categories"
+function renderBudgetsTotal() {
+  const budgetedCategories = appState.categories.filter((category) => category.kind === "expense" && category.monthly_budget !== null);
+  const totalOfBudgets = budgetedCategories.reduce((sum, category) => sum + Math.round(category.monthly_budget * 100), 0) / 100; // in cents: no float drift
+  elementById("budgets-total").textContent = budgetedCategories.length
+    ? `Budgets: ${euroFormatter.format(totalOfBudgets)} a month across ${budgetedCategories.length} ${budgetedCategories.length === 1 ? "category" : "categories"}`
+    : "No budgets yet.";
+}
+
+// The monthly limit of an expense category. Saved when you leave the field or press Enter; Escape puts it back.
+function createBudgetInput(category) {
+  const budgetInput = createElement("input", "budget-input");
+  budgetInput.type = "number";
+  budgetInput.min = "0";
+  budgetInput.step = "0.01";
+  budgetInput.placeholder = "no budget";
+  budgetInput.value = category.monthly_budget ?? "";
+  budgetInput.setAttribute("aria-label", `${category.name}: monthly budget in euros`);
+  budgetInput.addEventListener("change", () => {
+    const newLimit = budgetInput.value === "" ? null : Number(budgetInput.value);
+    if (newLimit === category.monthly_budget) return;
+    runThenReloadAllData(() => callApi(`/categories/${category.id}/budget`, { method: "PUT", body: { monthly_limit: newLimit } }));
+  });
+  budgetInput.addEventListener("keydown", (event) => {
+    if (event.key === "Enter") budgetInput.blur(); // blur fires "change"
+    if (event.key === "Escape") { budgetInput.value = category.monthly_budget ?? ""; budgetInput.blur(); }
+  });
+  return budgetInput;
 }
 
 // "3 transactions · 1 recurring", or "not used yet"

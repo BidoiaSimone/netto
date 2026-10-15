@@ -8,6 +8,7 @@ import { loadAllData } from "../core/dataRefresh.js";
 import { addClosedAccountOptionIfMissing } from "../core/accountPickers.js";
 import { fillCategoryPicker } from "../core/categoryPickers.js";
 import { openDialog } from "../app/dialogWindows.js";
+import { setPickedTags, setTagPickerDisabled, refreshTagSuggestions, readPickedTags, initializeTransactionTagPicker } from "./transactionTagPicker.js";
 
 let transactionBeingEdited = null; // null when adding a new one
 
@@ -34,6 +35,7 @@ export function openTransactionEditor(transaction) {
   form.description.value = transaction.description ?? "";
   updateTransactionFieldsForType(); // fills the category list for this type: pick the category after it
   elementById("tx-category").value = transaction.category_id ?? "";
+  setPickedTags(transaction.tags);
   form.amount.focus();
 }
 
@@ -67,12 +69,16 @@ export function updateTransactionFieldsForType() {
   }
   elementById("tx-submit").hidden = isInvestmentCash;
   if (isInvestmentCash) elementById("tx-delete").hidden = true;
+  setTagPickerDisabled(isInvestmentCash); // reconciliations can still be tagged (their details are editable)
+  refreshTagSuggestions();
 }
 
-// The form's values in the shape the API expects
+// The form's values in the shape the API expects. Tags always go along (even none), so an edit that
+// removes every tag really removes them.
 function readTransactionForm(form) {
   const formValues = Object.fromEntries(new FormData(form));
   return {
+    ...readPickedTags(),
     type: formValues.type,
     amount: Number(formValues.amount),
     from_account_id: formValues.from_account_id ? Number(formValues.from_account_id) : null,
@@ -94,6 +100,7 @@ async function saveTransaction(event) {
     return;
   }
   event.target.reset();
+  setPickedTags([]);
   elementById("tx-dialog").close();
   loadAllData();
 }
@@ -120,9 +127,11 @@ export function initializeTransactionDialog() {
   elementById("tx-dialog").addEventListener("close", () => {
     if (transactionBeingEdited) {
       elementById("tx-form").reset();
+      setPickedTags([]);
       switchTransactionDialogMode(null);
     }
   });
   elementById("tx-type").addEventListener("change", updateTransactionFieldsForType);
   elementById("tx-form").addEventListener("reset", () => setTimeout(updateTransactionFieldsForType));
+  initializeTransactionTagPicker();
 }

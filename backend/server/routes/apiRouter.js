@@ -11,6 +11,9 @@ apiRouter.use(require("./accountRoutes.js"));
 apiRouter.use(require("./transactionRoutes.js"));
 apiRouter.use(require("./recurringTransactionRoutes.js"));
 apiRouter.use(require("./categoryRoutes.js"));
+apiRouter.use(require("./tagRoutes.js"));
+apiRouter.use(require("./budgetRoutes.js"));
+apiRouter.use(require("./forecastRoutes.js"));
 apiRouter.use(require("./investmentTradeRoutes.js"));   // before the holdings: see above
 apiRouter.use(require("./investmentHoldingRoutes.js"));
 apiRouter.use(require("./netWorthRoutes.js"));

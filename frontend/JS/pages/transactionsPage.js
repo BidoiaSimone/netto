@@ -1,6 +1,6 @@
 // ---- Transactions page: the full list with its filters (all client-side, so they apply instantly) ----
 
-import { elementById, fillTableBody, createTypeBadge } from "../core/domHelpers.js";
+import { elementById, createElement, fillTableBody, createTypeBadge } from "../core/domHelpers.js";
 import { euroFormatter, getTodayAsLocalDate, getLocalDateDaysFromToday } from "../core/formatting.js";
 import { callApi } from "../core/apiClient.js";
 import { appState } from "../core/appState.js";
@@ -10,6 +10,7 @@ import { renderInsightsPage } from "./insightsPage.js";
 import { makeRowsOpenTransactionEditor } from "../dialogs/transactionDialog.js";
 import { UNCATEGORIZED_FILTER_VALUE } from "../core/categoryPickers.js";
 
+const UNTAGGED_FILTER_VALUE = "__none"; // the "No tags" choice of the tag filter
 
 export async function loadTransactions() {
   appState.transactions = await callApi("/transactions");
@@ -26,6 +27,7 @@ function readFilters() {
     accountId: elementById("account-select").value,
     type: elementById("f-type").value,
     categoryId: elementById("f-category").value, // an id, or UNCATEGORIZED_FILTER_VALUE
+    tagId: elementById("f-tag").value,           // an id, or UNTAGGED_FILTER_VALUE
     fromDate: elementById("f-from").value,
     toDate: elementById("f-to").value,
     minimumAmount: minimumText === "" ? null : Number(minimumText),
@@ -38,10 +40,14 @@ function matchesFilters(transaction, filters) {
     || transaction.from_account_id === Number(filters.accountId) || transaction.to_account_id === Number(filters.accountId);
   const matchesCategory = !filters.categoryId
     || (filters.categoryId === UNCATEGORIZED_FILTER_VALUE ? transaction.category_id == null : String(transaction.category_id) === filters.categoryId);
-  const searchableText = `${transaction.description ?? ""} ${transaction.category ?? ""}`.toLowerCase();
+  const matchesTag = !filters.tagId
+    || (filters.tagId === UNTAGGED_FILTER_VALUE ? transaction.tags.length === 0 : transaction.tags.some((tag) => String(tag.id) === filters.tagId));
+  const tagNames = transaction.tags.map((tag) => tag.name).join(" ");
+  const searchableText = `${transaction.description ?? ""} ${transaction.category ?? ""} ${tagNames}`.toLowerCase();
   return matchesAccount
     && (!filters.type || transaction.type === filters.type)
     && matchesCategory
+    && matchesTag
     && (!filters.fromDate || transaction.date >= filters.fromDate)
     && (!filters.toDate || transaction.date <= filters.toDate)
     && (filters.minimumAmount === null || transaction.amount >= filters.minimumAmount)
@@ -54,13 +60,42 @@ export function renderTransactionsPage() {
   const visibleTransactions = appState.transactions.filter((transaction) => matchesFilters(transaction, filters));
   fillTableBody("transactions-body", visibleTransactions, (transaction) => [
     transaction.date, createTypeBadge(transaction.type), transaction.from_account, transaction.to_account,
-    createSignedAmountCell(transaction), transaction.category, createDescriptionCell(transaction),
+    createSignedAmountCell(transaction), transaction.category, createDescriptionCell(transaction), createTagsCell(transaction),
   ]);
   makeRowsOpenTransactionEditor("transactions-body", visibleTransactions);
 
   const totalOfType = (type) => visibleTransactions.filter((transaction) => transaction.type === type).reduce((sum, transaction) => sum + transaction.amount, 0);
   elementById("tx-summary").textContent =
     `${visibleTransactions.length} of ${appState.transactions.length} transactions · income ${euroFormatter.format(totalOfType("income"))} · expenses ${euroFormatter.format(totalOfType("expense"))}`;
+}
+
+// The transaction's tags as small chips. Clicking one shows only that tag's transactions
+// (instead of opening the transaction, which a click anywhere else on the row does).
+function createTagsCell(transaction) {
+  const cell = createElement("span", "tag-chips");
+  for (const tag of transaction.tags) {
+    const chip = createElement("button", "tag-chip", tag.name);
+    chip.type = "button";
+    chip.title = `Show only "${tag.name}"`;
+    chip.onclick = (event) => {
+      event.stopPropagation();
+      elementById("f-tag").value = String(tag.id);
+      renderTransactionsPage();
+    };
+    chip.onkeydown = (event) => event.stopPropagation(); // Enter on the chip mustn't also open the row
+    cell.append(chip);
+  }
+  return cell;
+}
+
+// The tag filter: every tag by name, plus "No tags". Called whenever the tags reload.
+export function fillTagFilter() {
+  const tagFilter = elementById("f-tag"), filteredTagId = tagFilter.value;
+  tagFilter.replaceChildren(new Option("All tags", ""), ...appState.tags.map((tag) => new Option(tag.name, tag.id)),
+    new Option("No tags", UNTAGGED_FILTER_VALUE));
+  tagFilter.value = filteredTagId;
+  if (tagFilter.value !== filteredTagId) tagFilter.value = ""; // the tag was deleted
+  renderTransactionsPage();
 }
 
 // Quick date ranges: [from, to]

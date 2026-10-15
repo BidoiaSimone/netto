@@ -88,3 +88,5 @@ foobar-*
 netto-brand-kit.zip
 # Copies of the files the refactor overwrote (delete the folder once you're happy with the new code)
 pre-refactor-backup/
+# Just-for-fun pictures that belong to someone else (e.g. the Home background): never pushed to GitHub
+frontend/Images/just-for-fun/

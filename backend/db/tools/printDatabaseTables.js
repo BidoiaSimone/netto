@@ -29,7 +29,7 @@ const insertSampleTrade = db.prepare(`
 // insertSampleExpense.run({ account: "Cash", amount: 1000, description: "Lunch", date: today });
 // insertSampleTrade.run(sampleTrade); rebuildHoldingFromTrades(sampleTrade.ticker);
 
-for (const tableName of ["accounts", "categories", "transactions", "recurring_transactions", "investment_trades", "investments", "todos"]) {
+for (const tableName of ["accounts", "categories", "transactions", "recurring_transactions", "investment_trades", "investments", "todos", "tags", "transaction_tags", "category_budgets", "forecast_phases", "forecast_events", "forecast_assumptions"]) {
   console.log(`\n========= ${tableName} =========`);
   console.table(db.prepare(`SELECT * FROM ${tableName}`).all());
 }

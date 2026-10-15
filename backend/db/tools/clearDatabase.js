@@ -13,6 +13,12 @@ const { runPendingMigrations } = require("../migrations/migrationRunner.js");
 db.pragma("foreign_keys = OFF");
 db.exec(`
   DROP VIEW IF EXISTS account_balances;
+  DROP TABLE IF EXISTS forecast_events;
+  DROP TABLE IF EXISTS forecast_phases;
+  DROP TABLE IF EXISTS forecast_assumptions;
+  DROP TABLE IF EXISTS category_budgets;
+  DROP TABLE IF EXISTS transaction_tags;
+  DROP TABLE IF EXISTS tags;
   DROP TABLE IF EXISTS investment_trades;
   DROP TABLE IF EXISTS todos;
   DROP TABLE IF EXISTS transactions;

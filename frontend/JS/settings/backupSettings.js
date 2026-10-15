@@ -49,7 +49,7 @@ async function restoreBackupFromFile(file) {
   if (!confirm(confirmation)) return;
   runThenReloadAllData(async () => {
     const importedCounts = await callApi("/import", { method: "POST", body: backupData });
-    alert(`Backup restored: ${importedCounts.accounts} accounts, ${importedCounts.investments} investments, ${importedCounts.categories} categories, ${importedCounts.transactions} transactions.`);
+    alert(`Backup restored: ${importedCounts.accounts} accounts, ${importedCounts.investments} investments, ${importedCounts.categories} categories, ${importedCounts.transactions} transactions, ${importedCounts.tags} tags.`);
   });
 }
 

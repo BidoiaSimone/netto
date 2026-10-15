@@ -10,9 +10,13 @@ export function chooseValueAxis(lowestValue, highestValue) {
   const magnitude = 10 ** Math.floor(Math.log10(roughStep));
   const step = [1, 2, 2.5, 5, 10].map((factor) => factor * magnitude).find((candidate) => candidate >= roughStep);
   const decimals = step >= 1 ? 0 : step >= 0.1 ? 1 : 2;
+  const axisBottom = Math.floor(lowestValue / step) * step;
+  // every value the same (e.g. all 0 on an empty database): bottom and top would be equal and the charts would
+  // divide by zero when placing points (NaN everywhere), so the axis gets a height of its own
+  const axisTop = Math.max(Math.ceil(highestValue / step) * step, axisBottom + 4 * step);
   return {
-    axisBottom: Math.floor(lowestValue / step) * step,
-    axisTop: Math.ceil(highestValue / step) * step,
+    axisBottom,
+    axisTop,
     step,
     labelFormatter: new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR", minimumFractionDigits: decimals, maximumFractionDigits: decimals }),
   };

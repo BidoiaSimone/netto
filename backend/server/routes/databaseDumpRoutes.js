@@ -17,6 +17,12 @@ router.get("/database", function dumpWholeDatabase(request, response) {
     recurring_transactions: db.prepare(`SELECT * FROM recurring_transactions`).all(),
     investment_trades: db.prepare(`SELECT * FROM investment_trades`).all(),
     todos: db.prepare(`SELECT * FROM todos`).all(),
+    tags: db.prepare(`SELECT * FROM tags`).all(),
+    transaction_tags: db.prepare(`SELECT * FROM transaction_tags`).all(),
+    category_budgets: db.prepare(`SELECT * FROM category_budgets`).all(),
+    forecast_phases: db.prepare(`SELECT * FROM forecast_phases`).all(),
+    forecast_events: db.prepare(`SELECT * FROM forecast_events`).all(),
+    forecast_assumptions: db.prepare(`SELECT * FROM forecast_assumptions`).all(),
   };
 
   for (const [title, tableName] of [["Accounts", "accounts"], ["Categories", "categories"], ["Transactions", "transactions"], ["Investments", "investments"]]) {

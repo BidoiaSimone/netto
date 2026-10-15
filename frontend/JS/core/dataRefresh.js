@@ -6,6 +6,9 @@ import { loadNetWorth } from "../pages/homePage.js";
 import { loadAccounts } from "../pages/assetsPage.js";
 import { loadTransactions } from "../pages/transactionsPage.js";
 import { loadCategories } from "../pages/categoriesPage.js";
+import { loadTags } from "../pages/tagManagement.js";
+import { loadBudgetProgress } from "../pages/budgetProgress.js";
+import { loadForecast } from "../pages/forecastPage.js";
 import { loadInvestments } from "../pages/investmentsPage.js";
 import { loadNetWorthHistory } from "../pages/netWorthHistoryChart.js";
 import { loadRecurringTransactions } from "../pages/recurringPage.js";
@@ -19,6 +22,9 @@ export async function loadAllData() {
     loadNetWorth(),
     loadAccounts().then(loadTransactions), // transactions show account names
     loadCategories(),
+    loadTags(),
+    loadBudgetProgress(),
+    loadForecast(),
     loadRecurringTransactions(),
     loadInvestments(),
     loadNetWorthHistory(),

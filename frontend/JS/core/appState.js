@@ -6,6 +6,8 @@ export const appState = {
   accounts: [],          // GET /accounts (closed ones included)
   transactions: [],      // GET /transactions, newest first
   categories: [],        // GET /categories
+  tags: [],              // GET /tags: every tag with its dates and how many transactions use it
+  tagReport: [],         // GET /tags/report: what each tag adds up to (Insights > Tags)
   netWorth: null,        // GET /net-worth
   holdings: [],          // GET /investments: what is held, with live prices
   trades: [],            // GET /investments/trades: every buy and sell, newest first

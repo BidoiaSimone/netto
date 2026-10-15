@@ -5,16 +5,30 @@
 const express = require("express");
 const { buildFinancialStatements } = require("../services/financialStatements.js");
 const { parseDateOrDefaultToToday, getTodayAsLocalDate } = require("../utils/localDates.js");
+const db = require("../../db/databaseConnection.js");
+const { findFirstRecordedDate } = require("../../db/firstRecordedDate.js");
+
+// The first day anything happened: an account opening, a transaction or a trade
+function findFirstDayOfRecords() {
+  const firstTradeDay = db.prepare(`SELECT MIN(date) AS day FROM investment_trades`).get().day;
+  const firstOtherDay = findFirstRecordedDate(db);
+  return firstTradeDay && firstTradeDay < firstOtherDay ? firstTradeDay : firstOtherDay;
+}
 
 const router = express.Router();
 
 router.get("/statements", async function getStatements(request, response) {
   const today = getTodayAsLocalDate();
-  const from = parseDateOrDefaultToToday(request.query.from);
+  let from = parseDateOrDefaultToToday(request.query.from);
   let to = parseDateOrDefaultToToday(request.query.to);
   if (!from || !to) return response.status(400).json({ error: "from and to must be valid YYYY-MM-DD dates" });
   if (to > today) to = today; // nothing has happened after today yet
   if (from > to) return response.status(400).json({ error: "the period must start on or before its last day (and not in the future)" });
+  // "All time" asks from 1970. Before the first record everything is 0, which changes nothing in the balance sheet,
+  // but the maths that counts days would: 56 years of stamp duty, an average balance diluted over decades, returns
+  // spread over 20,000 days. So a period never starts before the first record (unless it ends before it too).
+  const firstDayOfRecords = findFirstDayOfRecords();
+  if (from < firstDayOfRecords && firstDayOfRecords <= to) from = firstDayOfRecords;
 
   try {
     response.json(await buildFinancialStatements(from, to));

@@ -1,0 +1,32 @@
+/* Statements: investment returns, the tax estimates (period table and balance sheet rows).
+   One of the numbered files in this folder: Home.html loads them in number order, and later files
+   win over earlier ones when two rules are equally specific, so keep that order when adding files. */
+
+/* ---- "estimate": a small dashed label, so a guessed number is never mistaken for a recorded one ---- */
+.estimate-badge {
+    display: inline-block; margin-left: 8px; padding: 1px 8px; border-radius: 99px; vertical-align: middle;
+    font-size: 11px; font-weight: 500; letter-spacing: 0.04em; text-transform: none;
+    color: var(--warn); border: 1px dashed rgba(var(--warn-rgb), 0.7); background: transparent;
+}
+h3 .estimate-badge { font-size: 11px; }
+
+/* balance sheet: the estimate rows under the real total, quieter than it */
+.st-balance-table tr.st-estimate-row td { color: var(--muted); font-style: italic; }
+.st-balance-table tr.st-estimate-row.st-total-row td { color: var(--text); }
+
+/* ---- investment returns ---- */
+.st-returns-panel .cards { margin-bottom: 16px; }
+.st-returns-panel .card strong.pos { color: var(--accent-text); }
+.st-returns-panel .card strong.neg { color: var(--neg); }
+[data-page="statements"] .st-returns-table td:nth-child(n+2), [data-page="statements"] .st-returns-table th:nth-child(n+2) { text-align: right; white-space: nowrap; }
+/* the grey line under a return may wrap: the cell's nowrap (above) is for the number, and a long detail line
+   kept on one line pushed the whole table past the right edge of the page */
+.st-return-detail { display: block; margin-top: 2px; font-size: 12px; font-weight: 400; color: var(--muted); white-space: normal; }
+/* eight columns need about 880px: on a narrower window the table scrolls sideways in its own box, not the page */
+@media (max-width: 1250px) { .st-returns-table { display: block; overflow-x: auto; } }
+.st-returns-table tr.st-total-row td { border-top: 1px solid var(--border); font-weight: 600; }
+
+/* ---- estimated taxes for the period ---- */
+[data-page="statements"] .st-taxes-table td:nth-child(2) { text-align: left; white-space: normal; font-size: 13px; }
+[data-page="statements"] .st-taxes-table td:nth-child(3), [data-page="statements"] .st-taxes-table th:nth-child(3) { text-align: right; white-space: nowrap; }
+.st-taxes-table tfoot td { border-top: 1px solid var(--border); font-weight: 600; }

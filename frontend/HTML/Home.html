@@ -29,6 +29,11 @@
   <link rel="stylesheet" href="../CSS/14-recurring-page.css">
   <link rel="stylesheet" href="../CSS/15-liquidity-insights.css">
   <link rel="stylesheet" href="../CSS/16-statements-page.css">
+  <link rel="stylesheet" href="../CSS/17-tags.css">
+  <link rel="stylesheet" href="../CSS/18-budgets.css">
+  <link rel="stylesheet" href="../CSS/19-returns-and-taxes.css">
+  <link rel="stylesheet" href="../CSS/20-forecast-page.css">
+  <link rel="stylesheet" href="../CSS/21-home-net-worth-groups.css">
 </head>
 <body>
 
@@ -45,6 +50,7 @@
   <a href="#investments">Investments</a>
   <a href="#insights">Insights</a>
   <a href="#statements">Statements</a>
+  <a href="#forecast">Forecast</a>
   <a href="#settings">Settings</a>
   <a href="#nextUp">Next up</a>
   <div id="side-networth">Net worth<strong id="net-worth-value">…</strong>
@@ -60,14 +66,16 @@
       <h2>Home</h2>
       <button type="button" class="add-btn" data-open="tx-dialog">+ Add transaction <kbd>N</kbd></button>
     </div>
-    <div class="cards">
-      <div class="card hero">Net worth<strong id="h-net">…</strong></div>
-      <div class="card">Assets &amp; accounts<strong id="h-acc">…</strong></div>
-      <div class="card">Investments<strong id="h-inv">…</strong></div>
+    <!-- net worth, then its three groups from most to least liquid (JS/core/netWorthGroups.js) -->
+    <div class="cards home-cards">
+      <div class="card hero">Net worth<strong id="h-net">…</strong><small class="home-card-note">everything you own, at today's values</small></div>
+      <div class="card home-group home-liquid">Liquid<strong id="h-liquid">…</strong><small id="h-liquid-note" class="home-card-note"></small></div>
+      <div class="card home-group home-investments">Investments<strong id="h-inv">…</strong><small id="h-inv-note" class="home-card-note"></small></div>
+      <div class="card home-group home-immobilized">Immobilized<strong id="h-immobilized">…</strong><small id="h-immobilized-note" class="home-card-note"></small></div>
     </div>
     <div class="alloc">
-      <div class="bar"><span id="bar-acc"></span><span id="bar-inv"></span></div>
-      <small><i class="dot a"></i>Assets &amp; accounts <i class="dot i"></i>Investments</small>
+      <div class="bar home-bar"><span id="bar-liquid" class="home-liquid"></span><span id="bar-inv" class="home-investments"></span><span id="bar-immobilized" class="home-immobilized"></span></div>
+      <small><i class="dot home-liquid"></i>Liquid <i class="dot home-investments"></i>Investments <i class="dot home-immobilized"></i>Immobilized</small>
     </div>
     <p id="stale"></p>
     <h3>Latest transactions</h3>
@@ -112,7 +120,7 @@
       <button type="button" class="add-btn" data-open="tx-dialog">+ Add transaction <kbd>N</kbd></button>
     </div>
     <div class="filters">
-      <input id="f-search" type="search" placeholder="Search description or category">
+      <input id="f-search" type="search" placeholder="Search description, category or tag">
       <select id="account-select"><option value="">All accounts</option></select>
       <select id="f-type">
         <option value="">All types</option><option value="income">Income</option><option value="expense">Expense</option>
@@ -120,6 +128,7 @@
         <option value="investment">Investment</option>
       </select>
       <select id="f-category"><option value="">All categories</option></select>
+      <select id="f-tag" aria-label="Tag"><option value="">All tags</option></select>
       <label>From <input id="f-from" type="date"></label>
       <label>To <input id="f-to" type="date"></label>
       <input id="f-min" type="number" step="0.01" min="0" placeholder="Min €">
@@ -133,7 +142,7 @@
     </div>
     <p id="tx-summary"></p>
     <table>
-      <thead><tr><th>Date</th><th>Type</th><th>From</th><th>To</th><th>Amount</th><th>Category</th><th>Description</th></tr></thead>
+      <thead><tr><th>Date</th><th>Type</th><th>From</th><th>To</th><th>Amount</th><th>Category</th><th>Description</th><th>Tags</th></tr></thead>
       <tbody id="transactions-body"></tbody>
     </table>
   </section>
@@ -157,7 +166,9 @@
     <div class="page-head"><h2>Categories</h2></div>
     <p class="hint">The lists you pick from when adding a transaction: an expense uses an expense category, an income an
       income one. Click a name to rename it: every transaction follows. Renaming to a name that already exists in the
-      same list merges the two. "→ income" / "→ expense" moves a category to the other list.</p>
+      same list merges the two. "→ income" / "→ expense" moves a category to the other list.
+      <b>Budget</b>: type a monthly limit next to an expense category and press Enter (empty = no budget). It applies
+      from this month on; earlier months keep the budget they had. Progress is on Insights, budget vs actual on Statements.</p>
     <div class="categories-columns">
       <div class="categories-list">
         <h3>Expense categories</h3>
@@ -165,10 +176,11 @@
           <input name="name" placeholder="New expense category (e.g. Coffee)" required>
           <button>Add</button>
         </form>
-        <table>
-          <thead><tr><th>Name</th><th>Used by</th><th></th></tr></thead>
+        <table class="expense-categories-table">
+          <thead><tr><th>Name</th><th>Budget / month</th><th>Used by</th><th></th></tr></thead>
           <tbody id="expense-categories-body"></tbody>
         </table>
+        <p id="budgets-total" class="budgets-total"></p>
       </div>
       <div class="categories-list">
         <h3>Income categories</h3>
@@ -182,6 +194,23 @@
         </table>
       </div>
     </div>
+
+    <!-- filled by JS/pages/tagManagement.js -->
+    <h3>Tags</h3>
+    <p class="hint">A tag groups transactions across categories: a trip ("Japan 2027": flights, hotels, food…), a
+      project, a wedding. Add tags in the transaction window. Dates are optional: when a transaction's date falls inside
+      them, the window suggests the tag. What each tag adds up to is on <a href="#insights">Insights</a>.</p>
+    <form id="tag-add-form" class="cat-add tag-add-form">
+      <input name="name" placeholder="New tag (e.g. Japan 2027)" required maxlength="60">
+      <label>From <input name="start_date" type="date"></label>
+      <label>To <input name="end_date" type="date"></label>
+      <button>Add</button>
+    </form>
+    <table class="tags-list">
+      <thead><tr><th>Name</th><th>From</th><th>To</th><th>Used by</th><th></th></tr></thead>
+      <tbody id="tags-body"></tbody>
+    </table>
+    <p id="tags-empty" class="chart-empty" hidden>No tags yet.</p>
   </section>
 
   <section data-page="investments">
@@ -251,6 +280,15 @@
       <div class="card">Projected savings<strong id="month-projected-savings">…</strong><small id="month-projected-savings-detail"></small></div>
     </div>
     <p class="hint small month-hint">Recurring expenses come from the Recurring page (also the ones still due); the rest is projected at this month's daily pace.</p>
+    <!-- filled by JS/pages/budgetProgress.js -->
+    <div class="panel budget-panel">
+      <div class="budget-panel-head"><h4>Budgets</h4><span id="budget-summary" class="hint small"></span></div>
+      <div id="budget-rows" class="budget-rows"></div>
+      <p id="budget-unbudgeted" class="budget-unbudgeted"></p>
+      <p id="budget-empty" class="hint small" hidden>No budgets yet: type a monthly limit next to an expense category on the <a href="#categories">Categories</a> page.</p>
+      <p class="hint small">Solid = spent so far, lighter = where the month is heading (same projection as the cards above).
+        Amber from 80% of the limit, red above it.</p>
+    </div>
     <!-- filled by JS/pages/liquidityInsights.js -->
     <h3>Liquidity</h3>
     <div class="cards liquidity-cards">
@@ -306,6 +344,26 @@
         </table>
       </div>
     </div>
+
+    <!-- filled by JS/pages/tagInsights.js -->
+    <h3>Tags</h3>
+    <p id="tag-report-empty" class="chart-empty" hidden>No tags yet: tag a few transactions (e.g. a trip) to see what they cost here.</p>
+    <table id="tag-report-table" class="tag-report-table">
+      <thead><tr><th>Tag</th><th>Dates</th><th>Transactions</th><th>Spent</th><th>Received</th><th>Net</th></tr></thead>
+      <tbody id="tag-report-body"></tbody>
+    </table>
+    <div id="tag-detail" class="panel tag-detail" hidden>
+      <h3 id="tag-detail-title" class="tag-detail-title"></h3>
+      <div class="cards liquidity-cards">
+        <div class="card">Spent<strong id="tag-spent">…</strong><small id="tag-spent-detail"></small></div>
+        <div class="card">Received<strong id="tag-received">…</strong><small id="tag-received-detail"></small></div>
+        <div class="card">Net<strong id="tag-net">…</strong><small id="tag-net-detail"></small></div>
+      </div>
+      <h4>Spending by category</h4>
+      <div id="tag-category-chart" class="hbars"></div>
+      <p class="hint small">Incomes and expenses with this tag, whatever their date. Cash withdrawn for it (a movement)
+        counts as a transaction but isn't spending: the expenses you pay with that cash are.</p>
+    </div>
   </section>
 
   <!-- filled by JS/pages/statementsPage.js -->
@@ -341,6 +399,26 @@
       <p id="st-bridge-note" class="hint small"></p>
     </div>
 
+    <!-- filled by JS/pages/statementsPage.js (renderInvestmentReturns) -->
+    <h3>Investment returns</h3>
+    <div class="panel st-returns-panel">
+      <div class="cards liquidity-cards">
+        <div class="card">Gain<strong id="st-return-gain">…</strong><small id="st-return-gain-detail"></small></div>
+        <div class="card">Your return (money-weighted)<strong id="st-return-mwr">…</strong><small id="st-return-mwr-detail"></small></div>
+        <div class="card">The investments (time-weighted)<strong id="st-return-twr">…</strong><small id="st-return-twr-detail"></small></div>
+      </div>
+      <table class="st-returns-table" id="st-returns-table">
+        <thead><tr><th>Ticker</th><th>Start</th><th>Bought</th><th>Sold</th><th>End</th><th>Gain</th><th>Money-weighted</th><th>Time-weighted</th></tr></thead>
+        <tbody id="st-returns-body"></tbody>
+      </table>
+      <p id="st-returns-empty" class="hint small" hidden>No investments in this period.</p>
+      <p class="hint small"><b>Time-weighted</b> = how the investments did, whatever you put in or took out (what a fund
+        publishes). <b>Money-weighted</b> (XIRR) = how your money did, so it includes your timing: a big buy just before a
+        rise lifts it, one just before a fall drags it down. The difference between the two is roughly what your timing
+        added or cost. Fees are included in both; taxes in neither.</p>
+      <p id="st-returns-note" class="hint small"></p>
+    </div>
+
     <h3>Income statement</h3>
     <div class="insights-columns">
       <div>
@@ -360,6 +438,25 @@
     </div>
     <p class="st-net-line">Net savings <strong id="st-net-savings"></strong> · savings rate <strong id="st-savings-rate"></strong></p>
 
+    <!-- filled by JS/pages/statementsPage.js (renderTaxEstimates) -->
+    <h3>Estimated taxes for the period <span class="estimate-badge">estimate</span></h3>
+    <table class="st-taxes-table">
+      <thead><tr><th>Tax</th><th>How it's estimated</th><th>Estimate</th></tr></thead>
+      <tbody id="st-taxes-body"></tbody>
+      <tfoot><tr><td>Total estimated</td><td></td><td id="st-taxes-total"></td></tr></tfoot>
+    </table>
+    <p id="st-taxes-note" class="hint small"></p>
+
+    <!-- filled by JS/pages/statementsPage.js (renderBudgetVsActual) -->
+    <h3>Budget vs actual</h3>
+    <table class="st-budget-table" id="st-budget-table">
+      <thead><tr><th>Category</th><th>Budget</th><th>Actual</th><th>Left / over</th><th>Used</th></tr></thead>
+      <tbody id="st-budget-body"></tbody>
+      <tfoot id="st-budget-foot"></tfoot>
+    </table>
+    <p id="st-budget-empty" class="hint small" hidden>No budgets in this period. Set them next to the expense categories on the <a href="#categories">Categories</a> page.</p>
+    <p id="st-budget-note" class="hint small"></p>
+
     <h3>Balance sheet</h3>
     <table class="st-balance-table">
       <thead><tr><th>Account</th><th id="st-opening-head">Start</th><th id="st-closing-head">End</th><th>Change</th></tr></thead>
@@ -367,6 +464,99 @@
     </table>
     <p class="hint small">Start = the end of the day before the period. Investments are valued at each day's closing
       price (today: the live price). Personal-use assets at the value you gave them.</p>
+    <p id="st-deferred-tax-note" class="hint small"></p>
+  </section>
+
+  <!-- filled by JS/pages/forecastPage.js (numbers and chart) and JS/pages/forecastPlanEditor.js (phases, events, assumptions) -->
+  <section data-page="forecast">
+    <div class="page-head">
+      <h2>Forecast</h2>
+      <div class="chips" id="fc-money-view" aria-label="Show amounts in">
+        <button type="button" class="ghost" data-value="real" title="What the amounts could buy at today's prices">Today's euros</button>
+        <button type="button" class="ghost" data-value="nominal" title="The euros of each future month">Future euros</button>
+      </div>
+    </div>
+
+    <div class="cards fc-key-numbers" id="fc-key-numbers"></div>
+    <div id="fc-warnings" class="fc-warnings"></div>
+
+    <div class="chart-head">
+      <h3>Net worth, real and forecast</h3>
+      <div class="chips" id="fc-years">
+        <button type="button" class="ghost" data-value="2">2Y</button>
+        <button type="button" class="ghost" data-value="5">5Y</button>
+        <button type="button" class="ghost" data-value="10">10Y</button>
+      </div>
+    </div>
+    <div class="panel">
+      <div id="fc-chart" class="line-chart stacked-area-chart fc-chart"></div>
+      <p class="chart-legend"><i class="swatch fc-cash"></i>Cash <i class="swatch fc-investments"></i>Investments
+        <i class="swatch fc-personal-use"></i>Personal use <i class="swatch total"></i>Net worth
+        <label class="fc-band-toggle"><input type="checkbox" id="fc-show-band" checked> <i class="swatch fc-band"></i><span id="fc-band-label">0% – 8% return</span></label></p>
+      <p class="hint small">Left of "today": what you really had, month by month. Right: the forecast from your phases,
+        events and assumptions below. The shaded band shows where net worth would be with a 0% or an 8% yearly return.</p>
+    </div>
+
+    <h3>Assumptions</h3>
+    <div class="panel fc-assumptions">
+      <label class="fc-slider"><span>Yearly return on investments <strong id="fc-return-value"></strong></span>
+        <input type="range" id="fc-return" min="0" max="0.1" step="0.005"></label>
+      <label class="fc-slider"><span>Inflation <strong id="fc-inflation-value"></strong></span>
+        <input type="range" id="fc-inflation" min="0" max="0.06" step="0.005"></label>
+      <label class="fc-slider"><span>Personal-use assets lose a year <strong id="fc-depreciation-value"></strong></span>
+        <input type="range" id="fc-depreciation" min="0" max="0.3" step="0.01"></label>
+      <div class="fc-slider"><span>A month's savings go to</span>
+        <div class="chips" id="fc-savings-go-to">
+          <button type="button" class="ghost" data-value="cash">Cash</button>
+          <button type="button" class="ghost" data-value="investments">Investments</button>
+        </div></div>
+      <p class="hint small fc-assumptions-note">Phase amounts are in today's euros and rise with inflation each month (your rent and
+        your salary will both be more euros in five years). A month that costs more than it brings in always comes out of
+        cash; when cash would go below zero, investments are sold to cover it. Taxes on returns aren't included.</p>
+    </div>
+
+    <h3>Phases</h3>
+    <p class="hint">Each phase starts in its month and lasts until the next one starts; the first one also covers today.
+      Amounts are per month, in today's euros.</p>
+    <div id="fc-suggestion" class="panel fc-suggestion" hidden></div>
+    <table class="fc-phases-table">
+      <thead><tr><th>Name</th><th>From</th><th>Until</th><th>Income / month</th><th>Expenses / month</th><th>Saves / month</th><th></th></tr></thead>
+      <tbody id="fc-phases-body"></tbody>
+      <!-- the "add" row is the table's last row, so each field sits under its own column. A <form> can't wrap
+           a table row, so the fields join the (empty) form below the table with form="fc-phase-form" -->
+      <tfoot class="fc-add-row">
+        <tr>
+          <td><input form="fc-phase-form" name="name" placeholder="New phase (e.g. Working)" required aria-label="New phase name"></td>
+          <td><input form="fc-phase-form" name="from_month" type="month" placeholder="YYYY-MM" pattern="\d{4}-\d{2}" required aria-label="Starts in (YYYY-MM)"></td>
+          <td></td>
+          <td><input form="fc-phase-form" name="monthly_income" type="number" step="0.01" min="0" placeholder="0,00" aria-label="Income per month"></td>
+          <td><input form="fc-phase-form" name="monthly_expenses" type="number" step="0.01" min="0" placeholder="0,00" aria-label="Expenses per month"></td>
+          <td></td>
+          <td><button form="fc-phase-form">Add phase</button></td>
+        </tr>
+      </tfoot>
+    </table>
+    <form id="fc-phase-form"></form>
+
+    <h3>One-off events</h3>
+    <p class="hint">Money that comes or goes once: + for money in (selling the car), − for money out (a new laptop).
+      An event can sell a personal-use asset: its value then leaves the forecast that month, so it isn't counted twice.</p>
+    <table class="fc-events-table">
+      <thead><tr><th>Name</th><th>Month</th><th>Amount</th><th>Sells</th><th></th></tr></thead>
+      <tbody id="fc-events-body"></tbody>
+      <!-- same as the phases: the "add" row's fields join the form below with form="fc-event-form" -->
+      <tfoot class="fc-add-row">
+        <tr>
+          <td><input form="fc-event-form" name="name" placeholder="New event (e.g. Sell the Polo)" required aria-label="New event name"></td>
+          <td><input form="fc-event-form" name="month" type="month" placeholder="YYYY-MM" pattern="\d{4}-\d{2}" required aria-label="Month (YYYY-MM)"></td>
+          <td><input form="fc-event-form" name="amount" type="number" step="0.01" placeholder="+ in, − out" required aria-label="Amount"></td>
+          <td><select form="fc-event-form" name="sells_account_id" id="fc-event-sells" aria-label="Sells"></select></td>
+          <td><button form="fc-event-form">Add event</button></td>
+        </tr>
+      </tfoot>
+    </table>
+    <form id="fc-event-form"></form>
+    <p id="fc-error" class="dialog-error" role="alert"></p>
   </section>
 
   <section data-page="settings">
@@ -439,13 +629,20 @@
     <input name="date" id="tx-date" type="date" title="Date (empty = today)">
     <select name="category_id" id="tx-category"><option value="">— no category —</option></select>
     <input name="description" placeholder="Description">
-    <p id="tx-adjust-note" class="hint small" hidden>This is a reconciliation: its amount is the difference you found when you counted, so only the date, category and description can change. Delete it to undo the reconciliation.</p>
+    <!-- tags: JS/dialogs/transactionTagPicker.js. No name attribute: the picker sends them itself -->
+    <div class="tag-field" id="tx-tag-field">
+      <span id="tx-tag-chips" class="tag-chips"></span>
+      <input id="tx-tag-input" list="tag-names" placeholder="Tags: type, then Enter" autocomplete="off" aria-label="Tags">
+    </div>
+    <datalist id="tag-names"></datalist>
+    <p id="tx-tag-suggestions" class="tag-suggestions" hidden></p>
+    <p id="tx-adjust-note" class="hint small" hidden>This is a reconciliation: its amount is the difference you found when you counted, so only the date, category, description and tags can change. Delete it to undo the reconciliation.</p>
     <p id="tx-recurring-note" class="hint small" hidden>Added by a recurring transaction. Changing it here changes only this one; the schedule is on the <a href="#recurring" data-close>Recurring</a> page.</p>
     <p id="tx-invest-note" class="hint small" hidden>This is the money side of an investment trade. Change or delete the trade on the <a href="#investments" data-close>Investments</a> page and this follows.</p>
     <p id="tx-error" class="dialog-error" role="alert"></p>
     <div class="actions">
       <button type="button" id="tx-delete" class="danger" hidden>Delete</button>
-      <a href="#categories" class="manage-link" data-close>Manage categories</a>
+      <a href="#categories" class="manage-link" data-close>Manage categories and tags</a>
       <button type="button" class="ghost" data-close>Cancel</button>
       <button id="tx-submit">Add transaction</button>
     </div>

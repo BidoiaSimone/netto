@@ -1,0 +1,56 @@
+/* Tags: the chips (transaction dialog, Transactions page), the Tags list on the Categories page,
+   and Insights > Tags.
+   One of the numbered files in this folder: Home.html loads them in number order, and later files
+   win over earlier ones when two rules are equally specific, so keep that order when adding files. */
+
+/* ---- a tag chip: a small rounded label, in the info colour (tags aren't money in or out) ---- */
+.tag-chips { display: inline-flex; flex-wrap: wrap; gap: 4px; }
+.tag-chip {
+    display: inline-flex; align-items: center; gap: 2px;
+    padding: 2px 9px; border-radius: 99px; font-size: 12px; font-weight: 500; line-height: 1.6; white-space: nowrap;
+    background: rgba(var(--info-rgb), 0.14); color: var(--info); border: 1px solid transparent;
+}
+/* a name typed in the dialog that isn't a tag yet: dashed until the transaction is saved */
+.tag-chip.new { background: transparent; border: 1px dashed rgba(var(--info-rgb), 0.6); }
+
+/* in the Transactions table the chips are buttons (click = filter by that tag); "td button" in
+   03-tables-and-forms.css styles table buttons as red Delete buttons, so these need their own look back */
+td button.tag-chip { padding: 2px 9px; border: 1px solid transparent; background: rgba(var(--info-rgb), 0.14); color: var(--info); font-weight: 500; }
+td button.tag-chip:hover { background: rgba(var(--info-rgb), 0.26); transform: none; box-shadow: none; }
+
+/* ---- the Tags field of the transaction dialog: chips and the text input inside one box ---- */
+dialog form .tag-field {
+    flex: 1 1 100%; display: flex; flex-wrap: wrap; align-items: center; gap: 6px;
+    padding: 6px 8px; border-radius: 10px; border: 1px solid var(--border); background: var(--surface-2); cursor: text;
+}
+dialog form .tag-field:focus-within { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.2); }
+dialog form .tag-field input { flex: 1 1 140px; min-width: 120px; border: 0; padding: 4px 6px; background: transparent; box-shadow: none; }
+dialog form .tag-field input:focus { box-shadow: none; }
+.tag-chip-remove {
+    padding: 0 0 0 4px; border: 0; background: transparent; color: inherit; font-size: 14px; line-height: 1; font-weight: 400; opacity: 0.7;
+}
+.tag-chip-remove:hover { background: transparent; box-shadow: none; transform: none; opacity: 1; }
+
+/* "Dates match: + Japan 2027" under the field */
+.tag-suggestions { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; width: 100%; margin: -4px 0 0; }
+.tag-suggestions[hidden] { display: none; }
+button.tag-suggestion { padding: 3px 10px; font-size: 12px; border-style: dashed; }
+
+/* ---- Categories page: the Tags list ---- */
+.tag-add-form label { display: flex; align-items: center; gap: 6px; color: var(--muted); font-size: 13px; }
+.tag-add-form input[name="name"] { flex: 1 1 220px; }
+.tags-list td:first-child input { width: 100%; max-width: 320px; }
+.tags-list td input[type="date"] { width: 150px; }
+.tags-list td:nth-child(4) { color: var(--muted); white-space: nowrap; }
+.tags-list td:last-child { text-align: right; }
+
+/* ---- Insights > Tags ---- */
+.tag-report-table td:nth-child(n+3), .tag-report-table th:nth-child(n+3) { text-align: right; white-space: nowrap; }
+.tag-report-table tr.selected { background: rgba(var(--accent-rgb), 0.1); }
+.tag-report-table tr.selected td:first-child { box-shadow: inset 3px 0 0 var(--accent); font-weight: 600; }
+.tag-detail-title { margin-top: 0; }
+.tag-detail h4 { margin: 4px 0 12px; color: var(--muted); font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; }
+.tag-detail .hbar .name { max-width: 160px; }
+/* the cards' amounts are white by default (02-page-layout.css); the net is green or red like every amount */
+.tag-detail .card strong.pos { color: var(--accent-text); }
+.tag-detail .card strong.neg { color: var(--neg); }

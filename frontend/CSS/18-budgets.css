@@ -1,0 +1,49 @@
+/* Budgets: the budget field on the Categories page, the bars on Insights > This month, and the
+   Budget vs actual table on Statements.
+   One of the numbered files in this folder: Home.html loads them in number order, and later files
+   win over earlier ones when two rules are equally specific, so keep that order when adding files. */
+
+/* the three states of a budget, one colour each, used by the bars and the table */
+.budget-row, .st-budget-track span { --budget-color: var(--accent); }
+.budget-row.near, .st-budget-track span.near { --budget-color: var(--warn); }
+.budget-row.over, .st-budget-track span.over { --budget-color: var(--neg); }
+
+/* ---- Categories page ---- */
+/* the expense list has one column more than the income list next to it, so its fields stay compact */
+.expense-categories-table td input.budget-input { width: 88px; text-align: right; }
+.expense-categories-table td:nth-child(3) { color: var(--muted); font-size: 13px; }
+.budgets-total { color: var(--muted); font-size: 13px; margin: -6px 0 0; }
+
+/* ---- Insights > This month > Budgets ---- */
+.budget-panel { margin-top: 16px; }
+.budget-panel-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+.budget-panel-head h4 { margin: 0; color: var(--muted); font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; }
+.budget-rows { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px 24px; }
+.budget-row-head { display: flex; justify-content: space-between; gap: 10px; font-size: 14px; margin-bottom: 6px; }
+.budget-name { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.budget-amounts { color: var(--muted); white-space: nowrap; font-variant-numeric: tabular-nums; }
+/* two layers on one track: the projection (light, behind) and what's spent (solid, in front) */
+.budget-track { position: relative; height: 10px; border-radius: 99px; background: var(--surface-2); overflow: hidden; }
+.budget-track span { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 99px; transition: width 0.8s cubic-bezier(.2, .8, .2, 1); }
+.budget-projected { background: var(--budget-color); opacity: 0.25; }
+.budget-spent { background: var(--budget-color); }
+.budget-outlook { display: block; margin-top: 5px; font-size: 12px; color: var(--muted); }
+.budget-outlook.warn { color: var(--warn); }
+.budget-outlook.neg { color: var(--neg); font-weight: 600; }
+.budget-unbudgeted { margin: 14px 0 6px; padding-top: 10px; border-top: 1px solid var(--border); font-size: 14px; color: var(--muted); }
+.budget-unbudgeted:empty { display: none; }
+
+/* ---- Statements > Budget vs actual ---- */
+[data-page="statements"] .st-budget-table td:nth-child(4), [data-page="statements"] .st-budget-table th:nth-child(4),
+[data-page="statements"] .st-budget-table td:nth-child(5), [data-page="statements"] .st-budget-table th:nth-child(5) { text-align: right; white-space: nowrap; }
+.st-budget-used { display: inline-flex; align-items: center; gap: 8px; }
+.st-budget-track { display: inline-block; position: relative; width: 70px; height: 6px; border-radius: 99px; background: var(--surface-2); overflow: hidden; }
+.st-budget-track span { position: absolute; left: 0; top: 0; bottom: 0; background: var(--budget-color); border-radius: 99px; }
+.st-budget-table tfoot td { border-top: 1px solid var(--border); font-weight: 600; }
+.st-budget-table tfoot tr.st-budget-unbudgeted td { font-weight: 400; color: var(--muted); }
+.st-budget-table .st-item small { display: block; margin-top: 2px; font-size: 12px; }
+
+/* ---- privacy mode: the budget amounts on the Categories page are amounts too ----
+   (Insights and Statements are already blurred as whole pages by 04-privacy-mode.css.)
+   A field you are typing in is shown, so a budget can still be set with amounts hidden. */
+body.private .budget-input:not(:focus), body.private .budgets-total { filter: blur(6px); }

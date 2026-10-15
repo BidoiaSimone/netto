@@ -20,12 +20,20 @@
  *   it should always be 0.
  *
  * Balances on a past day are rebuilt the same way as the net worth chart (services/netWorthHistory.js).
+ *
+ * Next to the income statement: budget vs actual for the same period (services/budgetCalculator.js).
+ * Also for the same period: the investments' real return, money- and time-weighted (services/investmentReturns.js),
+ * and estimated Italian taxes (services/italianTaxEstimates.js). The taxes are estimates shown NEXT TO the
+ * statements, never inside them: the bridge and the totals above only contain what netto recorded.
  */
 
 const db = require("../../db/databaseConnection.js");
 const { ACCOUNT_KINDS } = require("../../config/accountKinds.js");
 const { calculateInvestmentsValuePerDay, addDays } = require("./netWorthHistory.js");
 const { convertCentsToEuros } = require("../utils/moneyConversion.js");
+const { buildBudgetVsActual } = require("./budgetCalculator.js");
+const { listDaysNeededForReturns, buildInvestmentReturns } = require("./investmentReturns.js");
+const { buildItalianTaxEstimates } = require("./italianTaxEstimates.js");
 
 const LIQUIDITY_CLASS_ORDER = ["cash_and_equivalents", "restricted", "investments", "personal_use"];
 
@@ -136,8 +144,14 @@ async function buildFinancialStatements(from, to) {
   const openingDay = addDays(from, -1);
   const accountRows = selectAccountBalancesOnTwoDays.all({ openingDay, closingDay: to });
 
-  const { totals, tickerResults, tickersValuedAtCost } = await calculateInvestmentsValuePerDay([openingDay, to]);
-  const investmentRows = tickerResults.map((result) => ({ ticker: result.ticker, opening: result.valuesInCents[0], closing: result.valuesInCents[1] }));
+  // One valuation for everything: the two ends of the period (balance sheet) plus the trade days (returns).
+  // Same first and last day as before, so the prices, and the balance sheet, are exactly what they were.
+  const valuationDays = listDaysNeededForReturns(openingDay, to);
+  const valuation = await calculateInvestmentsValuePerDay(valuationDays);
+  const { tickerResults, tickersValuedAtCost } = valuation;
+  const lastIndex = valuationDays.length - 1;
+  const totals = [valuation.totals[0], valuation.totals[lastIndex]];
+  const investmentRows = tickerResults.map((result) => ({ ticker: result.ticker, opening: result.valuesInCents[0], closing: result.valuesInCents[lastIndex] }));
 
   const balanceSheet = buildBalanceSheet(accountRows, investmentRows);
   const incomeStatement = buildIncomeStatement(from, to);
@@ -145,6 +159,16 @@ async function buildFinancialStatements(from, to) {
     from, to, accountRows, incomeStatement,
     investmentsOpening: totals[0], investmentsClosing: totals[1],
     opening: balanceSheet.opening, closing: balanceSheet.closing,
+  });
+
+  const investmentReturns = buildInvestmentReturns({ openingDay, to, days: valuationDays, valuation });
+  const taxEstimates = buildItalianTaxEstimates({
+    from, to, openingDay, accountRows,
+    investmentValues: {
+      opening: new Map(investmentRows.map((row) => [row.ticker, row.opening])),
+      closing: new Map(investmentRows.map((row) => [row.ticker, row.closing])),
+    },
+    netWorthOpening: balanceSheet.opening, netWorthClosing: balanceSheet.closing,
   });
 
   const toEuros = convertCentsToEuros;
@@ -176,6 +200,9 @@ async function buildFinancialStatements(from, to) {
       closing: toEuros(bridge.closing),
       unexplained: toEuros(bridge.unexplained), // should be 0: anything else is a bug
     },
+    budget_vs_actual: buildBudgetVsActual(from, to),
+    investment_returns: investmentReturns,
+    tax_estimates: taxEstimates, // estimates only: not in any total above
     failed_tickers: tickersValuedAtCost, // no price history: valued at what they cost
   };
 }

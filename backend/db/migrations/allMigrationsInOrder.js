@@ -13,6 +13,9 @@ const allMigrationsInOrder = [
   require("./007-recurring-transactions.js"),
   require("./008-category-kinds.js"),
   require("./009-restricted-account-kind.js"),
+  require("./010-tags.js"),
+  require("./011-category-budgets.js"),
+  require("./012-forecast.js"),
 ];
 
 const LATEST_DATABASE_VERSION = allMigrationsInOrder.length;

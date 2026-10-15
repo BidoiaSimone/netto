@@ -23,7 +23,13 @@ startFrontendLiveReload();
 startExitTimerForWhenNoWindowOpens();
 
 app.use(apiRouter);                                  // the API
-app.use(express.static(FRONTEND_DIRECTORY));         // pages, css, js, images
+// pages, css, js, images. "no-cache" doesn't mean "don't keep a copy": it means "ask before using it". Without it
+// Safari may reuse a saved Home.html for a while after an update while loading the NEW scripts, and the new code
+// then looks for parts of the page the old copy doesn't have ("null is not an object"). Asking costs almost nothing:
+// an unchanged file is answered with a tiny "304 Not Modified" and the saved copy is used.
+app.use(express.static(FRONTEND_DIRECTORY, {
+  setHeaders: (response) => response.setHeader("Cache-Control", "no-cache"),
+}));
 app.get("/", (request, response) => response.redirect("/HTML/Home.html"));
 
 app.listen(SERVER_PORT, SERVER_HOST, function onServerStarted(error) {

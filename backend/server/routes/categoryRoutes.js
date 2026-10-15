@@ -6,6 +6,8 @@
 
 const express = require("express");
 const db = require("../../db/databaseConnection.js");
+const { getTodayAsLocalDate } = require("../utils/localDates.js");
+const { convertCentsToEuros } = require("../utils/moneyConversion.js");
 
 const router = express.Router();
 
@@ -17,15 +19,21 @@ const cleanCategoryName = (name) => String(name ?? "").trim().replace(/\s+/g, " 
 const selectCategoryByNameAndKind = db.prepare(`SELECT id, name, kind FROM categories WHERE name = ? AND kind = ?`);
 
 // Every category with how many transactions and recurring transactions use it
-// (so the page can warn before deleting), expense ones first, then by name
+// (so the page can warn before deleting), expense ones first, then by name.
+// monthly_budget: this month's limit in euros (migration 11), null when there is none (always null for income).
 router.get("/categories", function listCategories(request, response) {
-  response.json(db.prepare(`
+  const categoryRows = db.prepare(`
     SELECT c.id, c.name, c.kind,
            (SELECT COUNT(*) FROM transactions WHERE category_id = c.id) AS used,
-           (SELECT COUNT(*) FROM recurring_transactions WHERE category_id = c.id) AS used_by_recurring
+           (SELECT COUNT(*) FROM recurring_transactions WHERE category_id = c.id) AS used_by_recurring,
+           CASE WHEN c.kind = 'expense' THEN (
+             SELECT monthly_limit FROM category_budgets WHERE category_id = c.id AND from_month <= $month
+             ORDER BY from_month DESC LIMIT 1
+           ) END AS monthly_budget
     FROM categories c
     ORDER BY c.kind = 'income', c.name
-  `).all());
+  `).all({ month: getTodayAsLocalDate().slice(0, 7) });
+  response.json(categoryRows.map((category) => ({ ...category, monthly_budget: convertCentsToEuros(category.monthly_budget) })));
 });
 
 // { name, kind: "income" | "expense" }

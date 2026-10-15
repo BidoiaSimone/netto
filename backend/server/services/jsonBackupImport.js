@@ -5,6 +5,8 @@
  * (holdings typed in, no trades) are converted on the way in. Backups from before version 7 have no
  * recurring transactions: the import then simply has none. Backups from before version 8 have no
  * income / expense categories: each category gets its kind from how it is used, like migration 8 does.
+ * Backups from before version 10 have no tags: the import then simply has none. Same for budgets before version 11,
+ * and the forecast plan before version 12 (no phases or events, the default assumptions).
  *
  * Everything happens in one database transaction: on any bad row the old data stays untouched.
  */
@@ -44,6 +46,12 @@ const insertRecurringTransaction = db.prepare(`INSERT INTO recurring_transaction
     repeat_unit, repeat_interval, start_date, end_date, posted_count, paused, created_at)
   VALUES (@id, @type, @amount, @from_account_id, @to_account_id, @category_id, @description,
     @repeat_unit, @repeat_interval, @start_date, @end_date, @posted_count, @paused, @created_at)`);
+const insertTag = db.prepare(`INSERT INTO tags (id, name, start_date, end_date) VALUES (@id, @name, @start_date, @end_date)`);
+const insertTransactionTag = db.prepare(`INSERT INTO transaction_tags (transaction_id, tag_id) VALUES (@transaction_id, @tag_id)`);
+const insertCategoryBudget = db.prepare(`INSERT INTO category_budgets (category_id, from_month, monthly_limit) VALUES (@category_id, @from_month, @monthly_limit)`);
+const insertForecastPhase = db.prepare(`INSERT INTO forecast_phases (id, name, from_month, monthly_income, monthly_expenses)
+  VALUES (@id, @name, @from_month, @monthly_income, @monthly_expenses)`);
+const insertForecastEvent = db.prepare(`INSERT INTO forecast_events (id, name, month, amount, sells_account_id) VALUES (@id, @name, @month, @amount, @sells_account_id)`);
 const insertTodo = db.prepare(`INSERT INTO todos (id, text, done, created_at, done_at) VALUES (@id, @text, @done, @created_at, @done_at)`);
 const selectCategoryIdByName = db.prepare(`SELECT id FROM categories WHERE name = ?`);
 const insertCategoryByName = db.prepare(`INSERT INTO categories (name) VALUES (?)`);
@@ -139,6 +147,40 @@ function importInvestments(backupData) {
   for (const { ticker } of tradedTickers) rebuildHoldingFromTrades(ticker); // throws if the trades don't add up
 }
 
+// ---------- tags ----------
+
+// In backups from version 10. Ids are kept, so the links in transaction_tags still point to the right
+// transaction and tag; a link to a transaction or tag that isn't in the file stops the import (foreign keys).
+function importTags(backupData) {
+  if (!Array.isArray(backupData.tags)) return;
+  for (const tag of backupData.tags) insertTag.run(pickColumns(tag, ["id", "name", "start_date", "end_date"]));
+  for (const link of backupData.transaction_tags ?? []) insertTransactionTag.run(pickColumns(link, ["transaction_id", "tag_id"]));
+}
+
+// ---------- budgets ----------
+
+// In backups from version 11: every row of the history, pointing to categories by id (imported first)
+function importCategoryBudgets(backupData) {
+  for (const budgetRow of backupData.category_budgets ?? []) insertCategoryBudget.run(pickColumns(budgetRow, ["category_id", "from_month", "monthly_limit"]));
+}
+
+// ---------- the forecast plan ----------
+
+// In backups from version 12. The assumptions row always exists (migration 12): it's reset to the defaults,
+// then given the backup's values if it has them. Events point to accounts by id (imported before).
+function importForecastPlan(backupData) {
+  for (const phase of backupData.forecast_phases ?? []) insertForecastPhase.run(pickColumns(phase, ["id", "name", "from_month", "monthly_income", "monthly_expenses"]));
+  for (const event of backupData.forecast_events ?? []) insertForecastEvent.run(pickColumns(event, ["id", "name", "month", "amount", "sells_account_id"]));
+  db.exec(`DELETE FROM forecast_assumptions; INSERT INTO forecast_assumptions (id) VALUES (1);`);
+  const assumptions = backupData.forecast_assumptions;
+  if (assumptions) {
+    db.prepare(`UPDATE forecast_assumptions SET yearly_return = @yearly_return, yearly_inflation = @yearly_inflation,
+                savings_go_to = @savings_go_to, yearly_depreciation = @yearly_depreciation WHERE id = 1`)
+      .run(pickColumns(assumptions, ["yearly_return", "yearly_inflation", "savings_go_to", "yearly_depreciation"],
+        { yearly_return: 0.05, yearly_inflation: 0.02, savings_go_to: "cash", yearly_depreciation: 0.15 }));
+  }
+}
+
 // ---------- the Next up list ----------
 
 // In backups from version 5. An older backup has no list: the current one is kept.
@@ -155,13 +197,18 @@ function importTodos(backupData) {
 
 // All or nothing: throws (and changes nothing) on any bad row
 const replaceAllDataWithBackup = db.transaction((backupData) => {
-  db.exec(`DELETE FROM investment_trades; DELETE FROM investments; DELETE FROM transactions; DELETE FROM recurring_transactions;
+  db.exec(`DELETE FROM forecast_events; DELETE FROM forecast_phases;
+           DELETE FROM category_budgets; DELETE FROM transaction_tags; DELETE FROM tags;
+           DELETE FROM investment_trades; DELETE FROM investments; DELETE FROM transactions; DELETE FROM recurring_transactions;
            DELETE FROM categories; DELETE FROM accounts;`);
   const categories = Array.isArray(backupData.categories) ? backupData.categories : [];
   for (const category of categories) insertCategory.run(pickColumns(category, ["id", "name", "kind"], { kind: "expense" }));
   if ((backupData.format_version ?? 0) >= 2) importAccountsAndTransactions(backupData);
   else importLegacyAccountsAndTransactions(backupData);
   importInvestments(backupData); // after the transactions: trades point at their cash transaction
+  importTags(backupData);         // after the transactions too: the links point at them
+  importCategoryBudgets(backupData);
+  importForecastPlan(backupData);
   importTodos(backupData);
   if ((backupData.format_version ?? 0) < 8) assignCategoryKindsFromUsage(db);
 });
@@ -176,6 +223,8 @@ function countImportedRows() {
     transactions: countRows("transactions"),
     recurring_transactions: countRows("recurring_transactions"),
     todos: countRows("todos"),
+    tags: countRows("tags"),
+    category_budgets: countRows("category_budgets"),
   };
 }
 

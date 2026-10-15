@@ -1,0 +1,27 @@
+/* Home: net worth and its three groups (liquid, investments, immobilized), cards and bar.
+   One of the numbered files in this folder: Home.html loads them in number order, and later files
+   win over earlier ones when two rules are equally specific, so keep that order when adding files. */
+
+/* the same fixed colours as Insights > Liquidity and the Forecast page (cash green, investments blue,
+   personal use purple), so a group looks the same everywhere; not the accent colour, which you can change */
+.home-liquid { --home-group-color: #199e70; }
+.home-investments { --home-group-color: #3987e5; }
+.home-immobilized { --home-group-color: #9085e9; }
+
+/* net worth a bit wider, then the three groups */
+.home-cards { grid-template-columns: 1.4fr 1fr 1fr 1fr; }
+.home-group { border-top: 3px solid var(--home-group-color); }
+.card .home-card-note { display: block; margin-top: 8px; font-size: 12px; letter-spacing: 0; text-transform: none; line-height: 1.4; color: var(--muted); }
+.home-group strong.neg { color: var(--neg); }
+
+.home-bar { gap: 2px; background: transparent; }
+.home-bar span { background: var(--home-group-color); }
+.home-bar span[style*="width: 0%"] { display: none; } /* an empty group leaves no gap */
+.dot.home-liquid, .dot.home-investments, .dot.home-immobilized { background: var(--home-group-color); }
+
+@media (max-width: 1100px) { .home-cards { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 800px) { .home-cards { grid-template-columns: 1fr; } }
+
+/* privacy mode: the notes hold amounts too (the vouchers) and shares that hint at them; the amounts and the
+   bar are already blurred by 04-privacy-mode.css (.cards strong, .alloc) */
+body.private .home-card-note { filter: blur(6px); user-select: none; }

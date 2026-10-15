@@ -1,5 +1,6 @@
 /* THE DATABASE CONNECTION
  * Opens money.db once; every file that needs the database requires this one and shares the connection.
+ * Which file that is comes from config/projectPaths.js (the tests point it to an in-memory database).
  */
 
 const Database = require("better-sqlite3");
