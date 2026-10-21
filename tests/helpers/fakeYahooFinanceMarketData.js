@@ -6,7 +6,10 @@
  *   price history   one close per day (or per week), a smooth wave around a base price, so values
  *                   really change from one day to the next and the investment results aren't all 0
  *
- * A ticker not listed here behaves like one Yahoo doesn't know: both functions throw.
+ *   exchange rates  a fixed rate per currency, the same every day (units per 1 €)
+ *
+ * A ticker or currency not listed here behaves like one Yahoo doesn't know: the functions throw.
+ * setFakeExchangeRatesReachable(false) makes every exchange rate fail, like being offline.
  */
 
 const MILLISECONDS_PER_DAY = 864e5;
@@ -46,4 +49,27 @@ async function getPriceHistoryInEuros(ticker, startDate, interval) {
   return history;
 }
 
-module.exports = { getCurrentPriceInEuros, getPriceHistoryInEuros, FAKE_CURRENT_PRICE_BY_TICKER };
+// Units of the currency per 1 €. KWD has 3 decimals, JPY none: both are used by the currency tests.
+const FAKE_UNITS_PER_EURO_BY_CURRENCY = {
+  JPY: 160,
+  USD: 1.25,
+  KWD: 0.3125,
+  GBP: 0.8,
+};
+let exchangeRatesAreReachable = true;
+const setFakeExchangeRatesReachable = (isReachable) => { exchangeRatesAreReachable = isReachable; };
+
+// Same contract as the real one: { unitsPerEuro, rateDate }. A weekend date gives the Friday before, like the markets.
+async function getExchangeRateOnDate(currency, date) {
+  if (!exchangeRatesAreReachable) throw new Error("fetch failed");
+  if (!(currency in FAKE_UNITS_PER_EURO_BY_CURRENCY)) throw new Error(`No EUR/${currency} rate available around ${date}`);
+  const day = new Date(date + "T00:00:00Z");
+  const daysBackToFriday = { 0: 2, 6: 1 }[day.getUTCDay()] ?? 0;
+  const rateDate = new Date(day.getTime() - daysBackToFriday * MILLISECONDS_PER_DAY).toISOString().slice(0, 10);
+  return { unitsPerEuro: FAKE_UNITS_PER_EURO_BY_CURRENCY[currency], rateDate };
+}
+
+module.exports = {
+  getCurrentPriceInEuros, getPriceHistoryInEuros, getExchangeRateOnDate,
+  FAKE_CURRENT_PRICE_BY_TICKER, FAKE_UNITS_PER_EURO_BY_CURRENCY, setFakeExchangeRatesReachable,
+};

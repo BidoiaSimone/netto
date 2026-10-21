@@ -1,0 +1,30 @@
+/* Statements > Money flows (the Sankey diagram) and Forecast > FIRE number (its panel and its line on the chart).
+   One of the numbered files in this folder: Home.html loads them in number order, and later files
+   win over earlier ones when two rules are equally specific, so keep that order when adding files. */
+
+/* ---- Sankey ---- */
+/* the chart keeps a readable width: on a phone it scrolls sideways inside its own box, never the page */
+.sankey-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.sankey-chart { min-width: 560px; }
+.sankey-chart svg { display: block; }
+.sankey-band { opacity: 0.32; transition: opacity 0.15s; cursor: pointer; outline: none; }
+.sankey-band:hover, .sankey-band.active, .sankey-band:focus-visible { opacity: 0.62; }
+.sankey-band.income, .sankey-box.income { fill: var(--accent); }
+.sankey-band.expense, .sankey-box.expense { fill: var(--neg); }
+.sankey-band.investments, .sankey-box.investments { fill: var(--info); }
+.sankey-band.savings, .sankey-box.savings { fill: var(--accent-2); }
+.sankey-box { cursor: pointer; outline: none; }
+.sankey-box.middle { fill: var(--muted); }
+.sankey-name { fill: var(--text); font-size: 12px; font-weight: 600; }
+.sankey-amount { fill: var(--muted); font-size: 11px; font-variant-numeric: tabular-nums; }
+.sankey-readout { min-height: 1.4em; margin: 10px 0 0; font-size: 14px; color: var(--text); }
+
+/* ---- FIRE ---- */
+.fc-fire-panel { display: grid; gap: 16px; }
+.fc-fire-cards { grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
+.fc-fire-panel .chips button:disabled { opacity: 0.4; cursor: not-allowed; }
+#fc-fire-expenses button.active { color: var(--accent-2); border-color: var(--accent); background: rgba(var(--accent-rgb), 0.12); }
+.fc-fire-panel .hint.small { margin: 0; }
+.stacked-area-chart .reference-line.fire { fill: none; stroke: var(--warn); stroke-width: 1.5; stroke-dasharray: 6 4; }
+.stacked-area-chart .reference-label.fire { fill: var(--warn); font-size: 11px; font-weight: 600; paint-order: stroke; stroke: var(--surface); stroke-width: 4px; }
+.sankey-leader { fill: none; stroke: var(--muted); stroke-width: 1; opacity: 0.6; }

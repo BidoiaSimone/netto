@@ -11,6 +11,7 @@ const { startTestServer } = require("./helpers/testServer.js");
 const { buildFakeDataset, callApiExpectingSuccess } = require("./helpers/fakeDataset.js");
 const { simulateForecast, findPhaseOfMonth, calculateRunwayInMonths } = require("../backend/server/services/forecastSimulation.js");
 const { buildForecast, calculateRealAverages } = require("../backend/server/services/forecast.js");
+const { sumRecurringExpensesStillDue } = require("../backend/server/services/budgetCalculator.js");
 const { LATEST_DATABASE_VERSION } = require("../backend/db/migrations/allMigrationsInOrder.js");
 
 const db = openTestDatabase();
@@ -172,13 +173,25 @@ test("the suggested first phase comes from the last complete months, and says so
   assert.equal(averages.usesBudgets, false);
 });
 
-test("with no complete month yet, the current month so far is used at its daily pace", () => {
-  // the first record is 1 Jan 2025: on 10 Jan 2025 there is no complete month
+test("with no complete month yet, the current month so far is projected like on Insights", () => {
+  // the first record is 1 Jan 2025: on 10 Jan 2025 there is no complete month.
+  // habitual categories at the pace (÷ 10 days × 31), one-off ones and recurring as they are, + recurring still due
+  // the category with the most spending in those days becomes one-off for this test
+  const biggestCategoryId = db.prepare(`SELECT category_id FROM transactions WHERE type = 'expense' AND recurring_transaction_id IS NULL
+    AND category_id IS NOT NULL AND date BETWEEN '2025-01-01' AND '2025-01-10' GROUP BY category_id ORDER BY SUM(amount) DESC LIMIT 1`).get().category_id;
+  db.prepare(`UPDATE categories SET spending_pace = 'occasional' WHERE id = ?`).run(biggestCategoryId);
   const averages = calculateRealAverages("2025-01-10");
   assert.equal(averages.monthsOfData, 0);
   assert.match(averages.source, /No complete month of records yet/);
-  const spentByTheTenth = db.prepare(`SELECT COALESCE(SUM(amount), 0) AS total FROM transactions WHERE type = 'expense' AND date BETWEEN '2025-01-01' AND '2025-01-10'`).get().total;
-  assert.equal(averages.monthlyExpenses, Math.round((spentByTheTenth / 10) * 31));
+  const sumByTheTenth = (condition) => db.prepare(`
+    SELECT COALESCE(SUM(t.amount), 0) AS total FROM transactions t LEFT JOIN categories c ON c.id = t.category_id
+    WHERE t.type = 'expense' AND t.date BETWEEN '2025-01-01' AND '2025-01-10' AND ${condition}`).get().total;
+  const habitual = sumByTheTenth(`t.recurring_transaction_id IS NULL AND COALESCE(c.spending_pace, 'daily') = 'daily'`);
+  const asTheyAre = sumByTheTenth(`(t.recurring_transaction_id IS NOT NULL OR c.spending_pace = 'occasional')`);
+  const stillDue = [...sumRecurringExpensesStillDue("2025-01-10", "2025-01-31").values()].reduce((sum, amount) => sum + amount, 0);
+  assert.ok(asTheyAre > 0);
+  assert.equal(averages.monthlyExpenses, Math.round((habitual / 10) * 31 + asTheyAre + stillDue));
+  db.prepare(`UPDATE categories SET spending_pace = 'daily' WHERE id = ?`).run(biggestCategoryId);
 });
 
 test("with budgets, expenses = the budgets + what unbudgeted categories usually cost", async () => {
@@ -188,8 +201,19 @@ test("with budgets, expenses = the budgets + what unbudgeted categories usually 
   const notGroceries = db.prepare(`SELECT SUM(amount) AS total FROM transactions WHERE type = 'expense' AND date BETWEEN '2026-04-01' AND '2026-09-30' AND (category_id IS NULL OR category_id <> ?)`).get(dataset.categoryIds.groceries).total;
   assert.equal(averages.usesBudgets, true);
   assert.equal(averages.monthlyExpenses, Math.round(25000 + notGroceries / 6));
+  // the emergency fund (useBudgets: false) still gets what was really spent
+  const realSpending = db.prepare(`SELECT SUM(amount) AS total FROM transactions WHERE type = 'expense' AND date BETWEEN '2026-04-01' AND '2026-09-30'`).get().total;
+  assert.equal(calculateRealAverages("2026-10-14", { useBudgets: false }).monthlyExpenses, Math.round(realSpending / 6));
   await call("PUT", `/categories/${dataset.categoryIds.groceries}/budget`, { monthly_limit: null, from_month: "2026-10" });
   assert.ok(thisMonth); // (budgets set for a past month don't matter to the rest of the file)
+});
+
+test("GET /insights/monthly-expenses: the emergency fund's monthly expenses, the same average as the Forecast's", async () => {
+  const answer = await call("GET", "/insights/monthly-expenses");
+  const averages = calculateRealAverages(new Date().toLocaleDateString("sv-SE"), { useBudgets: false });
+  assert.equal(Math.round(answer.monthly_expenses * 100), averages.monthlyExpenses);
+  assert.equal(answer.months_of_data, averages.monthsOfData);
+  assert.equal(answer.source, averages.source);
 });
 
 test("the starting point is today's real net worth, split into cash, investments and personal-use", async () => {

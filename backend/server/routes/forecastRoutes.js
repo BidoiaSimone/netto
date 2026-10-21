@@ -82,16 +82,16 @@ router.delete("/forecast/phases/:id", (request, response) => {
 router.post("/forecast/events", (request, response) => {
   const { error, event } = validateEvent(request.body);
   if (error) return response.status(400).json({ error });
-  db.prepare(`INSERT INTO forecast_events (name, month, amount, sells_account_id) VALUES (?, ?, ?, ?)`)
-    .run(event.name, event.month, event.amount, event.sellsAccountId);
+  db.prepare(`INSERT INTO forecast_events (name, month, amount, sells_account_id, transfers_with_investments) VALUES (?, ?, ?, ?, ?)`)
+    .run(event.name, event.month, event.amount, event.sellsAccountId, event.transfersWithInvestments ? 1 : 0);
   answerWithForecast(request, response, 201);
 });
 
 router.put("/forecast/events/:id", (request, response) => {
   const { error, event } = validateEvent(request.body);
   if (error) return response.status(400).json({ error });
-  const { changes } = db.prepare(`UPDATE forecast_events SET name = ?, month = ?, amount = ?, sells_account_id = ? WHERE id = ?`)
-    .run(event.name, event.month, event.amount, event.sellsAccountId, Number(request.params.id));
+  const { changes } = db.prepare(`UPDATE forecast_events SET name = ?, month = ?, amount = ?, sells_account_id = ?, transfers_with_investments = ? WHERE id = ?`)
+    .run(event.name, event.month, event.amount, event.sellsAccountId, event.transfersWithInvestments ? 1 : 0, Number(request.params.id));
   if (!changes) return response.status(404).json({ error: "Event not found" });
   answerWithForecast(request, response);
 });

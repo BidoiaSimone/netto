@@ -3,7 +3,7 @@
 // saved. Each save answers with the whole new forecast, handed to forecastPage.js to redraw (onForecastChanged).
 // The sliders save while you move them, a moment after you stop, so the chart follows your hand.
 
-import { elementById, createElement, fillTableBody, highlightSelectedChip } from "../core/domHelpers.js";
+import { elementById, createElement, fillTableBody, highlightSelectedChip, hideAmountFieldWhenAmountsHidden } from "../core/domHelpers.js";
 import { euroFormatter } from "../core/formatting.js";
 import { callApi } from "../core/apiClient.js";
 
@@ -40,6 +40,7 @@ function createEditableCell(row, fieldName, { type = "text", step, rowToBody, pa
     if (event.key === "Enter") input.blur(); // blur fires "change"
     if (event.key === "Escape") { input.value = row[fieldName] ?? ""; input.blur(); }
   });
+  if (type === "number") hideAmountFieldWhenAmountsHidden(input); // income, expenses, an event's amount
   return input;
 }
 
@@ -93,22 +94,35 @@ function renderSuggestion(forecast) {
 
 // ---------- events ----------
 
-const eventToBody = (event) => ({ name: event.name, month: event.month, amount: event.amount, sells_account_id: event.sells_account_id });
+// What an event is linked to, as one dropdown value: "" (money from/to outside), "investments" (money moving
+// between cash and investments: − buys, + sells) or a personal-use asset's account id (the event sells it).
+// The API keeps these as two fields, sells_account_id and transfers_with_investments (only one can be set).
+const INVESTMENTS_LINK = "investments";
+const linkOfEvent = (event) => (event.transfers_with_investments ? INVESTMENTS_LINK : event.sells_account_id ?? "");
+const linkToBody = (link) => ({
+  sells_account_id: link === INVESTMENTS_LINK || link === "" ? null : link,
+  transfers_with_investments: link === INVESTMENTS_LINK,
+});
+const eventToBody = (event) => ({ name: event.name, month: event.month, amount: event.amount, ...linkToBody(linkOfEvent(event)) });
 
-// The personal-use assets an event can sell, as a dropdown (also the one in the "add" form)
-function createSellsPicker(forecast, selectedAccountId) {
+// The dropdown of what an event can be linked to (also the one in the "add" row)
+function createLinkPicker(forecast, selectedLink) {
   const picker = createElement("select");
-  picker.append(new Option("— nothing —", ""), ...forecast.personal_use_assets.map((asset) => new Option(`${asset.name} (${euroFormatter.format(asset.value)})`, asset.account_id)));
-  picker.value = selectedAccountId ?? "";
+  picker.append(
+    new Option("— nothing (money in or out) —", ""),
+    new Option("Investments (− buys, + sells)", INVESTMENTS_LINK),
+    ...forecast.personal_use_assets.map((asset) => new Option(`Sells ${asset.name} (${euroFormatter.format(asset.value)})`, asset.account_id)),
+  );
+  picker.value = selectedLink ?? "";
   return picker;
 }
 
 function renderEvents(forecast) {
   fillTableBody("fc-events-body", forecast.events, (event) => {
     const path = `/forecast/events/${event.id}`;
-    const sellsPicker = createSellsPicker(forecast, event.sells_account_id);
-    sellsPicker.setAttribute("aria-label", `${event.name}: sells`);
-    sellsPicker.addEventListener("change", () => changePlan(path, "PUT", { ...eventToBody(event), sells_account_id: sellsPicker.value }));
+    const linkPicker = createLinkPicker(forecast, linkOfEvent(event));
+    linkPicker.setAttribute("aria-label", `${event.name}: linked to`);
+    linkPicker.addEventListener("change", () => changePlan(path, "PUT", { ...eventToBody(event), ...linkToBody(linkPicker.value) }));
     // a past event keeps its editable name, with a note: it isn't counted until it's moved to a future month
     const nameCell = createElement("span", event.is_past ? "fc-past-event" : "");
     nameCell.append(createEditableCell(event, "name", { rowToBody: eventToBody, path, ariaLabel: "Event name" }));
@@ -117,12 +131,12 @@ function renderEvents(forecast) {
       nameCell,
       createEditableCell(event, "month", { type: "month", rowToBody: eventToBody, path, ariaLabel: `${event.name}: month` }),
       createEditableCell(event, "amount", { type: "number", step: "0.01", rowToBody: eventToBody, path, ariaLabel: `${event.name}: amount` }),
-      sellsPicker,
+      linkPicker,
       createDeleteButton(`Delete the event "${event.name}"?`, path),
     ];
   });
-  const addFormPicker = elementById("fc-event-sells"), pickedBefore = addFormPicker.value;
-  addFormPicker.replaceChildren(...createSellsPicker(forecast, null).options);
+  const addFormPicker = elementById("fc-event-link"), pickedBefore = addFormPicker.value;
+  addFormPicker.replaceChildren(...createLinkPicker(forecast, null).options);
   addFormPicker.value = pickedBefore;
 }
 
@@ -200,6 +214,6 @@ export function initializeForecastPlanEditor(callbacks) {
     name: fields.name.value, from_month: fields.from_month.value, monthly_income: fields.monthly_income.value, monthly_expenses: fields.monthly_expenses.value,
   }));
   addFromForm("fc-event-form", "/forecast/events", (fields) => ({
-    name: fields.name.value, month: fields.month.value, amount: fields.amount.value, sells_account_id: fields.sells_account_id.value,
+    name: fields.name.value, month: fields.month.value, amount: fields.amount.value, ...linkToBody(fields.linked_to.value),
   }));
 }

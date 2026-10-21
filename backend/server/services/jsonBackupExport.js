@@ -26,6 +26,10 @@ function buildFullJsonBackup() {
     forecast_phases: db.prepare(`SELECT * FROM forecast_phases ORDER BY from_month`).all(),               // from version 12
     forecast_events: db.prepare(`SELECT * FROM forecast_events ORDER BY month, id`).all(),
     forecast_assumptions: db.prepare(`SELECT * FROM forecast_assumptions WHERE id = 1`).get(),
+    investment_targets: db.prepare(`SELECT * FROM investment_targets ORDER BY ticker`).all(),   // from version 15
+    app_settings: db.prepare(`SELECT * FROM app_settings ORDER BY key`).all(),
+    savings_goals: db.prepare(`SELECT * FROM savings_goals ORDER BY position, id`).all(),          // from version 17
+    savings_goal_categories: db.prepare(`SELECT * FROM savings_goal_categories ORDER BY goal_id, category_id`).all(),
   };
 }
 

@@ -10,7 +10,10 @@
  *                              (your rent and your salary will both cost/pay more in euros in 5 years)
  *        a surplus            goes to cash, or to investments (an assumption)
  *        a deficit            always comes out of cash
- *   4. one-off events          their amount goes to (or comes out of) cash; one that sells an asset removes it
+ *   4. one-off events          their amount goes to (or comes out of) cash; one that sells an asset removes it.
+ *                              One that moves money with investments only changes its place: − buys investments
+ *                              (cash down, investments up), + sells them (investments down, cash up, at most
+ *                              what's there). Net worth doesn't move, and the invested money grows from next month
  *   5. cash below zero         investments are sold to cover the gap; if there aren't enough, cash stays negative
  *                              (a shortfall: money you'd have to find somewhere)
  *
@@ -78,6 +81,13 @@ function simulateForecast({ startDate, months, start, phases, events, assumption
     else cash += monthlySavings;
 
     for (const event of eventsByMonth.get(month) ?? []) {                  // 4
+      if (event.transfersWithInvestments) {
+        // − amount: buying (investments get exactly what cash gives); + amount: selling what there is to sell
+        const movedToInvestments = event.amount < 0 ? -event.amount : -Math.min(investments, event.amount);
+        investments += movedToInvestments;
+        cash -= movedToInvestments;
+        continue;
+      }
       cash += event.amount;
       if (event.sellsAccountId != null) assetValues.delete(event.sellsAccountId);
     }

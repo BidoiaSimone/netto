@@ -1,7 +1,8 @@
 // ---- trade dialog: buy or sell shares, or edit / delete a trade ----
 
 import { elementById, createElement } from "../core/domHelpers.js";
-import { euroFormatter, shareCountFormatter, getTodayAsLocalDate } from "../core/formatting.js";
+// single transactions stay readable with Hide amounts on (see core/formatting.js)
+import { visibleEuroFormatter as euroFormatter, shareCountFormatter, getTodayAsLocalDate } from "../core/formatting.js";
 import { callApi } from "../core/apiClient.js";
 import { appState } from "../core/appState.js";
 import { loadAllData } from "../core/dataRefresh.js";
@@ -9,6 +10,7 @@ import { addClosedAccountOptionIfMissing } from "../core/accountPickers.js";
 import { openDialog } from "../app/dialogWindows.js";
 
 let tradeBeingEdited = null; // null for a new trade
+let tradesWaitingToBeRecorded = []; // Investments > Target allocation > "Record these trades": the ones after this one
 
 const getSharesHeld = (ticker) => appState.holdings.find((holding) => holding.ticker === ticker)?.shares ?? 0;
 
@@ -22,8 +24,8 @@ export function openTradeDialog(trade = {}, { isEditing = false } = {}) {
   elementById("trade-delete").hidden = !isEditing;
   elementById("trade-side").value = trade.side ?? "buy";
   form.ticker.value = trade.ticker ?? "";
-  form.shares.value = isEditing ? trade.shares : "";
-  form.price.value = isEditing ? Math.round(trade.price * 10000) / 10000 : "";
+  form.shares.value = trade.shares ?? "";   // a new trade can come prefilled (target allocation)
+  form.price.value = trade.price ? Math.round(trade.price * 10000) / 10000 : "";
   form.fees.value = isEditing && trade.fees ? trade.fees : "";
   elementById("trade-date").max = getTodayAsLocalDate();
   elementById("trade-date").value = isEditing ? trade.date : getTodayAsLocalDate();
@@ -47,7 +49,9 @@ function updateTradeDialogTexts() {
   const form = elementById("trade-form");
   const isBuy = elementById("trade-side").value === "buy";
   const ticker = form.ticker.value.trim().toUpperCase();
-  elementById("trade-title").textContent = tradeBeingEdited ? `Edit ${isBuy ? "buy" : "sale"}` : isBuy ? "Buy shares" : "Sell shares";
+  const waitingCount = tradeBeingEdited ? 0 : tradesWaitingToBeRecorded.length;
+  elementById("trade-title").textContent = (tradeBeingEdited ? `Edit ${isBuy ? "buy" : "sale"}` : isBuy ? "Buy shares" : "Sell shares")
+    + (waitingCount ? ` (${waitingCount} more after this)` : "");
   elementById("trade-submit").textContent = tradeBeingEdited ? "Save changes" : isBuy ? "Buy" : "Sell";
   elementById("trade-account-label").textContent = isBuy ? "Paid from" : "Paid into";
 
@@ -92,8 +96,22 @@ async function saveTrade(event) {
     return;
   }
   if (!tradeBeingEdited) localStorage.setItem("tradeAccount", pickedAccountId ?? "");
-  elementById("trade-dialog").close();
+  const [nextTrade, ...tradesAfterTheNext] = tradesWaitingToBeRecorded;
+  elementById("trade-dialog").close(); // closing clears the sequence (see initializeTradeDialog): it's put back below
   loadAllData();
+  if (nextTrade) {
+    tradesWaitingToBeRecorded = tradesAfterTheNext;
+    openTradeDialog(nextTrade);
+  }
+}
+
+// Several new trades to check and save one after another: the dialog opens again for the next one after each
+// save. Closing it any other way (Cancel, Escape, a click outside) stops the sequence.
+export function openTradeDialogsOneAfterAnother(trades) {
+  if (!trades.length) return;
+  openTradeDialog(trades[0]);
+  tradesWaitingToBeRecorded = trades.slice(1);
+  updateTradeDialogTexts();
 }
 
 async function deleteTradeBeingEdited() {
@@ -117,5 +135,8 @@ export function initializeTradeDialog() {
   elementById("trade-new").addEventListener("click", () => openTradeDialog());
   elementById("trade-form").addEventListener("submit", saveTrade);
   elementById("trade-delete").addEventListener("click", deleteTradeBeingEdited);
-  elementById("trade-dialog").addEventListener("close", () => { tradeBeingEdited = null; });
+  elementById("trade-dialog").addEventListener("close", () => {
+    tradeBeingEdited = null;
+    tradesWaitingToBeRecorded = [];
+  });
 }

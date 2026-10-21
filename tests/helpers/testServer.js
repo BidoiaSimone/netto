@@ -9,7 +9,7 @@
 const express = require("express");
 const apiRouter = require("../../backend/server/routes/apiRouter.js");
 
-// Starts the server. Returns { callApi, stopServer }.
+// Starts the server. Returns { callApi, stopServer, baseUrl }.
 //   callApi(method, path, body) -> { status, body }   (body already parsed from JSON)
 async function startTestServer() {
   const app = express();
@@ -37,7 +37,7 @@ async function startTestServer() {
     return new Promise((resolve) => server.close(resolve));
   }
 
-  return { callApi, stopServer };
+  return { callApi, stopServer, baseUrl }; // baseUrl: for answers that aren't JSON (GET /edition.js)
 }
 
 module.exports = { startTestServer };

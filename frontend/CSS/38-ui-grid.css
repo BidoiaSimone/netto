@@ -1,0 +1,287 @@
+/* Settings > Layout > Grid: the same pages drawn in a Tron Legacy-inspired style.
+   Two versions: "grid" (cyan, Tron Legacy) and "grid-ares" (red, Tron: Ares); every rule matches both with
+   [data-ui^="grid"], and only the colour blocks below differ.
+   Loaded after every other file and only active with <html data-ui="grid…"> (JS/themeBeforeFirstPaint.js), so it
+   changes nothing for the other layouts. Delete this file, its <link> and its chip in Home.html to remove it
+   (and the Fonts/orbitron-* files, used only here).
+
+   The ideas:
+     - a black void with a glowing grid floor fading into the dark at the bottom of the window.
+     - everything is drawn with light: 1px cyan lines with a soft glow, no filled boxes.
+     - two colours with a meaning: cyan for you (money in, the main action, what's selected),
+       orange for the other side (money out). Settings > Color doesn't apply here: the cyan is the style.
+     - angular cut corners on every box, like the panels and light cycles of the film.
+     - Orbitron (a wide geometric face, bundled in Fonts/ so it works offline) for titles, labels and big numbers;
+       body text and table numbers stay in the system face so they're easy to read.
+     - always dark: Settings > Theme doesn't change it (the film has no daytime).
+     - one moment of motion: a line of light traces the net worth box on Home when the page opens. */
+
+@font-face {
+    font-family: "Orbitron";
+    src: url("../Fonts/orbitron-variable.woff2") format("woff2");
+    font-weight: 400 900;
+    font-display: swap;
+}
+
+/* ---- colours: two versions, both always dark ----
+   Each version sets a handful of colours; every rule below uses only these, so a third version is one more block.
+   The :is() parts only raise these rules' strength to that of the theme and accent blocks in 01-theme-colors.css. */
+/* Grid (Tron Legacy): cyan light, money out in orange */
+:root[data-ui="grid"]:is([data-theme], :not([data-theme])):is([data-accent], :not([data-accent])) {
+    --grid-rgb: 47, 191, 234;           /* the light every line and glow is drawn with */
+    --grid-light: #2fbfea;
+    --grid-soft: #8fdcf5;               /* the same light, paler: highlighted text */
+    --grid-bright: #e2f7ff;             /* nearly white: button hover, the brightest glow */
+    --grid-second: #8f9dff;             /* a second colour for charts and groups (investments) */
+    --grid-in: #2fbfea;                 /* money in */
+    --grid-in-rgb: 47, 191, 234;
+    --grid-out: #ff9a3c;                /* money out */
+    --grid-out-rgb: 255, 154, 60;
+    --grid-tint-rgb: 6, 20, 28;         /* the dark tint of boxes and fields */
+    --bg: #010407;
+    --text: #dff8ff;
+    --muted: #6f9aa8;
+    --on-accent: #01141b;
+    --grid-logo-filter: hue-rotate(52deg) saturate(1.4);
+}
+/* Grid red (Tron: Ares): red light, money in in white, money out in amber (red can't mean "out" when everything is red) */
+:root[data-ui="grid-ares"]:is([data-theme], :not([data-theme])):is([data-accent], :not([data-accent])) {
+    --grid-rgb: 255, 45, 45;
+    --grid-light: #ff2d2d;
+    --grid-soft: #ff8f8f;
+    --grid-bright: #ffe9e9;
+    --grid-second: #ff9e9e;
+    --grid-in: #f4f6fa;
+    --grid-in-rgb: 244, 246, 250;
+    --grid-out: #ffb020;
+    --grid-out-rgb: 255, 176, 32;
+    --grid-tint-rgb: 26, 5, 6;
+    --bg: #060102;
+    --text: #ffeeee;
+    --muted: #a88484;
+    --on-accent: #1c0000;
+    --grid-logo-filter: hue-rotate(-145deg) saturate(1.8);
+}
+/* what both versions build from those */
+:root[data-ui^="grid"]:is([data-theme], :not([data-theme])):is([data-accent], :not([data-accent])) {
+    color-scheme: dark;
+    --surface: rgba(var(--grid-tint-rgb), 0.72);
+    --surface-2: rgba(var(--grid-tint-rgb), 0.9);
+    --border: rgba(var(--grid-rgb), 0.22);
+    --accent: var(--grid-light);
+    --accent-rgb: var(--grid-rgb);
+    --accent-2: var(--grid-soft);
+    --accent-text: var(--grid-in);
+    --pos-rgb: var(--grid-in-rgb);
+    --accent-hover: var(--grid-soft);
+    --grad-from: var(--grid-light);
+    --grad-to: var(--grid-bright);
+    --neg: var(--grid-out);
+    --neg-rgb: var(--grid-out-rgb);
+    --warn: #ffd54a;
+    --warn-rgb: 255, 213, 74;
+    --info: var(--grid-second);
+    --info-rgb: 169, 184, 255;
+    --sidebar-bg: rgba(var(--grid-tint-rgb), 0.55);
+    --glow: 0 0 12px rgba(var(--grid-rgb), 0.45);
+    --dialog-shadow: 0 0 0 1px rgba(var(--grid-rgb), 0.5), 0 0 40px rgba(var(--grid-rgb), 0.18), 0 30px 80px rgba(0, 0, 0, 0.9);
+    --backdrop: rgba(0, 0, 0, 0.75);
+    --tooltip-shadow: 0 0 16px rgba(var(--grid-rgb), 0.25);
+    --grid-line: rgba(var(--grid-rgb), 0.55);     /* the lines that draw every box */
+    --grid-cut: 12px;                              /* the size of the cut corners */
+    --grid-display: "Orbitron", "Eurostile", "Microgramma", system-ui, sans-serif;
+}
+
+/* the cut-corner shape: top-left and bottom-right corners cut off */
+[data-ui^="grid"] {
+    --grid-shape: polygon(var(--grid-cut) 0, 100% 0, 100% calc(100% - var(--grid-cut)), calc(100% - var(--grid-cut)) 100%, 0 100%, 0 var(--grid-cut));
+}
+
+/* ---- the void and the grid floor ---- */
+[data-ui^="grid"] body {
+    background: var(--bg);
+    font-variant-numeric: tabular-nums;
+}
+[data-ui^="grid"] body::before {               /* the floor: a grid seen in perspective, fading into the horizon */
+    content: ""; position: fixed; z-index: -2; pointer-events: none;
+    left: -50%; right: -50%; bottom: -10vh; height: 60vh;
+    background:
+        repeating-linear-gradient(90deg, rgba(var(--grid-rgb), 0.22) 0 1px, transparent 1px 80px),
+        repeating-linear-gradient(0deg, rgba(var(--grid-rgb), 0.22) 0 1px, transparent 1px 80px);
+    transform: perspective(420px) rotateX(62deg); transform-origin: 50% 100%;
+    -webkit-mask-image: linear-gradient(to top, #000 10%, transparent 85%); mask-image: linear-gradient(to top, #000 10%, transparent 85%);
+}
+
+/* ---- the sidebar: a dark rail with a line of light along its edge ---- */
+[data-ui^="grid"] #sidebar {
+    background: var(--sidebar-bg);
+    border-right: 1px solid var(--grid-line);
+    box-shadow: 1px 0 14px rgba(var(--grid-rgb), 0.18);
+}
+:root[data-ui^="grid"]:is([data-accent], :not([data-accent])) .brand img { filter: var(--grid-logo-filter) drop-shadow(0 0 6px rgba(var(--grid-rgb), 0.6)); }
+[data-ui^="grid"] #sidebar a {
+    font-family: var(--grid-display); font-size: 12px; font-weight: 500;
+    text-transform: uppercase; letter-spacing: 0.14em;
+    border-radius: 0; color: var(--muted);
+}
+[data-ui^="grid"] #sidebar a:hover { background: transparent; color: var(--text); text-shadow: 0 0 8px rgba(var(--grid-rgb), 0.6); }
+[data-ui^="grid"] #sidebar a.active {
+    background: linear-gradient(90deg, rgba(var(--grid-rgb), 0.16), transparent);
+    color: var(--accent); font-weight: 600; text-shadow: 0 0 10px rgba(var(--grid-rgb), 0.7);
+}
+[data-ui^="grid"] #sidebar a.active::before { width: 2px; border-radius: 0; box-shadow: 0 0 10px var(--accent), 0 0 2px var(--accent); }
+[data-ui^="grid"] #side-networth {
+    border: 1px solid var(--grid-line); border-radius: 0; background: rgba(6, 20, 28, 0.6);
+    clip-path: var(--grid-shape);
+    font-family: var(--grid-display); font-size: 10px; letter-spacing: 0.2em;
+}
+[data-ui^="grid"] #side-networth strong { font-family: var(--grid-display); font-size: 17px; letter-spacing: 0.04em; color: var(--accent); text-shadow: 0 0 10px rgba(var(--grid-rgb), 0.6); }
+[data-ui^="grid"] .switch { font-family: system-ui, sans-serif; letter-spacing: 0; }
+[data-ui^="grid"] .switch i { border-radius: 0; background: transparent; border-color: var(--grid-line); }
+[data-ui^="grid"] .switch i::after { border-radius: 0; }
+[data-ui^="grid"] .switch input:checked + i { background: rgba(var(--grid-rgb), 0.15); box-shadow: 0 0 8px rgba(var(--grid-rgb), 0.5); }
+
+/* ---- type: titles and labels in Orbitron ---- */
+[data-ui^="grid"] h2 {
+    font-family: var(--grid-display); font-weight: 700; font-size: 26px;
+    text-transform: uppercase; letter-spacing: 0.16em; color: var(--text);
+    text-shadow: 0 0 14px rgba(var(--grid-rgb), 0.45);
+}
+[data-ui^="grid"] main h3, [data-ui^="grid"] h4, [data-ui^="grid"] th,
+[data-ui^="grid"] .card {
+    font-family: var(--grid-display); letter-spacing: 0.16em;
+}
+[data-ui^="grid"] main h3 { color: var(--accent); font-size: 11.5px; font-weight: 600; text-shadow: 0 0 8px rgba(var(--grid-rgb), 0.5); }
+[data-ui^="grid"] main h3::before { content: "▸ "; }          /* a small marker, like the HUD labels in the film */
+[data-ui^="grid"] main :is(.panel, .card, .yr-card) h3::before { content: none; }
+[data-ui^="grid"] .page-head { border-bottom: 1px solid var(--border); padding-bottom: 14px; position: relative; }
+[data-ui^="grid"] .page-head::after {                       /* a bright stretch of light on the title's line */
+    content: ""; position: absolute; left: 0; bottom: -1px; width: 140px; height: 1px;
+    background: var(--accent); box-shadow: 0 0 8px var(--accent);
+}
+
+/* ---- boxes: drawn with light, corners cut ---- */
+[data-ui^="grid"] :is(.card, .panel, table, .wrap-up, .goal-card, .yr-card, .todo-list li, dialog) {
+    border-radius: 0; clip-path: var(--grid-shape);
+}
+[data-ui^="grid"] :is(.card, .panel, .wrap-up, .goal-card, .yr-card) {
+    border: 1px solid var(--grid-line);
+    box-shadow: inset 0 0 24px rgba(var(--grid-rgb), 0.06);
+}
+/* the cut corners' diagonal edges: a thin line of the same light across each corner, drawn by a gradient
+   (the border itself is clipped away there) */
+[data-ui^="grid"] :is(.card, .panel, .wrap-up, .goal-card, .yr-card) {
+    --grid-diagonal: calc(var(--grid-cut) * 0.7071);
+    background:
+        linear-gradient(135deg, transparent calc(var(--grid-diagonal) - 0.5px), var(--grid-line) calc(var(--grid-diagonal) - 0.5px) calc(var(--grid-diagonal) + 0.7px), transparent calc(var(--grid-diagonal) + 0.7px)) top left / var(--grid-cut) var(--grid-cut) no-repeat,
+        linear-gradient(315deg, transparent calc(var(--grid-diagonal) - 0.5px), var(--grid-line) calc(var(--grid-diagonal) - 0.5px) calc(var(--grid-diagonal) + 0.7px), transparent calc(var(--grid-diagonal) + 0.7px)) bottom right / var(--grid-cut) var(--grid-cut) no-repeat,
+        var(--surface);
+}
+[data-ui^="grid"] .card { color: var(--muted); font-size: 10.5px; font-weight: 500; transition: border-color 0.2s, box-shadow 0.2s; }
+[data-ui^="grid"] .card:hover { transform: none; border-color: var(--accent); box-shadow: inset 0 0 28px rgba(var(--grid-rgb), 0.12); }
+[data-ui^="grid"] .card strong { font-family: var(--grid-display); font-weight: 600; font-size: 24px; letter-spacing: 0.03em; color: var(--text); }
+[data-ui^="grid"] .card strong.neg, [data-ui^="grid"] .card .neg { color: var(--neg); }
+/* the card's label and big number are in Orbitron; everything else inside (notes, legends, rows) in the system face */
+[data-ui^="grid"] .card > :not(strong, h3, h4) { font-family: system-ui, sans-serif; letter-spacing: 0; }
+
+/* Home: the three groups in the film's colours (yours, the system's, the other side's would be orange, so
+   personal-use things get white light instead), and net worth glowing */
+[data-ui^="grid"] .home-liquid { --home-group-color: var(--grid-light); }
+[data-ui^="grid"] .home-investments { --home-group-color: var(--grid-second); }
+[data-ui^="grid"] .home-immobilized { --home-group-color: var(--grid-bright); }
+[data-ui^="grid"] .liq-cash_and_equivalents { --liq-color: var(--grid-light); }
+[data-ui^="grid"] .liq-restricted { --liq-color: #ffd54a; }
+[data-ui^="grid"] .liq-investments { --liq-color: var(--grid-second); }
+[data-ui^="grid"] .liq-personal_use { --liq-color: var(--grid-bright); }
+[data-ui^="grid"] .home-group { border-top: 1px solid var(--grid-line); }
+[data-ui^="grid"] .home-group strong { color: var(--home-group-color); text-shadow: 0 0 10px color-mix(in srgb, var(--home-group-color) 55%, transparent); }
+[data-ui^="grid"] .card.hero { position: relative; border-color: var(--accent); }
+[data-ui^="grid"] .card.hero strong {
+    font-size: 38px; font-weight: 700;
+    background: none; -webkit-background-clip: border-box; background-clip: border-box;
+    color: var(--accent); text-shadow: 0 0 18px rgba(var(--grid-rgb), 0.75), 0 0 2px #fff;
+}
+/* the moment: a line of light runs along the top and down the side of the net worth box, once */
+[data-ui^="grid"] section[data-page="home"]:not([hidden]) .card.hero::after {
+    content: ""; position: absolute; top: 0; left: 0; height: 2px; width: 100%;
+    background: linear-gradient(90deg, transparent, #fff 70%, var(--accent));
+    box-shadow: 0 0 12px var(--accent);
+    transform-origin: left; animation: grid-light-trace 1.1s cubic-bezier(.6, 0, .2, 1) 0.15s both;
+}
+@keyframes grid-light-trace {
+    0% { transform: scaleX(0); opacity: 1; }
+    70% { transform: scaleX(1); opacity: 1; }
+    100% { transform: scaleX(1); opacity: 0; }
+}
+
+[data-ui^="grid"] .bar { border-radius: 0; height: 6px; background: rgba(var(--grid-rgb), 0.08); gap: 3px; }
+[data-ui^="grid"] .bar span { border-radius: 0; box-shadow: 0 0 10px color-mix(in srgb, var(--home-group-color, var(--accent)) 70%, transparent); }
+[data-ui^="grid"] .dot { border-radius: 0; transform: rotate(45deg); width: 7px; height: 7px; }
+[data-ui^="grid"] :is(.goal-track, .goal-track span, .budget-track, .budget-track span, .st-budget-track, .st-budget-track span) { border-radius: 0; }
+
+/* ---- tables: rows separated by faint lines of light ---- */
+[data-ui^="grid"] table { background: var(--surface); border: 1px solid var(--grid-line); }
+:where([data-ui^="grid"]) th {
+    background: rgba(var(--grid-rgb), 0.07); color: var(--accent);
+    font-size: 10px; font-weight: 600; text-shadow: 0 0 6px rgba(var(--grid-rgb), 0.4);
+    border-bottom: 1px solid var(--grid-line);
+}
+:where([data-ui^="grid"]) td { border-top: 1px solid rgba(var(--grid-rgb), 0.1); }
+[data-ui^="grid"] tbody tr:hover { background: rgba(var(--grid-rgb), 0.07); }
+[data-ui^="grid"] .pos { text-shadow: 0 0 8px rgba(var(--grid-rgb), 0.45); }
+[data-ui^="grid"] .neg { text-shadow: 0 0 8px rgba(var(--grid-out-rgb), 0.4); }
+[data-ui^="grid"] .badge { border-radius: 0; font-family: var(--grid-display); font-size: 9.5px; letter-spacing: 0.12em; text-transform: uppercase; border: 1px solid currentColor; background: transparent; }
+
+/* ---- controls: lines of light ---- */
+[data-ui^="grid"] :is(input, select) {
+    background: rgba(1, 8, 12, 0.8); border: 1px solid var(--border); border-radius: 0;
+}
+[data-ui^="grid"] :is(input, select):focus { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent), 0 0 14px rgba(var(--grid-rgb), 0.35); }
+/* buttons: :where() keeps them as weak as the base rules, so buttons with their own look keep it */
+:where([data-ui^="grid"]) :is(button, a.button) {
+    border-radius: 0; clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);
+    font-family: var(--grid-display); font-size: 11.5px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase;
+    background: var(--accent); border: 1px solid var(--accent); color: var(--on-accent);
+    transition: background 0.15s, box-shadow 0.15s, color 0.15s;
+}
+:where([data-ui^="grid"]) :is(button, a.button):hover { transform: none; background: var(--grid-bright); box-shadow: 0 0 18px rgba(var(--grid-rgb), 0.7); }
+[data-ui^="grid"] button.ghost { background: rgba(var(--grid-rgb), 0.04); color: var(--accent); border-color: var(--grid-line); }
+[data-ui^="grid"] button.ghost:hover { background: rgba(var(--grid-rgb), 0.14); color: #fff; box-shadow: 0 0 12px rgba(var(--grid-rgb), 0.35); }
+[data-ui^="grid"] :is(main, dialog, #selected-chip) button.active {
+    background: rgba(var(--grid-rgb), 0.2); color: #fff; border-color: var(--accent);
+    box-shadow: inset 0 0 12px rgba(var(--grid-rgb), 0.4); text-shadow: 0 0 8px var(--accent);
+}
+:where([data-ui^="grid"]) td button { background: transparent; color: var(--neg); border-color: rgba(var(--grid-out-rgb), 0.55); }
+[data-ui^="grid"] button.danger { background: transparent; color: var(--neg); border-color: rgba(var(--grid-out-rgb), 0.6); }
+[data-ui^="grid"] kbd { background: rgba(0, 0, 0, 0.25); border-radius: 0; }
+[data-ui^="grid"] :is(button, a, input, select):focus-visible { outline: 1px solid #fff; outline-offset: 2px; }
+[data-ui^="grid"] a:not(.button):not(#sidebar a) { color: var(--accent); }
+
+/* ---- dialogs: a panel of light floating in the void ---- */
+[data-ui^="grid"] dialog { background: rgba(2, 10, 15, 0.96); border: 1px solid var(--accent); }
+[data-ui^="grid"] dialog::backdrop { backdrop-filter: blur(2px); }
+[data-ui^="grid"] dialog h3 {
+    font-family: var(--grid-display); font-size: 16px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.16em; color: var(--accent); text-shadow: 0 0 10px rgba(var(--grid-rgb), 0.6);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    [data-ui^="grid"] section[data-page="home"]:not([hidden]) .card.hero::after { animation: none; opacity: 0; }
+}
+
+/* ---- phones: the same, a bit tighter; the floor stays lower so it never sits under the numbers ---- */
+@media (max-width: 800px) {
+    [data-ui^="grid"] body::before { height: 34vh; }
+    [data-ui^="grid"] #phone-bar { background: rgba(1, 6, 10, 0.92); border-bottom: 1px solid var(--grid-line); box-shadow: 0 1px 14px rgba(var(--grid-rgb), 0.15); }
+    [data-ui^="grid"] #phone-bar button { background: transparent; border-color: transparent; color: var(--accent); clip-path: none; box-shadow: none; }
+    [data-ui^="grid"] #phone-bar #phone-page-title { font-family: var(--grid-display); font-size: 14px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--text); }
+    [data-ui^="grid"] #sidebar { background: #01060a; border-right: 1px solid var(--accent); }
+    [data-ui^="grid"] h2 { font-size: 20px; }
+    [data-ui^="grid"] .card.hero strong { font-size: 32px; }
+    [data-ui^="grid"] { --grid-cut: 10px; }
+}
+
+/* the wide column titles take room: dates stay on one line */
+@media (min-width: 801px) {
+    [data-ui^="grid"] .transactions-table td:first-child { white-space: nowrap; }
+}

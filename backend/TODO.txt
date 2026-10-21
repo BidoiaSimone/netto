@@ -1,1 +1,0 @@
-1 make a todo page on the application with a check list that adds lables 

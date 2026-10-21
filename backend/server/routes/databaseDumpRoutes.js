@@ -23,6 +23,8 @@ router.get("/database", function dumpWholeDatabase(request, response) {
     forecast_phases: db.prepare(`SELECT * FROM forecast_phases`).all(),
     forecast_events: db.prepare(`SELECT * FROM forecast_events`).all(),
     forecast_assumptions: db.prepare(`SELECT * FROM forecast_assumptions`).all(),
+    savings_goals: db.prepare(`SELECT * FROM savings_goals`).all(),
+    savings_goal_categories: db.prepare(`SELECT * FROM savings_goal_categories`).all(),
   };
 
   for (const [title, tableName] of [["Accounts", "accounts"], ["Categories", "categories"], ["Transactions", "transactions"], ["Investments", "investments"]]) {

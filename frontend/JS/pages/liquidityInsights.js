@@ -1,33 +1,27 @@
 // ---- Insights page, "Liquidity": your net worth split by how quickly it can become money you spend ----
-// Needs both the net worth (GET /net-worth, split by liquidity class on the server) and the transactions
-// (for the monthly expenses), which load separately: both loaders call renderLiquidityInsights(), and
+// Needs both the net worth (GET /net-worth, split by liquidity class on the server) and what a month usually
+// costs (GET /insights/monthly-expenses), which load separately: both call renderLiquidityInsights(), and
 // whichever finishes last draws the complete picture.
 
 import { elementById, createElement, fillTableBody } from "../core/domHelpers.js";
-import { euroFormatter, getTodayAsLocalDate } from "../core/formatting.js";
+import { euroFormatter } from "../core/formatting.js";
 import { appState, isAccountOpen } from "../core/appState.js";
+import { callApi } from "../core/apiClient.js";
 import { ACCOUNT_KINDS, LIQUIDITY_CLASSES } from "../core/accountKinds.js";
-
-const MONTHS_OF_EXPENSES_AVERAGED = 6; // the emergency fund compares with the average of up to this many past months
 
 const percentFormatter = new Intl.NumberFormat("it-IT", { style: "percent", maximumFractionDigits: 1 });
 const monthsFormatter = new Intl.NumberFormat("it-IT", { maximumFractionDigits: 1 });
 
-// Average monthly spending, from the complete months before this one (up to 6).
-// With no complete month yet, this month so far is used (and the card says so).
-function calculateAverageMonthlyExpenses() {
-  const expensesByMonth = new Map(); // "2026-10" -> total
-  for (const transaction of appState.transactions) {
-    if (transaction.type !== "expense") continue;
-    const month = transaction.date.slice(0, 7);
-    expensesByMonth.set(month, (expensesByMonth.get(month) ?? 0) + transaction.amount);
-  }
-  const currentMonth = getTodayAsLocalDate().slice(0, 7);
-  const completeMonths = [...expensesByMonth.keys()].filter((month) => month < currentMonth).sort().slice(-MONTHS_OF_EXPENSES_AVERAGED);
-  const monthsUsed = completeMonths.length ? completeMonths : expensesByMonth.has(currentMonth) ? [currentMonth] : [];
-  if (!monthsUsed.length) return null;
-  const total = monthsUsed.reduce((sum, month) => sum + expensesByMonth.get(month), 0);
-  return { average: total / monthsUsed.length, monthCount: monthsUsed.length, isThisMonthSoFar: !completeMonths.length };
+// What a month usually costs, worked out on the server like the Forecast's starting point (services/forecast.js):
+//   the average of the last complete months (up to 6), counting only months your records cover from the 1st,
+//   or, with no complete month yet, this month projected to its end (habitual categories at the daily pace of the
+//   days recorded, one-off ones as spent, recurring by their dates).
+// Always what was really spent: budgets don't count here.
+let monthlyExpenses = null; // { monthly_expenses, months_of_data, source }
+
+export async function loadMonthlyExpenses() {
+  monthlyExpenses = await callApi("/insights/monthly-expenses");
+  renderLiquidityInsights();
 }
 
 // The open accounts of one class with money in them: "BBVA, BCC, Cash"
@@ -54,16 +48,20 @@ function renderLiquidNetWorthCard(netWorth, totals) {
 }
 
 function renderEmergencyFundCard(totals) {
-  const monthlyExpenses = calculateAverageMonthlyExpenses();
-  if (!monthlyExpenses || monthlyExpenses.average <= 0) {
+  if (!monthlyExpenses) return; // not loaded yet
+  const perMonth = monthlyExpenses.monthly_expenses;
+  if (perMonth <= 0) {
     elementById("liq-months").textContent = "—";
     elementById("liq-months-detail").textContent = "needs some expenses to compare with";
     return;
   }
-  const monthsCovered = totals.cash_and_equivalents / monthlyExpenses.average;
-  const basedOn = monthlyExpenses.isThisMonthSoFar ? "this month so far" : `the average of the last ${monthlyExpenses.monthCount === 1 ? "month" : `${monthlyExpenses.monthCount} months`}`;
+  const monthsCovered = totals.cash_and_equivalents / perMonth;
+  const count = monthlyExpenses.months_of_data;
+  const basedOn = count === 0 ? "this month projected to its end: rough until a whole month is recorded"
+    : `the average of the last ${count === 1 ? "complete month" : `${count} complete months`}`;
   elementById("liq-months").textContent = `${monthsFormatter.format(monthsCovered)} months`;
-  elementById("liq-months-detail").textContent = `cash & equivalents ÷ ${euroFormatter.format(monthlyExpenses.average)} of expenses a month (${basedOn})`;
+  elementById("liq-months-detail").textContent = `cash & equivalents ÷ ${euroFormatter.format(perMonth)} of expenses a month (${basedOn})`;
+  elementById("liq-months-detail").title = monthlyExpenses.source;
 }
 
 // The bar and the table: each class with its amount and its share of the net worth

@@ -12,13 +12,5 @@
 .switch input:focus-visible + i { box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.3); }
 .switch kbd { background: var(--surface-2); color: var(--muted); margin-left: auto; }
 
-/* ---- privacy mode: everything with an amount is blurred except the transactions ----
-   No `transition: filter` here on purpose: in Safari an animated blur is cut off sharply at the
-   element's edges (and stays that way) instead of fading out into the page. */
-body.private #side-networth strong, body.private .cards strong, body.private .alloc, body.private #stale,
-body.private [data-page="assets"] > :not(.page-head),
-body.private [data-page="investments"] > :not(.page-head),
-body.private [data-page="insights"] > :not(.page-head),
-body.private [data-page="statements"] > :not(.page-head):not(.st-period-row) {
-    filter: blur(9px); user-select: none; pointer-events: none;
-}
+/* ---- privacy mode: amounts are written as ***** € by the formatters (JS/core/formatting.js), not blurred,
+   so the pages stay readable and usable in public (nothing to style here) ---- */

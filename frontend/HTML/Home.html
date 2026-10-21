@@ -2,7 +2,9 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <!-- viewport-fit=cover: the page may reach the rounded corners and the home bar; the bars keep clear of them with
+       env(safe-area-inset-*), which only gives real values with this -->
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>netto</title>
   <link rel="icon" href="../Images/logo/netto-app-icon.svg">
   <!-- standalone app (Safari "Add to Dock"): name, Dock icon and window color -->
@@ -10,8 +12,10 @@
   <link rel="apple-touch-icon" href="/Images/icons/apple-touch-icon.png">
   <meta name="apple-mobile-web-app-title" content="netto">
   <meta name="theme-color" content="#0a0f0c">
-  <!-- applies the saved theme and colour before anything is drawn (a light theme never flashes dark first) -->
+  <!-- applies the saved theme, colour and layout before anything is drawn (a light theme never flashes dark first) -->
   <script src="../JS/themeBeforeFirstPaint.js"></script>
+  <!-- full netto or netto light: sets <html data-edition>, before the stylesheets (backend/config/edition.js) -->
+  <script src="/edition.js"></script>
   <!-- styles, split by topic; the order matters (later files win), see the comment at the top of each -->
   <link rel="stylesheet" href="../CSS/01-theme-colors.css">
   <link rel="stylesheet" href="../CSS/02-page-layout.css">
@@ -34,41 +38,93 @@
   <link rel="stylesheet" href="../CSS/19-returns-and-taxes.css">
   <link rel="stylesheet" href="../CSS/20-forecast-page.css">
   <link rel="stylesheet" href="../CSS/21-home-net-worth-groups.css">
+  <link rel="stylesheet" href="../CSS/23-foreign-currency.css">
+  <link rel="stylesheet" href="../CSS/24-target-allocation.css">
+  <link rel="stylesheet" href="../CSS/25-trends-and-reminders.css">
+  <link rel="stylesheet" href="../CSS/26-money-flows-and-fire.css">
+  <link rel="stylesheet" href="../CSS/27-year-in-review.css">
+  <link rel="stylesheet" href="../CSS/28-month-breakdown.css">
+  <link rel="stylesheet" href="../CSS/29-goals.css">
+  <link rel="stylesheet" href="../CSS/30-offline.css">
+  <link rel="stylesheet" href="../CSS/31-phone.css">
+  <link rel="stylesheet" href="../CSS/32-quick-add.css">
+  <link rel="stylesheet" href="../CSS/33-month-wrap-up.css">
+  <link rel="stylesheet" href="../CSS/34-old-tracker-import.css">
+  <link rel="stylesheet" href="../CSS/35-light-edition.css">
+  <link rel="stylesheet" href="../CSS/37-ui-pocket.css">
 </head>
 <body>
+
+<!-- phones only (31-phone.css): the bar at the top, with the menu button, the page's name and Hide amounts.
+     The sidebar becomes a menu that slides in from the left: JS/app/phoneMenu.js -->
+<header id="phone-bar">
+  <button type="button" id="phone-menu-button" class="ghost" aria-label="Menu" aria-controls="sidebar" aria-expanded="false">
+    <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+  </button>
+  <button type="button" id="phone-page-title" title="Tap to reload">Home</button>
+  <!-- transactions kept on this device, waiting to be sent (JS/app/offlineStatus.js) -->
+  <button type="button" id="phone-pending-badge" class="ghost" hidden></button>
+  <!-- Pocket only (37-ui-pocket.css): Settings up here, out of the tab bar -->
+  <a href="#settings" id="phone-settings-button" class="phone-bar-link" aria-label="Settings">
+    <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M4 7h9M17 7h3M4 17h3M11 17h9M15 5v4M9 15v4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+  </a>
+  <button type="button" id="phone-privacy-button" class="ghost" aria-label="Hide amounts">
+    <svg class="eye-open" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="1.8"/></svg>
+    <svg class="eye-closed" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M4 4l16 16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+  </button>
+</header>
+<div id="phone-menu-backdrop" hidden></div>
+<!-- Pocket layout only (37-ui-pocket.css): the round + that adds a transaction, always in reach of the thumb -->
+<button type="button" id="pocket-add" class="pocket-add" data-open="tx-dialog" aria-label="Add transaction">
+  <svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>
+</button>
 
 <nav id="sidebar">
   <div class="brand">
     <img class="logo-dark" src="../Images/logo/netto-logo-dark-bg.svg" alt="netto" width="100">
     <img class="logo-light" src="../Images/logo/netto-logo-light-bg.svg" alt="netto" width="100">
+    <span class="edition-badge light-only">light</span>
   </div>
+  <!-- group names: only Pocket on a computer shows them (37-ui-pocket.css), and puts the links under them -->
+  <span class="nav-group nav-group-everyday" aria-hidden="true">Every day</span>
+  <span class="nav-group nav-group-planning full-only" aria-hidden="true">Planning</span>
+  <span class="nav-group nav-group-review desktop-only" aria-hidden="true">Looking back</span>
   <a href="#home">Home</a>
   <a href="#assets">Assets</a>
   <a href="#transactions">Transactions</a>
-  <a href="#recurring">Recurring</a>
-  <a href="#categories">Categories</a>
+  <a href="#recurring" class="desktop-only">Recurring</a>
+  <a href="#categories" class="desktop-only">Categories</a>
   <a href="#investments">Investments</a>
   <a href="#insights">Insights</a>
-  <a href="#statements">Statements</a>
-  <a href="#forecast">Forecast</a>
+  <a href="#goals" class="full-only desktop-only">Goals</a>
+  <a href="#statements" class="full-only desktop-only">Statements</a>
+  <a href="#forecast" class="full-only desktop-only">Forecast</a>
+  <a href="#year" class="full-only desktop-only">Year in review</a>
   <a href="#settings">Settings</a>
-  <a href="#nextUp">Next up</a>
+  <a href="#nextUp" class="full-only desktop-only">Next up</a>
   <div id="side-networth">Net worth<strong id="net-worth-value">…</strong>
-    <label class="switch"><input type="checkbox" id="privacy-toggle"><i></i>Hide amounts <kbd>P</kbd></label>
+    <label class="switch" title="Hide amounts (P)"><input type="checkbox" id="privacy-toggle"><i></i>Hide amounts <kbd>P</kbd></label>
   </div>
 </nav>
 
 <main>
   <p id="error" role="alert"></p>
+  <!-- filled by JS/app/offlineStatus.js -->
+  <div id="offline-bar" class="offline-bar" role="status" hidden></div>
 
   <section data-page="home">
     <div class="page-head">
       <h2>Home</h2>
       <button type="button" class="add-btn" data-open="tx-dialog">+ Add transaction <kbd>N</kbd></button>
     </div>
+    <!-- last month in a few lines, from the 1st until closed: JS/pages/monthWrapUp.js -->
+    <div id="month-wrap-up" class="full-only desktop-only"></div>
+    <!-- your most frequent transactions, one tap to add again: JS/pages/quickAdd.js -->
+    <div id="quick-add" class="quick-add" hidden></div>
+    <p id="today-spent" class="today-spent"></p>
     <!-- net worth, then its three groups from most to least liquid (JS/core/netWorthGroups.js) -->
     <div class="cards home-cards">
-      <div class="card hero">Net worth<strong id="h-net">…</strong><small class="home-card-note">everything you own, at today's values</small></div>
+      <div class="card hero">Net worth<strong id="h-net">…</strong></div>
       <div class="card home-group home-liquid">Liquid<strong id="h-liquid">…</strong><small id="h-liquid-note" class="home-card-note"></small></div>
       <div class="card home-group home-investments">Investments<strong id="h-inv">…</strong><small id="h-inv-note" class="home-card-note"></small></div>
       <div class="card home-group home-immobilized">Immobilized<strong id="h-immobilized">…</strong><small id="h-immobilized-note" class="home-card-note"></small></div>
@@ -77,9 +133,10 @@
       <div class="bar home-bar"><span id="bar-liquid" class="home-liquid"></span><span id="bar-inv" class="home-investments"></span><span id="bar-immobilized" class="home-immobilized"></span></div>
       <small><i class="dot home-liquid"></i>Liquid <i class="dot home-investments"></i>Investments <i class="dot home-immobilized"></i>Immobilized</small>
     </div>
-    <p id="stale"></p>
+    <!-- accounts due to be counted again: JS/pages/reconciliationReminders.js -->
+    <div id="home-reminders" class="home-reminders full-only desktop-only" hidden></div>
     <h3>Latest transactions</h3>
-    <table>
+    <table class="recent-table">
       <thead><tr><th>Date</th><th>Type</th><th>Amount</th><th>Description</th></tr></thead>
       <tbody id="recent-body"></tbody>
     </table>
@@ -103,7 +160,6 @@
         <button type="button" id="reconcile-apply" class="reconcile-apply">Reconcile</button>
       </div>
       <div class="assets-list">
-        <p class="hint">Click an account's name to edit or close it. Reconcile: type what you really have in an account. Leave a field empty to keep the recorded amount (e.g. money in the safe you can't check now).</p>
         <table>
           <thead><tr><th>Name</th><th>Kind</th><th>Recorded</th><th>Last verified</th><th>Counted</th><th>Difference</th></tr></thead>
           <tbody id="assets-body"></tbody>
@@ -121,6 +177,7 @@
     </div>
     <div class="filters">
       <input id="f-search" type="search" placeholder="Search description, category or tag">
+      <button type="button" id="f-more" class="ghost phone-only" aria-expanded="false">Filters</button>
       <select id="account-select"><option value="">All accounts</option></select>
       <select id="f-type">
         <option value="">All types</option><option value="income">Income</option><option value="expense">Expense</option>
@@ -141,19 +198,17 @@
       </div>
     </div>
     <p id="tx-summary"></p>
-    <table>
+    <table class="transactions-table">
       <thead><tr><th>Date</th><th>Type</th><th>From</th><th>To</th><th>Amount</th><th>Category</th><th>Description</th><th>Tags</th></tr></thead>
       <tbody id="transactions-body"></tbody>
     </table>
   </section>
 
-  <section data-page="recurring">
+  <section data-page="recurring" class="desktop-only">
     <div class="page-head">
       <h2>Recurring</h2>
       <button type="button" class="add-btn" data-open="recurring-dialog">+ Add recurring</button>
     </div>
-    <p class="hint">Rent, salary, subscriptions… On each date the transaction is added by itself, like one you typed in
-      (if the app was off that day, as soon as it's on again). Click one to change, pause or delete it.</p>
     <p id="recurring-summary" class="recurring-summary"></p>
     <table>
       <thead><tr><th>Description</th><th>Type</th><th>Amount</th><th>Account</th><th>Repeats</th><th>Next</th></tr></thead>
@@ -162,30 +217,27 @@
     <p id="recurring-empty" class="chart-empty" hidden>No recurring transactions yet: add your rent, salary or a subscription.</p>
   </section>
 
-  <section data-page="categories">
+  <section data-page="categories" class="desktop-only">
     <div class="page-head"><h2>Categories</h2></div>
-    <p class="hint">The lists you pick from when adding a transaction: an expense uses an expense category, an income an
-      income one. Click a name to rename it: every transaction follows. Renaming to a name that already exists in the
-      same list merges the two. "→ income" / "→ expense" moves a category to the other list.
-      <b>Budget</b>: type a monthly limit next to an expense category and press Enter (empty = no budget). It applies
-      from this month on; earlier months keep the budget they had. Progress is on Insights, budget vs actual on Statements.</p>
     <div class="categories-columns">
       <div class="categories-list">
         <h3>Expense categories</h3>
         <form class="cat-add category-add-form" data-kind="expense">
-          <input name="name" placeholder="New expense category (e.g. Coffee)" required>
+          <button type="button" class="category-look-button" aria-label="Icon and colour of the new category"></button>
+          <input name="name" placeholder="New expense category" required>
           <button>Add</button>
         </form>
         <table class="expense-categories-table">
-          <thead><tr><th>Name</th><th>Budget / month</th><th>Used by</th><th></th></tr></thead>
+          <thead><tr><th>Name</th><th class="full-only">Budget / month</th><th class="full-only" title="How the month projections on Insights treat it">Type</th><th>Used by</th><th></th></tr></thead>
           <tbody id="expense-categories-body"></tbody>
         </table>
-        <p id="budgets-total" class="budgets-total"></p>
+        <p id="budgets-total" class="budgets-total full-only"></p>
       </div>
       <div class="categories-list">
         <h3>Income categories</h3>
         <form class="cat-add category-add-form" data-kind="income">
-          <input name="name" placeholder="New income category (e.g. Salary)" required>
+          <button type="button" class="category-look-button" aria-label="Icon and colour of the new category"></button>
+          <input name="name" placeholder="New income category" required>
           <button>Add</button>
         </form>
         <table>
@@ -197,11 +249,8 @@
 
     <!-- filled by JS/pages/tagManagement.js -->
     <h3>Tags</h3>
-    <p class="hint">A tag groups transactions across categories: a trip ("Japan 2027": flights, hotels, food…), a
-      project, a wedding. Add tags in the transaction window. Dates are optional: when a transaction's date falls inside
-      them, the window suggests the tag. What each tag adds up to is on <a href="#insights">Insights</a>.</p>
     <form id="tag-add-form" class="cat-add tag-add-form">
-      <input name="name" placeholder="New tag (e.g. Japan 2027)" required maxlength="60">
+      <input name="name" placeholder="New tag" required maxlength="60">
       <label>From <input name="start_date" type="date"></label>
       <label>To <input name="end_date" type="date"></label>
       <button>Add</button>
@@ -218,6 +267,7 @@
       <h2>Investments</h2>
       <button type="button" class="add-btn" id="trade-new">+ Buy / Sell</button>
     </div>
+    <p id="inv-price-note" class="hint small price-note" hidden></p>
 
     <div class="cards">
       <div class="card hero">Portfolio value<strong id="inv-value">…</strong></div>
@@ -238,7 +288,7 @@
       <div class="chips ticker-chips" id="inv-tickers"></div>
       <p class="chart-sub" id="inv-period-summary"></p>
       <div id="inv-line" class="line-chart"></div>
-      <p class="hint small">Market price of one share, in euros. The dashed line is your average purchase price: above it you're in profit on that fund.</p>
+      <p class="hint small">Price of one share, in euros. Dashed line: your average purchase price.</p>
     </div>
 
     <div class="chart-grid">
@@ -256,6 +306,40 @@
       </div>
     </div>
 
+    <!-- filled by JS/pages/targetAllocation.js (migration 15) -->
+    <h3 class="full-only">Target allocation</h3>
+    <div class="panel allocation-panel full-only">
+      <div class="table-scroll">
+        <table class="allocation-table">
+          <thead><tr><th>Fund</th><th>Value</th><th>Now</th><th>Target</th><th>Drift</th><th>Drift (€)</th></tr></thead>
+          <tbody id="allocation-body"></tbody>
+          <tfoot><tr><td>Total</td><td id="allocation-total-value"></td><td></td><td id="allocation-target-total"></td><td></td><td></td></tr></tfoot>
+        </table>
+      </div>
+      <p id="allocation-empty" class="hint small" hidden>No investments or targets yet.</p>
+      <div class="allocation-actions">
+        <form id="allocation-add-form" class="allocation-add-form">
+          <input id="allocation-add-ticker" list="ticker-list" placeholder="Add a fund" autocomplete="off" aria-label="Add a fund to the targets">
+          <button class="ghost">Add</button>
+        </form>
+        <span id="allocation-target-status" class="hint small"></span>
+        <button type="button" id="allocation-undo" class="ghost" hidden>Undo</button>
+        <button type="button" id="allocation-save" hidden>Save targets</button>
+      </div>
+      <label class="allocation-threshold hint small">Highlight a drift from
+        <input type="number" id="allocation-threshold" step="0.5" inputmode="decimal" aria-label="Drift threshold in percentage points"> percentage points</label>
+      <p id="allocation-error" class="dialog-error" role="alert"></p>
+
+      <h4 class="allocation-calculator-title">Where to put new money</h4>
+      <label class="allocation-new-money">I'm investing
+        <input type="number" id="allocation-new-money" min="0" step="10" inputmode="decimal" placeholder="500"> €</label>
+      <div id="allocation-buys" class="allocation-buys"></div>
+      <button type="button" id="allocation-record" class="ghost" hidden>Record these trades…</button>
+      <p class="hint small">The money goes to the fund furthest below its target first, then to the next ones as they catch up,
+        so the portfolio moves towards your targets. It never sells: selling to rebalance would make your gains taxable (26%).
+        Shares are approximate (today's price, fees not included).</p>
+    </div>
+
     <h3>Holdings</h3>
     <table>
       <thead><tr><th>Ticker</th><th>Shares</th><th>Avg price</th><th>Invested</th><th>Value</th><th>Gain</th><th>Gain %</th><th></th></tr></thead>
@@ -263,7 +347,6 @@
     </table>
 
     <h3>Trades</h3>
-    <p class="hint small">Every buy and sell. Click one to change or delete it: the holding is recalculated and the money moves back.</p>
     <table>
       <thead><tr><th>Date</th><th>Type</th><th>Ticker</th><th>Shares</th><th>Price</th><th>Fees</th><th>Total</th><th>Account</th><th>Realized</th></tr></thead>
       <tbody id="trades-body"></tbody>
@@ -274,12 +357,18 @@
     <div class="page-head"><h2>Insights</h2></div>
     <!-- filled by JS/pages/monthProjection.js -->
     <h3 class="liq-title">This month</h3>
+    <!-- netto light: the month's totals so far, no projection (JS/pages/insightsPage.js) -->
+    <div class="cards liquidity-cards light-only">
+      <div class="card">Income<strong id="light-month-income">…</strong><small id="light-month-income-detail"></small></div>
+      <div class="card">Spent<strong id="light-month-spent">…</strong><small id="light-month-spent-detail"></small></div>
+      <div class="card">Saved<strong id="light-month-saved">…</strong><small id="light-month-saved-detail"></small></div>
+    </div>
+    <div class="full-only">
     <div class="cards liquidity-cards">
-      <div class="card">Spent so far<strong id="month-spent">…</strong><small id="month-spent-detail"></small></div>
-      <div class="card">Projected spending<strong id="month-projected-spending">…</strong><small id="month-projected-spending-detail"></small></div>
+      <div class="card">Spent so far<strong id="month-spent">…</strong><div id="month-spent-breakdown" class="month-breakdown"></div><small id="month-spent-detail"></small></div>
+      <div class="card">Projected spending<strong id="month-projected-spending">…</strong><div id="month-projected-spending-breakdown" class="month-breakdown"></div><small id="month-projected-spending-detail"></small></div>
       <div class="card">Projected savings<strong id="month-projected-savings">…</strong><small id="month-projected-savings-detail"></small></div>
     </div>
-    <p class="hint small month-hint">Recurring expenses come from the Recurring page (also the ones still due); the rest is projected at this month's daily pace.</p>
     <!-- filled by JS/pages/budgetProgress.js -->
     <div class="panel budget-panel">
       <div class="budget-panel-head"><h4>Budgets</h4><span id="budget-summary" class="hint small"></span></div>
@@ -289,7 +378,9 @@
       <p class="hint small">Solid = spent so far, lighter = where the month is heading (same projection as the cards above).
         Amber from 80% of the limit, red above it.</p>
     </div>
+    </div>
     <!-- filled by JS/pages/liquidityInsights.js -->
+    <div class="full-only desktop-only">
     <h3>Liquidity</h3>
     <div class="cards liquidity-cards">
       <div class="card">Invested vs liquid<strong id="liq-invested-share">…</strong><small id="liq-invested-detail"></small></div>
@@ -303,10 +394,11 @@
         <tbody id="liq-body"></tbody>
       </table>
       <p class="hint small">From most to least liquid. "Invested vs liquid" compares investments with cash &amp; cash equivalents only.
-        Personal-use assets (like a car) count in your net worth at the value you gave them, but only become money once sold.
-        An account's class comes from its kind: change it on the Assets page.</p>
+        Personal-use assets (like a car) count in your net worth at the value you gave them, but only become money once sold.</p>
       <p id="liq-note" class="hint small"></p>
     </div>
+    </div>
+    <div class="desktop-only">
     <div class="chart-head nw-head">
       <h3>Net worth over time</h3>
       <div class="chips" id="nw-range">
@@ -328,6 +420,25 @@
       <thead><tr><th>Month</th><th>Income</th><th>Expenses</th><th>Saved</th><th>Savings rate</th></tr></thead>
       <tbody id="months-body"></tbody>
     </table>
+    </div>
+
+    <!-- filled by JS/pages/categoryTrends.js -->
+    <div class="full-only desktop-only">
+    <div class="chart-head trends-head">
+      <h3>Category trends</h3>
+      <label class="trends-toggle hint small"><input type="checkbox" id="trends-exclude-trips"> Leave trips out of the usual</label>
+    </div>
+    <div class="panel trends-panel">
+      <p id="trends-summary" class="chart-sub"></p>
+      <div class="table-scroll" id="trends-table-box">
+        <table class="trends-table">
+          <thead><tr><th>Category</th><th>So far</th><th>Heading to</th><th>Last month</th><th>Usual</th><th>vs usual</th><th>Last 12 months</th></tr></thead>
+          <tbody id="trends-body"></tbody>
+        </table>
+      </div>
+      <p id="trends-empty" class="chart-empty" hidden>No expenses in the last 12 months yet.</p>
+    </div>
+    </div>
     <div class="insights-columns">
       <div>
         <h3>Spending by category (this month)</h3>
@@ -336,7 +447,7 @@
           <tbody id="cats-body"></tbody>
         </table>
       </div>
-      <div>
+      <div class="desktop-only">
         <h3>Income by category (this month)</h3>
         <table>
           <thead><tr><th>Category</th><th>Received</th></tr></thead>
@@ -347,7 +458,7 @@
 
     <!-- filled by JS/pages/tagInsights.js -->
     <h3>Tags</h3>
-    <p id="tag-report-empty" class="chart-empty" hidden>No tags yet: tag a few transactions (e.g. a trip) to see what they cost here.</p>
+    <p id="tag-report-empty" class="chart-empty" hidden>No tags yet: tag a few transactions to see what they cost here.</p>
     <table id="tag-report-table" class="tag-report-table">
       <thead><tr><th>Tag</th><th>Dates</th><th>Transactions</th><th>Spent</th><th>Received</th><th>Net</th></tr></thead>
       <tbody id="tag-report-body"></tbody>
@@ -361,13 +472,37 @@
       </div>
       <h4>Spending by category</h4>
       <div id="tag-category-chart" class="hbars"></div>
+      <!-- filled by JS/pages/tagInsights.js when the tag has transactions in other currencies (migration 14) -->
+      <div id="tag-currencies" hidden>
+        <h4>Paid in other currencies</h4>
+        <div class="table-scroll">
+          <table class="tag-currencies-table">
+            <thead><tr><th>Currency</th><th>Spent</th><th>In euros</th><th>Received</th><th>Exchange cost</th></tr></thead>
+            <tbody id="tag-currencies-body"></tbody>
+            <tfoot><tr><td>Total exchange cost</td><td></td><td></td><td></td><td id="tag-exchange-cost"></td></tr></tfoot>
+          </table>
+        </div>
+        <p id="tag-currencies-note" class="hint small"></p>
+      </div>
       <p class="hint small">Incomes and expenses with this tag, whatever their date. Cash withdrawn for it (a movement)
         counts as a transaction but isn't spending: the expenses you pay with that cash are.</p>
     </div>
   </section>
 
   <!-- filled by JS/pages/statementsPage.js -->
-  <section data-page="statements">
+  <section data-page="goals" class="full-only desktop-only">
+    <!-- filled by JS/pages/goalsPage.js -->
+    <div class="page-head">
+      <h2>Goals</h2>
+      <button type="button" class="add-btn" id="goal-add">+ New goal</button>
+    </div>
+    <p class="hint">Every month, <b>baseline − what you really spent</b> in the goal's categories goes to the goal; a month over the
+      baseline takes some back. Goals sharing a category fill in queue order.</p>
+    <div id="goals-list" class="goals-list"></div>
+    <p id="goals-empty" class="chart-empty" hidden>No goals yet: add the next thing you want to earn by cutting back.</p>
+  </section>
+
+  <section data-page="statements" class="full-only desktop-only">
     <div class="page-head"><h2>Statements</h2></div>
     <div class="st-period-row">
       <div class="chips" id="st-period">
@@ -438,6 +573,21 @@
     </div>
     <p class="st-net-line">Net savings <strong id="st-net-savings"></strong> · savings rate <strong id="st-savings-rate"></strong></p>
 
+    <!-- filled by JS/pages/moneyFlows.js -->
+    <h3>Money flows</h3>
+    <div class="panel st-flows-panel">
+      <p id="st-flows-summary" class="chart-sub"></p>
+      <div id="st-flows-box" class="sankey-scroll">
+        <div id="st-flows-chart" class="sankey-chart"></div>
+      </div>
+      <p id="st-flows-readout" class="sankey-readout" aria-live="polite"></p>
+      <p id="st-flows-empty" class="chart-empty" hidden>No income or expenses in this period.</p>
+      <p class="hint small">Left: where the period's money came from. Right: where it went. <b>Into investments</b> is the cash
+        your accounts paid for trades minus what sales paid back; <b>left as savings</b> (or <b>taken from savings</b>) is what's
+        left over (or missing) after that. Categories under 3% of their side are grouped into "Other". Moving money between
+        your own accounts and reconciliations aren't income or spending, so they aren't here.</p>
+    </div>
+
     <!-- filled by JS/pages/statementsPage.js (renderTaxEstimates) -->
     <h3>Estimated taxes for the period <span class="estimate-badge">estimate</span></h3>
     <table class="st-taxes-table">
@@ -468,7 +618,7 @@
   </section>
 
   <!-- filled by JS/pages/forecastPage.js (numbers and chart) and JS/pages/forecastPlanEditor.js (phases, events, assumptions) -->
-  <section data-page="forecast">
+  <section data-page="forecast" class="full-only desktop-only">
     <div class="page-head">
       <h2>Forecast</h2>
       <div class="chips" id="fc-money-view" aria-label="Show amounts in">
@@ -495,6 +645,24 @@
         <label class="fc-band-toggle"><input type="checkbox" id="fc-show-band" checked> <i class="swatch fc-band"></i><span id="fc-band-label">0% – 8% return</span></label></p>
       <p class="hint small">Left of "today": what you really had, month by month. Right: the forecast from your phases,
         events and assumptions below. The shaded band shows where net worth would be with a 0% or an 8% yearly return.</p>
+    </div>
+
+    <!-- filled by JS/pages/fireNumber.js -->
+    <h3>FIRE number</h3>
+    <div class="panel fc-fire-panel">
+      <div class="cards fc-fire-cards" id="fc-fire-cards"></div>
+      <label class="fc-slider"><span>Safe withdrawal rate <strong id="fc-fire-rate-value"></strong></span>
+        <input type="range" id="fc-fire-rate" min="0.02" max="0.06" step="0.0025"></label>
+      <div class="fc-slider"><span>Yearly expenses to cover</span>
+        <div class="chips" id="fc-fire-expenses">
+          <button type="button" class="ghost" data-value="last_phase" id="fc-fire-from-phase">Plan's last phase</button>
+          <button type="button" class="ghost" data-value="last_12_months" id="fc-fire-from-last-12">Last 12 months</button>
+        </div></div>
+      <p class="hint small">FIRE number = yearly expenses ÷ withdrawal rate: the money whose yearly withdrawals would cover them.
+        The US "4% rule" comes from US returns over 30-year retirements; for a European investor (lower past returns, more
+        fees and taxes, and an early retirement lasts longer than 30 years) 3–3,5% is the more careful choice.
+        Only cash and investments count towards it, not personal-use assets like the car. The dashed line on the chart is the
+        FIRE number (in future euros it rises with inflation).</p>
     </div>
 
     <h3>Assumptions</h3>
@@ -526,7 +694,7 @@
            a table row, so the fields join the (empty) form below the table with form="fc-phase-form" -->
       <tfoot class="fc-add-row">
         <tr>
-          <td><input form="fc-phase-form" name="name" placeholder="New phase (e.g. Working)" required aria-label="New phase name"></td>
+          <td><input form="fc-phase-form" name="name" placeholder="New phase" required aria-label="New phase name"></td>
           <td><input form="fc-phase-form" name="from_month" type="month" placeholder="YYYY-MM" pattern="\d{4}-\d{2}" required aria-label="Starts in (YYYY-MM)"></td>
           <td></td>
           <td><input form="fc-phase-form" name="monthly_income" type="number" step="0.01" min="0" placeholder="0,00" aria-label="Income per month"></td>
@@ -540,23 +708,34 @@
 
     <h3>One-off events</h3>
     <p class="hint">Money that comes or goes once: + for money in (selling the car), − for money out (a new laptop).
-      An event can sell a personal-use asset: its value then leaves the forecast that month, so it isn't counted twice.</p>
+      An event can sell a personal-use asset: its value then leaves the forecast that month, so it isn't counted twice.
+      Linked to Investments, the money only changes place: −5.000 moves cash into investments (where it grows), +5.000 sells investments back to cash.</p>
     <table class="fc-events-table">
-      <thead><tr><th>Name</th><th>Month</th><th>Amount</th><th>Sells</th><th></th></tr></thead>
+      <thead><tr><th>Name</th><th>Month</th><th>Amount</th><th>Linked to</th><th></th></tr></thead>
       <tbody id="fc-events-body"></tbody>
       <!-- same as the phases: the "add" row's fields join the form below with form="fc-event-form" -->
       <tfoot class="fc-add-row">
         <tr>
-          <td><input form="fc-event-form" name="name" placeholder="New event (e.g. Sell the Polo)" required aria-label="New event name"></td>
+          <td><input form="fc-event-form" name="name" placeholder="New event" required aria-label="New event name"></td>
           <td><input form="fc-event-form" name="month" type="month" placeholder="YYYY-MM" pattern="\d{4}-\d{2}" required aria-label="Month (YYYY-MM)"></td>
           <td><input form="fc-event-form" name="amount" type="number" step="0.01" placeholder="+ in, − out" required aria-label="Amount"></td>
-          <td><select form="fc-event-form" name="sells_account_id" id="fc-event-sells" aria-label="Sells"></select></td>
+          <td><select form="fc-event-form" name="linked_to" id="fc-event-link" aria-label="Linked to"></select></td>
           <td><button form="fc-event-form">Add event</button></td>
         </tr>
       </tfoot>
     </table>
     <form id="fc-event-form"></form>
     <p id="fc-error" class="dialog-error" role="alert"></p>
+  </section>
+
+  <!-- filled by JS/pages/yearInReviewPage.js -->
+  <section data-page="year" class="full-only desktop-only">
+    <div class="page-head">
+      <h2>Year in review</h2>
+      <div class="chips" id="yr-years" aria-label="Year"></div>
+    </div>
+    <p id="yr-period" class="hint yr-period"></p>
+    <div id="yr-cards" class="yr-cards"></div>
   </section>
 
   <section data-page="settings">
@@ -580,26 +759,91 @@
       </span>
     </p>
     <p class="setting-row">
+      <span>Layout</span>
+      <span id="layout-chips" class="chips option-chips layout-chips">
+        <button type="button" class="ghost" data-value="classic" title="The sidebar on the left">Classic</button>
+        <button type="button" class="ghost" data-value="pocket" title="Like a banking app: a grouped sidebar on the computer, a tab bar and a big + on the phone">Pocket</button>
+      </span>
+    </p>
+    <p class="setting-row phone-only-setting">
+      <span>On this phone</span>
+      <span id="phone-features-chips" class="chips option-chips">
+        <button type="button" class="ghost" data-value="core" title="Home, Transactions, Insights (this month), Assets, Investments and Settings: the rest is on the Mac">The essentials</button>
+        <button type="button" class="ghost" data-value="all" title="Every page, as on the Mac">Everything</button>
+      </span>
+    </p>
+    <p class="setting-row">
       <span>Hide amounts</span>
       <span id="privacy-chips" class="chips option-chips">
         <button type="button" class="ghost" data-value="always" title="Amounts are hidden after every reload">On every load</button>
         <button type="button" class="ghost" data-value="open" title="Reloads keep the current state; amounts are hidden when you open the app again">Only when opening the app</button>
       </span>
     </p>
+    <p class="setting-row">
+      <span>Hide again after</span>
+      <span id="privacy-auto-hide-chips" class="chips option-chips" title="Amounts shown and nothing tapped, clicked or scrolled for this long: they're hidden again (this device only)">
+        <button type="button" class="ghost" data-value="2">2 min</button>
+        <button type="button" class="ghost" data-value="10">10 min</button>
+        <button type="button" class="ghost" data-value="30">30 min</button>
+        <button type="button" class="ghost" data-value="0">Never</button>
+      </span>
+    </p>
+    <!-- the rest of Settings stays on the computer (the phone shows only the core: see 31-phone.css) -->
+    <div class="desktop-only">
+    <!-- stored with your data (and in the JSON backup): JS/settings/reminderSettings.js -->
+    <div class="full-only">
+    <h3>Reminders and highlights</h3>
+    <div class="settings-numbers">
+      <label class="setting-number"><span>Reconcile cash, current accounts and vouchers every</span>
+        <span><input type="number" id="setting-reconcile-everyday" step="1" inputmode="numeric"> days</span></label>
+      <label class="setting-number"><span>Reconcile savings accounts every</span>
+        <span><input type="number" id="setting-reconcile-savings" step="1" inputmode="numeric"> days</span></label>
+      <label class="setting-number"><span>A category is "running hot" above its usual by</span>
+        <span><input type="number" id="setting-trend-share" step="5" inputmode="numeric"> %</span></label>
+      <label class="setting-number"><span>…and by at least</span>
+        <span><input type="number" id="setting-trend-euros" step="5" inputmode="decimal"> €</span></label>
+    </div>
+    <p class="hint small">0 days = no reminders for those accounts.</p>
+    </div>
+    <!-- JS/pages/monthWrapUp.js -->
+    <h3>Month wrap-ups</h3>
+    <p class="setting-row wrap-up-picker">
+      <select id="wrap-up-month" aria-label="Month"></select>
+      <button type="button" id="wrap-up-show" class="ghost">Show</button>
+      <span id="wrap-up-none" class="hint small" hidden>The first one is ready on the 1st of next month.</span>
+    </p>
+    <div id="wrap-up-again"></div>
     <p><button id="refreshToggle">Auto Refresh: OFF</button></p>
     <p class="backup-buttons">
       <a class="button" href="/export" download>Download backup (JSON)</a>
       <button type="button" id="open-backups" class="ghost">Open backups folder</button>
     </p>
     <p id="backup-status" class="hint small"></p>
+    <label class="check-field backup-offsite"><input type="checkbox" id="backup-offsite-toggle">
+      <span>Also keep a copy of each daily backup in iCloud Drive (folder "<span class="full-only">netto backups</span><span class="light-only">netto light backups</span>"), so losing this Mac doesn't lose the data</span></label>
+    <p id="backup-offsite-status" class="hint small"></p>
     <p>
       <button id="importBtn">Restore backup (JSON)…</button>
       <input type="file" id="importFile" accept=".json,application/json" hidden>
     </p>
+    <!-- JS/settings/oldTrackerImport.js -->
+    <div class="full-only">
+    <h3>History from the old tracker</h3>
+    <!-- a label, not a button that clicks a hidden input: Safari can ignore a script's click on a hidden file input -->
+    <p>
+      <label class="file-button" for="old-tracker-file">Import from the old tracker (CSV)…</label>
+      <input type="file" id="old-tracker-file" class="visually-hidden-file" accept=".csv,text/csv,text/plain">
+    </p>
+    </div>
+    </div>
   </section>
 
-  <section data-page="nextUp">
+  <section data-page="nextUp" class="full-only desktop-only">
     <div class="page-head"><h2>Next up</h2></div>
+
+    <!-- accounts due to be reconciled: JS/pages/reconciliationReminders.js -->
+    <h3 id="nextup-reminders-title" hidden>Accounts to reconcile</h3>
+    <ul id="nextup-reminders" class="todo-list reminder-list"></ul>
 
     <div class="todo-add">
       <input type="text" id="todoInput" placeholder="New task...">
@@ -615,7 +859,10 @@
 </main>
 
 <dialog id="tx-dialog">
-  <!-- one dialog for adding and editing: openTransactionEditor() in JS/dialogs/transactionDialog.js switches it to edit mode -->
+  <!-- one dialog for adding and editing: openTransactionEditor() in JS/dialogs/transactionDialog.js switches it to edit mode.
+       The .form-group / .form-row / .form-label boxes only show in Pocket (37-ui-pocket.css), where the window is drawn
+       like an iOS sheet: grouped rows with their names on the left. Elsewhere they're display: contents, as if they
+       weren't there. The segmented type control (#tx-type-segments) is Pocket's too; it drives the select under it. -->
   <h3 id="tx-title">New transaction</h3>
   <form id="tx-form">
     <select name="type" id="tx-type">
@@ -623,12 +870,43 @@
       <option value="adjustment" disabled hidden>Reconciliation</option>
       <option value="investment" disabled hidden>Investment</option>
     </select>
-    <select name="from_account_id" id="tx-from"></select>
-    <select name="to_account_id" id="tx-to"></select>
-    <input name="amount" type="number" step="0.01" min="0.01" placeholder="Amount" required>
-    <input name="date" id="tx-date" type="date" title="Date (empty = today)">
-    <select name="category_id" id="tx-category"><option value="">— no category —</option></select>
-    <input name="description" placeholder="Description">
+    <div class="segmented" id="tx-type-segments" role="radiogroup" aria-label="Type"></div>
+    <div class="form-group tx-accounts">
+      <label class="form-row"><span class="form-label">From</span><select name="from_account_id" id="tx-from"></select></label>
+      <label class="form-row"><span class="form-label">To</span><select name="to_account_id" id="tx-to"></select></label>
+    </div>
+    <!-- paid in another currency (yen on a trip): JS/dialogs/foreignCurrencyFields.js. No name attributes: it sends them itself -->
+    <div class="fx-field" id="tx-fx-field">
+      <button type="button" id="tx-fx-toggle" class="ghost fx-toggle">+ Paid in another currency</button>
+      <div id="tx-fx-inputs" class="fx-inputs" hidden>
+        <select id="tx-fx-currency" aria-label="Currency"></select>
+        <input id="tx-fx-amount" type="number" step="any" min="0" inputmode="decimal" placeholder="Amount in the other currency" aria-label="Amount in the other currency">
+        <button type="button" id="tx-fx-remove" class="ghost fx-remove" title="Paid in euros after all" aria-label="Paid in euros after all">×</button>
+      </div>
+      <p id="tx-fx-info" class="hint small fx-info"></p>
+    </div>
+    <!-- text, not number: it takes "4,70" and sums like "4,70+1,20" (JS/core/amountExpression.js) -->
+    <div class="amount-field">
+      <input name="amount" type="text" inputmode="decimal" autocomplete="off" placeholder="0,00" required aria-label="Amount in euros">
+      <button type="button" class="ghost amount-operator" data-operator="-" title="Take something off (what your roommate gave back)" aria-label="Minus">−</button>
+      <button type="button" class="ghost amount-operator" data-operator="+" title="Add another amount (a receipt)" aria-label="Plus">+</button>
+      <small id="tx-amount-result" class="amount-result"></small>
+    </div>
+    <div class="form-group tx-when">
+      <label class="form-row"><span class="form-label">Date</span><input name="date" id="tx-date" type="date" title="Date (empty = today)"></label>
+      <div class="chips date-chips" id="tx-date-chips">
+        <button type="button" class="ghost" data-days="0">Today</button>
+        <button type="button" class="ghost" data-days="-1">Yesterday</button>
+        <button type="button" class="ghost" data-days="-2">2 days ago</button>
+      </div>
+    </div>
+    <div class="form-group tx-details">
+      <!-- Pocket only: the most used categories as round icons, one tap to pick (JS/dialogs/transactionCategoryChips.js) -->
+      <div class="category-chips" id="tx-category-chips" role="radiogroup" aria-label="Most used categories" hidden></div>
+      <label class="form-row"><span class="form-label">Category</span><select name="category_id" id="tx-category"><option value="">— no category —</option></select></label>
+      <label class="form-row"><input name="description" placeholder="Description" aria-label="Description" list="description-suggestions" autocomplete="off"></label>
+    </div>
+    <datalist id="description-suggestions"></datalist>
     <!-- tags: JS/dialogs/transactionTagPicker.js. No name attribute: the picker sends them itself -->
     <div class="tag-field" id="tx-tag-field">
       <span id="tx-tag-chips" class="tag-chips"></span>
@@ -642,7 +920,7 @@
     <p id="tx-error" class="dialog-error" role="alert"></p>
     <div class="actions">
       <button type="button" id="tx-delete" class="danger" hidden>Delete</button>
-      <a href="#categories" class="manage-link" data-close>Manage categories and tags</a>
+      <a href="#categories" class="manage-link desktop-only" data-close>Manage categories and tags</a>
       <button type="button" class="ghost" data-close>Cancel</button>
       <button id="tx-submit">Add transaction</button>
     </div>
@@ -666,7 +944,13 @@
     <label class="field"><span>Category</span>
       <select name="category_id" id="rec-category"><option value="">— no category —</option></select></label>
     <label class="field"><span>Description</span>
-      <input name="description" placeholder="e.g. Rent"></label>
+      <input name="description"></label>
+    <label class="field"><span>Billed in (optional)</span>
+      <select name="original_currency" id="rec-currency"></select></label>
+    <label class="field" id="rec-original-amount-field" hidden><span id="rec-original-amount-label">Amount in that currency</span>
+      <input name="original_amount" type="number" step="any" min="0" inputmode="decimal"></label>
+    <p id="rec-currency-note" class="hint small wide-note" hidden>The amount in € above is used for every transaction; when the bank's
+      charge differs, change that one transaction on the Transactions page.</p>
     <div class="field wide"><span>Repeat</span>
       <div class="repeat-row">
         <span class="repeat-every">Every</span>
@@ -702,12 +986,73 @@
   </form>
 </dialog>
 
+<!-- after a quick add: Undo / Change (JS/pages/quickAdd.js) -->
+<div id="quick-add-toast" class="quick-add-toast" role="status" hidden></div>
+
+<dialog id="goal-dialog">
+  <!-- adding a goal, or editing one: openGoalEditor() in JS/dialogs/goalDialog.js -->
+  <h3 id="goal-title">New goal</h3>
+  <form id="goal-form">
+    <label class="field wide"><span>What it's for</span>
+      <input name="name" maxlength="60" required></label>
+    <label class="field"><span>Target (€)</span>
+      <input name="target" type="number" step="0.01" min="0.01" placeholder="1300" required></label>
+    <label class="field"><span>Counts from</span>
+      <input name="start_date" type="date" required></label>
+    <div class="field wide"><span>Cut back on (and what each normally costs a month)</span>
+      <div id="goal-categories" class="goal-category-list"></div>
+      <small id="goal-baseline-note" class="hint"></small>
+    </div>
+    <p id="goal-preview" class="trade-total"></p>
+    <p id="goal-error" class="dialog-error" role="alert"></p>
+    <div class="actions">
+      <button type="button" id="goal-delete" class="danger" hidden>Delete</button>
+      <button type="button" class="ghost" data-close>Cancel</button>
+      <button id="goal-submit">Add goal</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="category-look-dialog" class="category-look-dialog">
+  <!-- a category's icon and colour, for one in the list or the one being added: JS/dialogs/categoryLookDialog.js -->
+  <h3>Icon and colour</h3>
+  <form id="category-look-form">
+    <div class="look-preview">
+      <span id="look-preview-icon"></span>
+      <strong id="look-preview-name"></strong>
+    </div>
+    <div class="look-section">
+      <span class="look-section-title">Colour</span>
+      <div id="look-colors" class="look-colors" role="radiogroup" aria-label="Colour"></div>
+    </div>
+    <div class="look-section">
+      <span class="look-section-title">Icon</span>
+      <div id="look-icons" class="look-icons" role="radiogroup" aria-label="Icon"></div>
+    </div>
+    <div class="actions">
+      <button type="button" class="ghost" data-close>Cancel</button>
+      <button id="look-save">Done</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="old-tracker-dialog" class="old-tracker-dialog">
+  <!-- the preview of the import from the old tracker: JS/settings/oldTrackerImport.js -->
+  <h3>Import from the old tracker</h3>
+  <div id="old-tracker-preview"></div>
+  <p id="old-tracker-error" class="dialog-error" role="alert"></p>
+  <div class="actions">
+    <button type="button" class="ghost" data-close>Cancel</button>
+    <button type="button" id="old-tracker-import">Import</button>
+  </div>
+</dialog>
+
 <dialog id="account-dialog">
   <!-- adding an account, or editing one: openAccountEditor() in JS/dialogs/accountDialog.js switches it to edit mode -->
   <h3 id="account-title">New account or asset</h3>
   <form id="account-form">
     <label class="field"><span>Name</span>
-      <input name="name" placeholder="e.g. Cash, Car" required></label>
+      <input name="name" required></label>
     <label class="field"><span>Kind</span>
       <!-- grouped by liquidity class; same kinds and labels as JS/core/accountKinds.js -->
       <select name="kind">
@@ -740,7 +1085,7 @@
     <label class="field"><span>Type</span>
       <select name="side" id="trade-side"><option value="buy">Buy</option><option value="sell">Sell</option></select></label>
     <label class="field"><span>Ticker</span>
-      <input name="ticker" id="trade-ticker" list="ticker-list" placeholder="e.g. VWCE.MI" required autocomplete="off"></label>
+      <input name="ticker" id="trade-ticker" list="ticker-list" required autocomplete="off"></label>
     <datalist id="ticker-list"></datalist>
     <label class="field"><span>Shares</span>
       <input name="shares" type="number" step="any" min="0" placeholder="0" required></label>
@@ -776,6 +1121,23 @@
     <div class="actions">
       <button type="button" class="ghost" data-close>Cancel</button>
       <button id="reconcile-confirm">Confirm</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="quick-reconcile-dialog">
+  <!-- counting one account from a reminder: JS/dialogs/quickReconcileDialog.js -->
+  <h3 id="quick-reconcile-title">Reconcile</h3>
+  <form id="quick-reconcile-form">
+    <p class="hint quick-reconcile-recorded">netto has <strong id="quick-reconcile-recorded"></strong>. Count what's really there.</p>
+    <label class="field wide"><span>What's really there (€)</span>
+      <input name="counted" type="number" step="0.01" inputmode="decimal" placeholder="0,00" required></label>
+    <p id="quick-reconcile-difference" class="trade-total"></p>
+    <p id="quick-reconcile-error" class="dialog-error" role="alert"></p>
+    <div class="actions">
+      <button type="button" class="ghost" data-close>Later</button>
+      <button type="button" id="quick-reconcile-same" class="ghost">It's right</button>
+      <button id="quick-reconcile-save">Save</button>
     </div>
   </form>
 </dialog>

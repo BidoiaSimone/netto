@@ -79,6 +79,7 @@ test-results/
 # ─── netto ────────────────────────────────────────────────
 # Database backups made by migrations and imports (also covered by *.db, kept explicit)
 backend/db/backups/
+backend/db/light-backups/
 # Downloaded "Download backup (JSON)" files: they hold ALL your financial data
 money-tracker-*.json
 # Stray SQLite test databases created without the .db extension

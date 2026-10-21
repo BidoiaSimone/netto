@@ -126,3 +126,47 @@ test("deleting a category leaves its transactions uncategorized, not deleted", a
     assert.equal(db.prepare(`SELECT category_id FROM transactions WHERE id = ?`).get(transactionId).category_id, null);
   }
 });
+
+// ---- icon and colour (migration 21) ----
+
+test("a new category can be given an icon and a colour, and the list returns them", async () => {
+  const created = await call("POST", "/categories", { name: "Pharmacy", kind: "expense", icon: "pills", color: "#D6408A" });
+  assert.equal(created.icon, "pills");
+  assert.equal(created.color, "#d6408a", "colours are kept in lowercase");
+  const listed = (await call("GET", "/categories")).find((category) => category.id === created.id);
+  assert.equal(listed.icon, "pills");
+  assert.equal(listed.color, "#d6408a");
+
+  // without them: both null, so the lists show the initial on a guessed colour
+  const plain = await call("POST", "/categories", { name: "Books", kind: "expense" });
+  assert.equal(plain.icon, null);
+  assert.equal(plain.color, null);
+});
+
+test("the look can be changed and cleared, and badly formed ones are refused", async () => {
+  const { groceries } = dataset.categoryIds;
+  const usesBefore = countTransactionsOfCategory(groceries);
+
+  const changed = await call("PUT", `/categories/${groceries}/look`, { icon: "cart", color: "#2f9e44" });
+  assert.deepEqual([changed.icon, changed.color], ["cart", "#2f9e44"]);
+  assert.equal(countTransactionsOfCategory(groceries), usesBefore, "nothing else changes");
+
+  for (const badLook of [{ icon: "Cart!", color: "#2f9e44" }, { icon: "cart", color: "green" }, { icon: "cart", color: "#2f9e4" }, { icon: 3 }]) {
+    assert.equal((await callApi("PUT", `/categories/${groceries}/look`, badLook)).status, 400, JSON.stringify(badLook));
+    assert.equal((await callApi("POST", "/categories", { name: "Bad look", kind: "expense", ...badLook })).status, 400, JSON.stringify(badLook));
+  }
+  const stored = db.prepare(`SELECT icon, color FROM categories WHERE id = ?`).get(groceries);
+  assert.deepEqual({ ...stored }, { icon: "cart", color: "#2f9e44" }, "a refused change leaves the old look");
+
+  const cleared = await call("PUT", `/categories/${groceries}/look`, { icon: null, color: "" });
+  assert.deepEqual([cleared.icon, cleared.color], [null, null]);
+  assert.equal((await callApi("PUT", "/categories/999999/look", { icon: "cart" })).status, 404);
+});
+
+test("renaming keeps the look", async () => {
+  const { transport } = dataset.categoryIds;
+  await call("PUT", `/categories/${transport}/look`, { icon: "bus", color: "#3478f6" });
+  await call("PUT", `/categories/${transport}`, { name: "Public transport" });
+  const stored = db.prepare(`SELECT name, icon, color FROM categories WHERE id = ?`).get(transport);
+  assert.deepEqual({ ...stored }, { name: "Public transport", icon: "bus", color: "#3478f6" });
+});

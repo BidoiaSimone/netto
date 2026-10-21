@@ -1,0 +1,50 @@
+/* Settings > Import from the old tracker: the preview dialog (JS/settings/oldTrackerImport.js).
+   One of the numbered files in this folder: Home.html loads them in number order, and later files
+   win over earlier ones when two rules are equally specific, so keep that order when adding files. */
+
+dialog.old-tracker-dialog { width: min(720px, calc(100vw - 32px)); }
+.old-tracker-dialog .actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 14px; }
+#old-tracker-preview { max-height: min(62vh, 640px); overflow-y: auto; padding-right: 4px; font-size: 14px; }
+.ot-text { margin: 0 0 10px; line-height: 1.45; }
+.ot-section { margin: 16px 0 0; }
+.ot-section h4 { margin: 0 0 6px; font-size: 13px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); }
+
+/* the corrections (folded) and the lines to look at */
+.ot-details { margin: 12px 0 0; }
+.ot-details summary { cursor: pointer; color: var(--text); }
+.ot-lines { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 6px; }
+.ot-line {
+    display: grid; grid-template-columns: 56px minmax(0, 1fr) auto; gap: 2px 10px; align-items: baseline;
+    padding: 6px 0; border-top: 1px solid var(--border); font-variant-numeric: tabular-nums;
+}
+label.ot-line { grid-template-columns: auto 56px minmax(0, 1fr) auto; cursor: pointer; }
+label.ot-line input { width: auto; margin: 0; align-self: center; }
+.ot-line-date { color: var(--muted); }
+.ot-line-what { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ot-line-amount { text-align: right; }
+.ot-line-change { grid-column: 2 / -1; color: var(--accent-2); font-size: 13px; }
+.ot-line-why { grid-column: 2 / -1; font-size: 12px; }
+label.ot-line .ot-line-change, label.ot-line .ot-line-why { grid-column: 3 / -1; }
+
+/* the "Old tracker" account, step by step */
+.ot-steps { list-style: none; margin: 6px 0 10px; padding: 0; display: grid; gap: 2px; font-variant-numeric: tabular-nums; }
+.ot-steps li { display: flex; justify-content: space-between; gap: 12px; }
+.ot-steps li:last-child { border-top: 1px solid var(--border); padding-top: 4px; font-weight: 600; }
+.ot-step-amount { white-space: nowrap; }
+.ot-list { margin: 0; padding-left: 18px; display: grid; gap: 6px; line-height: 1.45; }
+
+/* what each category cost */
+.ot-scroll { overflow-x: auto; }
+.ot-categories { margin: 4px 0; font-variant-numeric: tabular-nums; }
+.ot-categories th, .ot-categories td { padding: 7px 10px; }
+.ot-categories td:not(:first-child), .ot-categories th:not(:first-child) { text-align: right; white-space: nowrap; }
+.ot-categories tr.ot-income td:first-child::after { content: " (income)"; color: var(--muted); font-size: 12px; }
+
+/* Settings: the label that opens the file picker looks like the other ghost buttons; the input itself is
+   invisible but still there (not display: none, which some browsers won't open a picker for) */
+.file-button {
+    display: inline-flex; align-items: center; cursor: pointer; padding: 10px 14px; border-radius: 10px; font-size: 14px;
+    border: 1px solid var(--border); background: transparent; color: var(--muted); font-weight: 500; transition: background 0.2s, color 0.2s;
+}
+.file-button:hover { background: var(--surface-2); color: var(--text); }
+.visually-hidden-file { position: absolute; width: 1px; height: 1px; opacity: 0; overflow: hidden; pointer-events: none; }

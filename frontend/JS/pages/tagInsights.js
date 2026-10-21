@@ -8,6 +8,7 @@ import { elementById, createElement, fillTableBody, makeTableRowsOpenItems } fro
 import { euroFormatter, formatSignedEuros, formatShortDate, formatCount } from "../core/formatting.js";
 import { appState } from "../core/appState.js";
 import { drawHorizontalBarChart } from "../charts/horizontalBarChart.js";
+import { formatForeignAmount } from "../core/currencies.js";
 
 const SAVED_TAG_KEY = "insightsSelectedTagId";
 const percentFormatter = new Intl.NumberFormat("it-IT", { style: "percent", maximumFractionDigits: 0 });
@@ -60,12 +61,35 @@ function renderTagDetail(tag) {
   elementById("tag-received-detail").textContent = incomeNames || "nothing received";
   elementById("tag-net-detail").textContent = tag.net < 0 ? "what it cost you overall" : "more came in than went out";
 
+  renderTagCurrencies(tag);
   drawHorizontalBarChart("tag-category-chart", tag.expenses_by_category.map((row) => ({
     name: row.name,
     value: row.total,
     label: `${euroFormatter.format(row.total)} · ${percentFormatter.format(tag.spent ? row.total / tag.spent : 0)}`,
     colorClass: "neg",
   })));
+}
+
+// Paid in other currencies (migration 14): per currency, what was spent in it, what that came to in euros, and
+// what the exchange rates cost against the market. Hidden when the whole trip was in euros.
+function renderTagCurrencies(tag) {
+  const currencyRows = tag.by_currency ?? [];
+  elementById("tag-currencies").hidden = currencyRows.length === 0;
+  if (!currencyRows.length) return;
+  const formatOriginal = (amount, currency) => (amount ? formatForeignAmount(amount, currency) : "—");
+  fillTableBody("tag-currencies-body", currencyRows, (row) => [
+    row.currency,
+    formatOriginal(row.spent_original, row.currency),
+    row.spent ? euroFormatter.format(row.spent) : "—",
+    row.received_original ? `${formatOriginal(row.received_original, row.currency)} (${euroFormatter.format(row.received)})` : "—",
+    createElement("span", row.exchange_cost > 0 ? "neg" : row.exchange_cost < 0 ? "pos" : "", euroFormatter.format(row.exchange_cost)),
+  ]);
+  elementById("tag-exchange-cost").textContent = euroFormatter.format(tag.exchange_cost);
+  const ratelessCount = currencyRows.reduce((sum, row) => sum + row.rateless_count, 0);
+  elementById("tag-currencies-note").textContent =
+    "Exchange cost: what the rates your card and the ATMs used cost you compared with the market rate of each day, "
+    + "cash withdrawals included. It's part of the euros you paid, not an extra on top of them."
+    + (ratelessCount ? ` ${formatCount(ratelessCount, "transaction")} still without a market rate (they're added once netto can reach Yahoo) aren't counted yet.` : "");
 }
 
 function selectTag(tagId) {

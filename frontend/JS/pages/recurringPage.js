@@ -2,13 +2,14 @@
 // On each date the server adds a normal transaction by itself (services/recurringTransactionPoster.js).
 
 import { elementById, createElement, fillTableBody, createTypeBadge, makeTableRowsOpenItems } from "../core/domHelpers.js";
-import { euroFormatter, formatShortDate } from "../core/formatting.js";
+// single transactions stay readable with Hide amounts on (see core/formatting.js)
+import { visibleEuroFormatter as euroFormatter, formatShortDate } from "../core/formatting.js";
 import { callApi } from "../core/apiClient.js";
 import { appState } from "../core/appState.js";
 import { describeRepeat, calculateMonthlyEquivalent } from "../core/recurrenceDates.js";
-import { createSignedAmountCell } from "../core/transactionDisplay.js";
+import { createSignedAmountCell, createTransactionIcon } from "../core/transactionDisplay.js";
 import { openRecurringTransactionEditor } from "../dialogs/recurringTransactionDialog.js";
-import { renderMonthProjection } from "./monthProjection.js";
+import { renderMonthProjection, sumRecurringStillDueThisMonth } from "./monthProjection.js";
 
 export async function loadRecurringTransactions() {
   appState.recurringTransactions = await callApi("/recurring-transactions");
@@ -37,11 +38,20 @@ function createNextDateCell(rule) {
   return formatShortDate(rule.next_date, true);
 }
 
-function renderRecurringPage() {
+// The name cell: the category's icon (Pocket only, 09-categories-page.css), then the description or the category
+function createRuleNameCell(rule) {
+  const label = createElement("span", "category-label");
+  const icon = createTransactionIcon(rule);
+  icon.className = "category-icon small" + (icon.classList.contains("uncategorized") ? " uncategorized" : "");
+  label.append(icon, createElement("span", "category-label-text", rule.description || rule.category || "—"));
+  return label;
+}
+
+export function renderRecurringPage() {
   const rules = sortBySoonestDate(appState.recurringTransactions);
   elementById("recurring-empty").hidden = rules.length > 0;
   fillTableBody("recurring-body", rules, (rule) => [
-    rule.description || rule.category || "—",
+    createRuleNameCell(rule),
     createTypeBadge(rule.type),
     createSignedAmountCell(rule),
     describeAccounts(rule),
@@ -53,7 +63,11 @@ function renderRecurringPage() {
   renderMonthlySummary();
 }
 
-// What the active rules mean per month, on average (a yearly 120 € counts as 10 € a month)
+const formatSignedEuros = (amount) => `${amount >= 0 ? "+" : "−"}${euroFormatter.format(Math.abs(amount))}`;
+
+// Two lines:
+//   what the active rules mean per month, on average (a yearly 120 € counts as 10 € a month)
+//   what is still to come before the end of this month (the same numbers Insights > This month uses)
 function renderMonthlySummary() {
   const activeRules = appState.recurringTransactions.filter(isActive);
   const monthlyTotalOfType = (type) => activeRules.filter((rule) => rule.type === type).reduce((sum, rule) => sum + calculateMonthlyEquivalent(rule), 0);
@@ -63,8 +77,17 @@ function renderMonthlySummary() {
     return;
   }
   const moneyIn = monthlyTotalOfType("income"), moneyOut = monthlyTotalOfType("expense");
-  summary.replaceChildren("Per month on average: ",
+  const stillDue = sumRecurringStillDueThisMonth();
+  const monthName = new Date().toLocaleDateString("en-GB", { month: "long" });
+  summary.replaceChildren(
+    "Per month on average: ",
     createElement("span", "pos", `+${euroFormatter.format(moneyIn)} in`), " · ",
     createElement("span", "neg", `−${euroFormatter.format(moneyOut)} out`), " · ",
-    createElement("strong", "", `${moneyIn - moneyOut >= 0 ? "+" : "−"}${euroFormatter.format(Math.abs(moneyIn - moneyOut))} left`));
+    createElement("strong", "", `${formatSignedEuros(moneyIn - moneyOut)} net`),
+    createElement("br"),
+    `Still due in ${monthName}: `,
+    createElement("span", "pos", `+${euroFormatter.format(stillDue.income)} in`), " · ",
+    createElement("span", "neg", `−${euroFormatter.format(stillDue.expense)} out`), " · ",
+    createElement("strong", "", `${formatSignedEuros(stillDue.income - stillDue.expense)} net`),
+  );
 }

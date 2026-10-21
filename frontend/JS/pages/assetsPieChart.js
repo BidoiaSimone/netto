@@ -7,7 +7,7 @@ import { euroFormatter, animateEuroAmount } from "../core/formatting.js";
 import { appState, isAccountOpen } from "../core/appState.js";
 import { createSvgElement } from "../charts/svgHelpers.js";
 
-const SLICE_COLORS = ["#3987e5", "#d95926", "#199e70", "#c98500", "#d55181", "#008300", "#9085e9", "#e66767"];
+export const SLICE_COLORS = ["#3987e5", "#d95926", "#199e70", "#c98500", "#d55181", "#008300", "#9085e9", "#e66767"];
 const OTHER_SLICE_COLOR = "#5b6b62";
 const PIE_CENTER = 100, PIE_RADIUS = 96; // in a 200×200 viewBox
 

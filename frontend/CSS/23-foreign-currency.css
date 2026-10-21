@@ -1,0 +1,37 @@
+/* Transactions paid in another currency: the dialog's currency fields, the foreign amount under the euros in
+   the lists, and the currencies table of Insights > Tags. (22 is the "just for fun" background, not loaded.)
+   One of the numbered files in this folder: Home.html loads them in number order, and later files
+   win over earlier ones when two rules are equally specific, so keep that order when adding files. */
+
+/* ---- transaction dialog ---- */
+/* a full row of its own, so the euro amount and the date stay together on the row after it */
+dialog form .fx-field { flex: 1 1 100%; display: flex; flex-direction: column; gap: 6px; }
+/* off: a small text button, not a big green one */
+dialog form button.fx-toggle {
+    align-self: flex-start; padding: 4px 10px; font-size: 13px; border-style: dashed;
+}
+/* currency | amount | × on one row, at every width */
+dialog form .fx-inputs { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto; gap: 10px; }
+dialog form .fx-inputs select, dialog form .fx-inputs input { width: 100%; min-width: 0; }
+dialog form .fx-inputs .fx-remove { padding: 0 14px; font-size: 18px; line-height: 1; }
+.fx-info { margin: 0; font-variant-numeric: tabular-nums; }
+.fx-info:empty { display: none; }
+
+/* recurring dialog: the note under "Billed in" takes the whole row */
+dialog form .wide-note { flex-basis: 100%; margin: 0; }
+
+/* ---- the foreign amount under the euros (Home, Transactions, Recurring) ---- */
+.amount-with-original { display: inline-flex; flex-direction: column; align-items: flex-start; line-height: 1.25; }
+.original-amount { color: var(--muted); font-size: 12px; font-weight: 500; font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+/* ---- Insights > Tags: paid in other currencies ---- */
+.table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; margin-bottom: 14px; }
+.table-scroll > table { margin-bottom: 0; }
+.tag-currencies-table td:nth-child(n+2), .tag-currencies-table th:nth-child(n+2) { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.tag-currencies-table tfoot td { font-weight: 600; border-top: 1px solid var(--border); }
+
+/* ---- phones: inputs at 16px, or iOS zooms the page in when one is tapped ---- */
+@media (max-width: 700px) {
+    dialog form .fx-inputs select, dialog form .fx-inputs input { font-size: 16px; }
+}
+#tag-currencies h4 { margin-top: 20px; }

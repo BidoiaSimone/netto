@@ -8,9 +8,13 @@
  *
  * Default plan: with no phases saved, one phase "Now" is suggested from your real numbers:
  *   income and expenses = the average of the last complete months (up to 6). A month only counts if your
- *   records cover all of it. With no complete month yet, this month so far is used: expenses at this month's
- *   daily pace (like the Insights projection), income as received. If budgets exist, expenses = the budgets
- *   + the average spending in categories without a budget.
+ *   records cover all of it. With no complete month yet, this month so far is projected to its end like the
+ *   Insights projection: recurring expenses by their dates (also the ones still due), one-off categories
+ *   as spent, habitual ones at this month's daily pace; income as received. If budgets exist, expenses = the
+ *   budgets + the spending in categories without a budget.
+ *
+ * FIRE number (services/fireNumber.js): yearly expenses ÷ the withdrawal rate, from the plan's last phase or the
+ * last 12 months' real expenses (both settings), and the month the forecast's cash + investments reach it.
  */
 
 const db = require("../../db/databaseConnection.js");
@@ -18,9 +22,11 @@ const { ACCOUNT_KINDS } = require("../../config/accountKinds.js");
 const { findFirstRecordedDate } = require("../../db/firstRecordedDate.js");
 const { calculateInvestmentsValuePerDay } = require("./netWorthHistory.js");
 const { addMonthsKeepingDay } = require("./recurrenceSchedule.js");
-const { findLimitsInEffect } = require("./budgetCalculator.js");
+const { findLimitsInEffect, sumRecurringExpensesStillDue } = require("./budgetCalculator.js");
 const { simulateForecast, findPhaseOfMonth, calculateRunwayInMonths } = require("./forecastSimulation.js");
 const { convertCentsToEuros } = require("../utils/moneyConversion.js");
+const { calculateFireNumber, findWhenFireNumberIsReached } = require("./fireNumber.js");
+const { readAllSettings } = require("./appSettings.js");
 
 const MONTHS_OF_HISTORY_SHOWN = 12;
 const MONTHS_OF_DATA_FOR_AVERAGES = 6;
@@ -44,7 +50,8 @@ const monthName = (yearMonth) => new Date(yearMonth + "-01T00:00:00Z").toLocaleD
 const loadPhases = () => db.prepare(`SELECT * FROM forecast_phases ORDER BY from_month`).all()
   .map((row) => ({ id: row.id, name: row.name, fromMonth: row.from_month, monthlyIncome: row.monthly_income, monthlyExpenses: row.monthly_expenses }));
 const loadEvents = () => db.prepare(`SELECT * FROM forecast_events ORDER BY month, id`).all()
-  .map((row) => ({ id: row.id, name: row.name, month: row.month, amount: row.amount, sellsAccountId: row.sells_account_id }));
+  .map((row) => ({ id: row.id, name: row.name, month: row.month, amount: row.amount, sellsAccountId: row.sells_account_id,
+    transfersWithInvestments: row.transfers_with_investments === 1 }));
 function loadAssumptions() {
   const row = db.prepare(`SELECT * FROM forecast_assumptions WHERE id = 1`).get();
   return { yearlyReturn: row.yearly_return, yearlyInflation: row.yearly_inflation, savingsGoTo: row.savings_go_to, yearlyDepreciation: row.yearly_depreciation };
@@ -61,9 +68,35 @@ function sumOfUnbudgetedExpenses(firstDay, lastDay, budgetedCategoryIds) {
   return rows.filter((row) => !budgetedCategoryIds.has(row.category_id)).reduce((sum, row) => sum + row.total, 0);
 }
 
+// This month's expenses projected to the month's end, the same way as Insights > This month (cents):
+//   recurring       already added + still due before the month ends
+//   one-off     (spending_pace 'occasional', migration 16) as spent: one purchase says nothing about the rest
+//   habitual    everything else, at the daily pace of the days observed
+// Categories in `leftOutCategoryIds` (the budgeted ones, counted by their budget instead) are skipped.
+function projectThisMonthExpenses({ firstDay, today, daysObserved, daysInMonth, leftOutCategoryIds }) {
+  const rows = db.prepare(`
+    SELECT t.category_id, t.recurring_transaction_id IS NOT NULL AS is_recurring, c.spending_pace, SUM(t.amount) AS total
+    FROM transactions t LEFT JOIN categories c ON c.id = t.category_id
+    WHERE t.type = 'expense' AND t.date BETWEEN ? AND ?
+    GROUP BY t.category_id, is_recurring
+  `).all(firstDay, today);
+  let projected = 0;
+  for (const row of rows) {
+    if (leftOutCategoryIds.has(row.category_id)) continue;
+    const countedAsIs = row.is_recurring || row.spending_pace === "occasional";
+    projected += countedAsIs ? row.total : (row.total / daysObserved) * daysInMonth;
+  }
+  const monthEnd = `${today.slice(0, 7)}-${padTwoDigits(daysInMonth)}`;
+  for (const [categoryId, stillDue] of sumRecurringExpensesStillDue(today, monthEnd)) {
+    if (!leftOutCategoryIds.has(categoryId)) projected += stillDue;
+  }
+  return projected;
+}
+
 // { monthlyIncome, monthlyExpenses (cents), monthsOfData, source (a sentence for the page), usesBudgets }
 // today: YYYY-MM-DD (a parameter so the tests can choose it)
-function calculateRealAverages(today) {
+// useBudgets: false = always what was really spent, budgets or not (the emergency fund on Insights uses that)
+function calculateRealAverages(today, { useBudgets = true } = {}) {
   const currentMonth = today.slice(0, 7);
   const firstRecordedDay = findFirstRecordedDate(db);
   const completeMonths = [];
@@ -71,7 +104,7 @@ function calculateRealAverages(today) {
     completeMonths.push(month);
   }
 
-  const limits = findLimitsInEffect(currentMonth);
+  const limits = useBudgets ? findLimitsInEffect(currentMonth) : new Map();
   const usesBudgets = limits.size > 0;
   const totalOfBudgets = [...limits.values()].reduce((sum, limit) => sum + limit, 0);
   const budgetedCategoryIds = new Set(limits.keys());
@@ -97,17 +130,48 @@ function calculateRealAverages(today) {
   const firstDayObserved = firstRecordedDay > `${currentMonth}-01` ? firstRecordedDay : `${currentMonth}-01`;
   const daysObserved = Math.max(1, Number(today.slice(8)) - Number(firstDayObserved.slice(8)) + 1);
   const daysInMonth = countDaysInMonth(currentMonth);
-  const expensesAtPace = (spent) => (spent / daysObserved) * daysInMonth;
-  const monthlyExpenses = usesBudgets
-    ? totalOfBudgets + expensesAtPace(sumOfUnbudgetedExpenses(firstDayObserved, today, budgetedCategoryIds))
-    : expensesAtPace(sumOfType("expense", firstDayObserved, today));
+  const monthlyExpenses = (usesBudgets ? totalOfBudgets : 0)
+    + projectThisMonthExpenses({ firstDay: firstDayObserved, today, daysObserved, daysInMonth, leftOutCategoryIds: budgetedCategoryIds });
   return {
     monthlyIncome: sumOfType("income", firstDayObserved, today),
     monthlyExpenses: Math.round(monthlyExpenses),
     monthsOfData: 0,
     usesBudgets,
     source: `No complete month of records yet: ${monthName(currentMonth)} so far (${daysObserved} day${daysObserved === 1 ? "" : "s"}), `
-      + `expenses at its daily pace, income as received. A rough start: adjust it.${budgetsText}`,
+      + `expenses projected to the month's end like on Insights (habitual categories at the daily pace, one-off ones as spent, `
+      + `recurring by their dates), income as received. A rough start: adjust it.${budgetsText}`,
+  };
+}
+
+// The real expenses of the last 12 complete months, per year (cents), and how many months that is: fewer when your
+// records are younger (then scaled to a year). Null with no complete month yet.
+function calculateExpensesOfLastTwelveMonths(today) {
+  const firstRecordedDay = findFirstRecordedDate(db);
+  const completeMonths = [];
+  for (let month = previousMonth(today.slice(0, 7)); completeMonths.length < 12 && `${month}-01` >= firstRecordedDay; month = previousMonth(month)) completeMonths.push(month);
+  if (!completeMonths.length) return null;
+  const total = sumOfType("expense", `${completeMonths.at(-1)}-01`, `${completeMonths[0]}-${countDaysInMonth(completeMonths[0])}`);
+  return { yearlyExpenses: Math.round((total / completeMonths.length) * 12), monthsOfData: completeMonths.length };
+}
+
+// The FIRE block of the answer (euros). lastPhase: the plan's last phase (or the suggested one).
+function buildFireNumber({ today, lastPhase, start, points, settings }) {
+  const lastTwelveMonths = calculateExpensesOfLastTwelveMonths(today);
+  const useLastTwelveMonths = settings.fire_expenses_from_last_12_months === 1 && lastTwelveMonths !== null;
+  const yearlyExpenses = useLastTwelveMonths ? lastTwelveMonths.yearlyExpenses : lastPhase.monthlyExpenses * 12;
+  const fireNumber = calculateFireNumber(yearlyExpenses, settings.fire_withdrawal_rate);
+  const countedNow = start.cash + start.investments;
+  const reachedAt = findWhenFireNumberIsReached(points, fireNumber);
+  return {
+    withdrawal_rate: settings.fire_withdrawal_rate,
+    expenses_from: useLastTwelveMonths ? "last_12_months" : "last_phase",
+    yearly_expenses: convertCentsToEuros(yearlyExpenses),
+    fire_number: convertCentsToEuros(fireNumber),         // today's euros; null without expenses
+    counted_now: convertCentsToEuros(countedNow),         // cash + investments, not the car
+    share_now: fireNumber ? countedNow / fireNumber : null,
+    reached_on: reachedAt?.date ?? null,                  // null = not within the forecast
+    last_phase: { name: lastPhase.name, yearly_expenses: convertCentsToEuros(lastPhase.monthlyExpenses * 12) },
+    last_12_months: lastTwelveMonths && { yearly_expenses: convertCentsToEuros(lastTwelveMonths.yearlyExpenses), months_of_data: lastTwelveMonths.monthsOfData },
   };
 }
 
@@ -179,9 +243,13 @@ async function buildForecast(today, { years = DEFAULT_FORECAST_YEARS } = {}) {
   const liquidNow = start.cash + start.investments;
   const runwayInMonths = calculateRunwayInMonths(liquidNow, phaseNow);
 
+  const lastPhase = [...phases].sort((first, second) => (first.fromMonth < second.fromMonth ? -1 : 1)).at(-1);
+  const fire = buildFireNumber({ today, lastPhase, start, points: result.points, settings: readAllSettings() });
+
   return {
     today,
     years,
+    fire,
     assumptions: { yearly_return: assumptions.yearlyReturn, yearly_inflation: assumptions.yearlyInflation, savings_go_to: assumptions.savingsGoTo, yearly_depreciation: assumptions.yearlyDepreciation },
     // each phase lasts until the next one starts; the first one also covers today
     phases: storedPhases.map((phase, index) => ({
@@ -193,6 +261,7 @@ async function buildForecast(today, { years = DEFAULT_FORECAST_YEARS } = {}) {
     averages: { monthly_income: toEuros(averages.monthlyIncome), monthly_expenses: toEuros(averages.monthlyExpenses), months_of_data: averages.monthsOfData, uses_budgets: averages.usesBudgets, source: averages.source },
     events: events.map((event) => ({
       id: event.id, name: event.name, month: event.month, amount: toEuros(event.amount), sells_account_id: event.sellsAccountId,
+      transfers_with_investments: event.transfersWithInvestments,
       is_past: result.ignoredEvents.includes(event),
     })),
     personal_use_assets: todayGroups.personalUseAssets.map((asset) => ({ account_id: asset.accountId, name: asset.name, value: toEuros(asset.value) })),

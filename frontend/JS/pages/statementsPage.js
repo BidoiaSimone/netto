@@ -1,6 +1,7 @@
 // ---- Statements page: your three financial statements for a period (GET /statements) ----
 //   net worth bridge   how the net worth at the start became the one at the end (waterfall chart)
 //   income statement   income and expenses by category, net savings, savings rate
+//   money flows        the same income and expenses as a Sankey diagram, with investments and savings (moneyFlows.js)
 //   balance sheet      every account and investment at the start and at the end, by liquidity class
 //   budget vs actual   each budgeted category's limit over the period (prorated by days) against what was spent
 //   investment returns money-weighted (XIRR) and time-weighted, per ticker and in total
@@ -15,6 +16,7 @@ import { callApi } from "../core/apiClient.js";
 import { showErrorMessage } from "../core/errorBanner.js";
 import { LIQUIDITY_CLASSES, getAccountKindLabel } from "../core/accountKinds.js";
 import { drawWaterfallChart } from "../charts/waterfallChart.js";
+import { renderMoneyFlows } from "./moneyFlows.js";
 
 const SAVED_PERIOD_KEY = "statementsPeriod";
 const DEFAULT_PERIOD = "this-month";
@@ -318,6 +320,7 @@ function renderStatementsPage(statements) {
   renderPeriodPicker(statements);
   renderBridge(statements.bridge, statements.failed_tickers);
   renderIncomeStatement(statements.income_statement);
+  renderMoneyFlows(statements.money_flows);
   renderBalanceSheet(statements.balance_sheet, statements);
   renderBudgetVsActual(statements.budget_vs_actual);
   renderInvestmentReturns(statements.investment_returns, statements.failed_tickers);

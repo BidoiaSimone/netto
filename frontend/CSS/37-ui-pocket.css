@@ -1,0 +1,755 @@
+/* Settings > Layout > Pocket: the same pages drawn like a banking app.
+   Loaded after every other file and only active with <html data-ui="pocket"> (JS/themeBeforeFirstPaint.js), so it
+   changes nothing for Classic.
+
+   The ideas:
+     - Apple's own grouped lists: a grey (or black) page, white (or dark grey) rounded groups, thin separators,
+       section titles in plain sentence case. The system font (SF Pro on Apple devices), like their own apps.
+     - Home opens on net worth, big: the one loud thing.
+     - made for each screen rather than stretched between them:
+         phone   a tab bar at the bottom where the thumb is, a round + to add from any page, dialogs as sheets,
+                 and only the essentials (core/phoneFeatures.js: the rest is marked desktop-only)
+         computer  a sidebar like a Mac app's, the pages grouped by what you do with them
+     - dialogs come up from the bottom on the phone, like a sheet. */
+
+/* the round + is part of this layout only */
+.pocket-add { display: none; }
+
+/* ---- colours: only the neutrals change; the accent, green, red and amber come from 01-theme-colors.css ---- */
+:root[data-ui="pocket"]:not([data-theme="light"]) {
+    --bg: #000000;
+    --surface: #1c1c1e;
+    --surface-2: #2c2c2e;
+    --border: #38383a;
+    --text: #ffffff;
+    --muted: #8d8d93;
+    --sidebar-bg: rgba(30, 30, 32, 0.78);
+    --pocket-field: #2c2c2e;
+    --pocket-press: #3a3a3c;
+    --pocket-sidebar: #161618;                   /* the sidebar on a computer */
+    --glow: none;
+    --dialog-shadow: 0 -8px 40px rgba(0, 0, 0, 0.5);
+    --backdrop: rgba(0, 0, 0, 0.55);
+}
+:root[data-ui="pocket"][data-theme="light"] {
+    --bg: #f2f2f7;
+    --surface: #ffffff;
+    --surface-2: #f2f2f7;
+    --border: #dcdce1;
+    --text: #000000;
+    --muted: #86868b;
+    --sidebar-bg: rgba(250, 250, 252, 0.8);
+    --pocket-field: #eeeef3;
+    --pocket-press: #e5e5ea;
+    --pocket-sidebar: #e9e9ee;
+    --glow: none;
+    --dialog-shadow: 0 -8px 40px rgba(0, 0, 0, 0.14);
+    --backdrop: rgba(0, 0, 0, 0.3);
+}
+
+[data-ui="pocket"] body {
+    font-family: -apple-system, system-ui, "SF Pro Text", "Segoe UI", sans-serif;   /* the system's own font, like iOS and macOS apps */
+    font-variant-numeric: tabular-nums;
+    background: var(--bg);
+    -webkit-font-smoothing: antialiased;
+}
+
+/* ---- the column ---- */
+[data-ui="pocket"] #error:empty { margin: 0; min-height: 0; }
+[data-ui="pocket"] h2 { font-size: 34px; font-weight: 800; letter-spacing: -0.02em; }
+[data-ui="pocket"] .page-head { margin-bottom: 18px; }
+/* section titles: sentence case, set in from the edge like a grouped list's header */
+[data-ui="pocket"] main h3 {
+    margin: 30px 0 8px 16px; color: var(--muted);
+    font-size: 15px; font-weight: 600; text-transform: none; letter-spacing: 0;
+}
+/* a title inside a box sits at the box's top, not 30px down; a title in a row with buttons (.chart-head: "How your
+   funds are doing  1M 6M 1Y") gets its space from the row, not twice */
+[data-ui="pocket"] main :is(.panel, .card, .yr-card, .goal-card) h3 { margin: 0 0 12px; }
+[data-ui="pocket"] main .chart-head { margin-top: 30px; }
+[data-ui="pocket"] main .chart-head h3 { margin: 0 0 0 16px; }
+/* small titles inside boxes ("Where to put new money", "Budgets", a tag's "Spending by category"): sentence case,
+   like every other title in this layout */
+[data-ui="pocket"] :is(.allocation-calculator-title, .budget-panel-head h4, .tag-detail h4) {
+    text-transform: none; letter-spacing: 0; font-size: 14px; font-weight: 700; color: var(--muted);
+}
+
+/* groups: rounded, no outline, a thin line between rows */
+[data-ui="pocket"] :is(table, .panel, .goal-card, .wrap-up) {
+    background: var(--surface); border: 0; border-radius: 14px;
+}
+[data-ui="pocket"] .panel { padding: 16px 18px; }
+[data-ui="pocket"] :is(.panel, .goal-card, .wrap-up, .yr-card) :is(.card, table) { background: var(--pocket-field); }  /* a group inside a group */
+/* :where() keeps these as weak as the base table rules, so the phone's card layouts (31-phone.css) still win */
+:where([data-ui="pocket"]) th {
+    background: transparent; color: var(--muted);
+    font-size: 12.5px; font-weight: 600; text-transform: none; letter-spacing: 0;
+}
+:where([data-ui="pocket"]) td { border-top: 0.5px solid var(--border); padding-top: 12px; padding-bottom: 12px; }
+[data-ui="pocket"] tbody tr:hover { background: var(--pocket-field); }
+
+[data-ui="pocket"] .card {
+    background: var(--surface); border: 0; border-radius: 20px;
+    color: var(--muted); font-size: 14px; font-weight: 600; text-transform: none; letter-spacing: 0;
+    transition: none;
+}
+[data-ui="pocket"] .card:hover { transform: none; box-shadow: none; }
+[data-ui="pocket"] .card strong { font-size: 26px; font-weight: 700; letter-spacing: -0.01em; }
+[data-ui="pocket"] .card small { font-weight: 500; }
+[data-ui="pocket"] .home-group { border-top: 0; }
+[data-ui="pocket"] .home-group::before {                   /* the group's colour as a small dot before its name */
+    content: ""; display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 7px;
+    background: var(--home-group-color);
+}
+
+/* Home: net worth alone at the top, big. Investments does the same with the portfolio value (its two other cards,
+   invested and gain, side by side under it) */
+[data-ui="pocket"] .home-cards { grid-template-columns: repeat(3, 1fr); gap: 12px; }
+[data-ui="pocket"] section[data-page="investments"] > .cards { grid-template-columns: 1fr 1fr; gap: 12px; }
+[data-ui="pocket"] :is(.home-cards, section[data-page="investments"] > .cards) .card.hero {
+    grid-column: 1 / -1; background: none; padding: 18px 0 14px; text-align: center;
+    font-size: 15px;
+}
+[data-ui="pocket"] .card.hero strong {
+    margin-top: 4px; font-size: clamp(46px, 8vw, 78px); font-weight: 800; letter-spacing: -0.035em; line-height: 1.05;
+    background: none; -webkit-background-clip: border-box; background-clip: border-box; color: var(--text);
+}
+[data-ui="pocket"] .card.hero .home-card-note { font-size: 13px; }
+[data-ui="pocket"] :not(.home-cards, section[data-page="investments"] > .cards) > .card.hero strong { font-size: 32px; }   /* other heroes stay in a group */
+
+/* Assets: total assets big and centred at the top, like net worth on Home and the portfolio value on Investments.
+   The pie panel and its column are display: contents, so the total, the pie, the legend and Reconcile become parts
+   of the page's own grid: on a computer the total across the top, the pie, legend and Reconcile on the left and the
+   accounts list on the right (still the only part that scrolls, see 08-assets-page.css); on a phone one column. */
+[data-ui="pocket"] :is(.assets-side, .assets-chart) { display: contents; }
+[data-ui="pocket"] .assets-split {
+    grid-template-columns: minmax(260px, 330px) minmax(0, 1fr); column-gap: 28px; row-gap: 0; align-items: start;
+    grid-template-areas: "label label" "total total" "pie list" "legend list" "note list" "reconcile list";
+    grid-template-rows: auto auto auto auto auto 1fr;
+}
+[data-ui="pocket"] main .assets-chart h3 { grid-area: label; margin: 18px 0 0; line-height: normal;   /* main beats the panels' title rule (margin under it) */
+    text-align: center; color: var(--muted); font-size: 15px; font-weight: 600; }
+[data-ui="pocket"] .assets-total {
+    grid-area: total; margin: 4px 0 26px;   /* the same spacing as the net worth card on Home */ text-align: center;
+    font-size: clamp(46px, 8vw, 78px); font-weight: 800; letter-spacing: -0.035em; line-height: 1.05;
+    background: none; -webkit-background-clip: border-box; background-clip: border-box; color: var(--text);
+}
+[data-ui="pocket"] #assets-pie { grid-area: pie; margin: 0 auto 16px; }
+[data-ui="pocket"] #assets-legend { grid-area: legend; margin: 0; padding: 10px 16px; background: var(--surface); border-radius: 14px; }
+[data-ui="pocket"] #assets-pie-note { grid-area: note; }
+[data-ui="pocket"] .reconcile-apply { grid-area: reconcile; margin-top: 12px; }
+[data-ui="pocket"] .assets-list { grid-area: list; align-self: stretch; }
+
+/* Home opens on net worth: the cards and their bar move up, right under the title (the wrap-up and the rest follow) */
+[data-ui="pocket"] section[data-page="home"] { display: flex; flex-direction: column; }
+[data-ui="pocket"] section[data-page="home"] > * { order: 3; }
+[data-ui="pocket"] section[data-page="home"] > :is(#error, .page-head) { order: 0; }
+[data-ui="pocket"] section[data-page="home"] > .home-cards { order: 1; }
+[data-ui="pocket"] section[data-page="home"] > .alloc { order: 2; margin-bottom: 22px; }
+
+[data-ui="pocket"] .bar { height: 8px; border-radius: 99px; }
+[data-ui="pocket"] .alloc small { text-align: center; }
+
+[data-ui="pocket"] .wrap-up { padding: 18px 20px; }
+
+/* ---- controls (the button rules use :where() so buttons with their own look, like the account names on
+   Assets, the tag chips or Delete, keep it) ---- */
+[data-ui="pocket"] :is(input, select) {
+    background: var(--pocket-field); border: 1px solid transparent; border-radius: 12px;
+}
+[data-ui="pocket"] :is(input, select):focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.22); }
+:where([data-ui="pocket"]) :is(button, a.button) {
+    border-radius: 999px; padding: 10px 18px; transition: transform 0.12s, background 0.15s;
+}
+:where([data-ui="pocket"]) :is(button, a.button):hover { box-shadow: none; transform: none; }
+:where([data-ui="pocket"]) :is(button, a.button):active { transform: scale(0.97); }
+[data-ui="pocket"] button.ghost { background: var(--surface); border-color: transparent; color: var(--text); font-weight: 600; }
+[data-ui="pocket"] main :is(.panel, .card, table, .wrap-up) button.ghost, [data-ui="pocket"] dialog button.ghost { background: var(--pocket-field); }
+[data-ui="pocket"] button.ghost:hover { background: var(--pocket-press); }
+/* every selected chip (some pages set theirs by id, like #fc-years: the "#selected-chip" in :is() is never on the
+   page, it only lifts this rule to the same strength as those, so it applies to them too) */
+[data-ui="pocket"] :is(main, dialog, #selected-chip) button.active {
+    background: var(--text); color: var(--bg); border-color: var(--text);
+}
+:where([data-ui="pocket"]) td button { background: transparent; border-color: transparent; color: var(--neg); }
+:where([data-ui="pocket"]) td button:hover { background: rgba(var(--neg-rgb), 0.12); }
+[data-ui="pocket"] .badge { font-weight: 600; }
+[data-ui="pocket"] kbd { background: rgba(0, 0, 0, 0.12); border-radius: 6px; }
+[data-ui="pocket"] button:focus-visible, [data-ui="pocket"] a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* ---- dialogs ---- */
+[data-ui="pocket"] dialog { border: 0; border-radius: 26px; background: var(--surface); padding: 26px 26px 22px; box-shadow: var(--dialog-shadow); }
+[data-ui="pocket"] dialog h3 { font-size: 22px; font-weight: 800; letter-spacing: -0.01em; }
+
+@media (prefers-reduced-motion: reduce) {
+    :where([data-ui="pocket"]) :is(button, a.button):active { transform: none; }
+}
+
+/* the pages in the order of what you do with them (the links stay in Classic's order in Home.html: only the flex
+   order changes). On a computer they sit under their group's name; on the phone the tab bar uses the same order */
+[data-ui="pocket"] .brand { order: -10; }
+[data-ui="pocket"] .nav-group-everyday { order: 0; }
+[data-ui="pocket"] #sidebar a[href="#home"] { order: 1; }
+[data-ui="pocket"] #sidebar a[href="#transactions"] { order: 2; }
+[data-ui="pocket"] #sidebar a[href="#assets"] { order: 3; }
+[data-ui="pocket"] #sidebar a[href="#insights"] { order: 4; }
+[data-ui="pocket"] .nav-group-planning { order: 10; }
+[data-ui="pocket"] #sidebar a[href="#recurring"] { order: 11; }
+[data-ui="pocket"] #sidebar a[href="#categories"] { order: 12; }
+[data-ui="pocket"] #sidebar a[href="#goals"] { order: 13; }
+[data-ui="pocket"] #sidebar a[href="#forecast"] { order: 14; }
+[data-ui="pocket"] #sidebar a[href="#nextUp"] { order: 15; }
+[data-ui="pocket"] .nav-group-review { order: 20; }
+[data-ui="pocket"] #sidebar a[href="#investments"] { order: 21; }
+[data-ui="pocket"] #sidebar a[href="#statements"] { order: 22; }
+[data-ui="pocket"] #sidebar a[href="#year"] { order: 23; }
+[data-ui="pocket"] #sidebar a[href="#settings"] { order: 30; }
+[data-ui="pocket"] #side-networth { order: 90; }
+
+/* ---- on a computer: a sidebar like a Mac app's ---- */
+@media (min-width: 801px) {
+    /* shared: no green stripe on the current page (the row's own colour says it), an icon before each link */
+    [data-ui="pocket"] #sidebar a.active::before { display: none; }
+    [data-ui="pocket"] #sidebar a::after {                  /* the icon (see the list at the end of this file) */
+        content: ""; order: -1; flex: none; background: currentColor;
+        -webkit-mask: var(--tab-icon) center / contain no-repeat; mask: var(--tab-icon) center / contain no-repeat;
+    }
+    [data-ui="pocket"] #sidebar { background: var(--pocket-sidebar); border-right: 0.5px solid var(--border); overflow-y: auto; scrollbar-width: none; }
+    [data-ui="pocket"] #sidebar::-webkit-scrollbar { display: none; }
+    [data-ui="pocket"] #sidebar a { transform: none; transition: background 0.12s, color 0.12s; }
+    [data-ui="pocket"] #sidebar a:hover { transform: none; }
+
+
+    /* named groups, an icon and a name per page, net worth and Hide amounts at the bottom (like Finder, Settings) */
+    [data-ui="pocket"] #sidebar { width: 236px; padding: 24px 12px 16px; gap: 1px; }
+    [data-ui="pocket"] .brand { margin: 0 0 16px 12px; }
+    [data-ui="pocket"] .brand img { width: 92px; }
+    [data-ui="pocket"] .nav-group { display: block; margin: 18px 12px 5px; font-size: 12px; font-weight: 700; color: var(--muted); }
+    [data-ui="pocket"] .nav-group-everyday { margin-top: 0; }
+    [data-ui="pocket"] #sidebar a {
+        display: flex; align-items: center; gap: 10px;
+        padding: 7px 12px; border-radius: 9px;
+        font-size: 14.5px; font-weight: 600; color: var(--text);
+    }
+    [data-ui="pocket"] #sidebar a::after { width: 19px; height: 19px; color: var(--accent); }
+    [data-ui="pocket"] #sidebar a:hover { background: var(--pocket-field); color: var(--text); }
+    [data-ui="pocket"] #sidebar a.active { background: rgba(var(--accent-rgb), 0.16); color: var(--text); font-weight: 700; }
+    [data-ui="pocket"] #sidebar a[href="#settings"] { margin-top: 14px; }
+    [data-ui="pocket"] #side-networth {
+        margin-top: auto; padding: 14px 14px 12px; border: 0; border-radius: 14px; background: var(--surface);
+        font-size: 12.5px; font-weight: 600; text-transform: none; letter-spacing: 0; color: var(--muted);
+    }
+    [data-ui="pocket"] #side-networth strong { font-size: 21px; font-weight: 800; color: var(--text); letter-spacing: -0.01em; }
+    [data-ui="pocket"] #side-networth .switch { margin-top: 10px; font-size: 12.5px; }
+    [data-ui="pocket"] main { margin-left: 236px; padding: 40px 48px 90px; max-width: 1180px; }
+}
+
+/* ---- phones: drawn the way iOS draws its own apps (Apple's Human Interface Guidelines, iOS 26 "Liquid Glass",
+        refined at WWDC 2026) ----
+   - two layers: the content (solid, grouped lists) and, floating above it, the controls and navigation in "glass"
+     (translucent and blurred, so the content shows through). Glass only for those, never in the content.
+   - a large page title at the top of each page; scrolling it away brings the name into the top bar, small
+     (JS/app/phoneMenu.js adds .title-in-bar to <body>). The top bar has no background of its own until then.
+   - top-bar actions as plain symbols on small glass circles, on the trailing side.
+   - the tab bar floats above the content as a glass capsule, held clear of the home bar; icons over one-word labels.
+   - dialogs are sheets that float up from the bottom, with a grabber.
+   - with Reduce transparency on, the glass becomes solid. */
+@media (max-width: 800px) {
+    [data-ui="pocket"] {
+        --glass: color-mix(in srgb, var(--surface) 72%, transparent);
+        --glass-edge: color-mix(in srgb, var(--text) 10%, transparent);
+        --glass-shadow: 0 8px 28px rgba(0, 0, 0, 0.14), 0 1px 3px rgba(0, 0, 0, 0.08);
+        --glass-blur: saturate(1.8) blur(18px);
+    }
+    [data-ui="pocket"][data-theme="dark"] { --glass: color-mix(in srgb, var(--surface) 70%, transparent); --glass-shadow: 0 8px 28px rgba(0, 0, 0, 0.5); }
+
+    /* -- the top bar: nothing behind it at the top of a page; once the large title has scrolled away, a soft
+          blurred edge (Apple's "scroll edge effect") and the page's name -- */
+    [data-ui="pocket"] #phone-menu-button, [data-ui="pocket"] #phone-menu-backdrop { display: none !important; }
+    [data-ui="pocket"] #phone-bar {
+        justify-content: flex-end; gap: 8px; background: transparent; border-bottom: 0;
+        -webkit-backdrop-filter: none; backdrop-filter: none;
+        transition: background 0.2s;
+    }
+    [data-ui="pocket"] body.title-in-bar #phone-bar {
+        background: color-mix(in srgb, var(--bg) 78%, transparent);
+        -webkit-backdrop-filter: var(--glass-blur); backdrop-filter: var(--glass-blur);
+        -webkit-mask-image: linear-gradient(#000 75%, transparent); mask-image: linear-gradient(#000 75%, transparent);
+        padding-bottom: 16px;
+    }
+    /* the page's name, small and centred in the bar: hidden while the large title shows it */
+    [data-ui="pocket"] #phone-bar #phone-page-title {
+        position: absolute; left: 50%; top: calc(env(safe-area-inset-top) + 8px); transform: translateX(-50%);
+        width: auto; max-width: 56%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+        font-size: 17px; font-weight: 600; color: var(--text); background: none; border: 0;
+        opacity: 0; pointer-events: none; transition: opacity 0.2s;
+    }
+    [data-ui="pocket"] body.title-in-bar #phone-bar #phone-page-title { opacity: 1; pointer-events: auto; }
+    /* Settings and the eye: symbols on small glass circles (the waiting-transactions badge sits before them) */
+    [data-ui="pocket"] #phone-bar :is(#phone-settings-button, #phone-privacy-button) {
+        display: grid; place-items: center; width: 44px; height: 44px; padding: 0; border-radius: 50%;
+        background: var(--glass); border: 0.5px solid var(--glass-edge); box-shadow: var(--glass-shadow);
+        -webkit-backdrop-filter: var(--glass-blur); backdrop-filter: var(--glass-blur);
+        color: var(--text);
+    }
+    [data-ui="pocket"] #phone-bar :is(#phone-settings-button, #phone-privacy-button).active { color: var(--accent-2); }
+    [data-ui="pocket"] #sidebar a[href="#settings"] { display: none; }   /* Settings is in the top bar instead */
+
+    /* -- the large title: the page's own heading, at the top of the page -- */
+    [data-ui="pocket"] .page-head:not(:has(> :not(h2))),
+    [data-ui="pocket"] .page-head { display: flex; justify-content: flex-start; margin: 0 0 14px; }
+    [data-ui="pocket"] .page-head h2 { display: block; margin: 0 0 0 4px; font-size: 34px; font-weight: 700; letter-spacing: 0.01em; line-height: 1.15; }
+    [data-ui="pocket"] .add-btn { display: none; }              /* the round + does it */
+
+    /* -- the tab bar: a glass capsule floating above the content, clear of the home bar --
+       --tab-bar-gap is the space under it: the iPhone's home bar (swipe up = close the app, sideways = switch apps)
+       catches touches near the bottom edge. Bigger in the home-screen app, where the page reaches the very bottom
+       of the screen; in Safari the browser's own toolbar is already in between. */
+    [data-ui="pocket"] { --tab-bar-gap: max(env(safe-area-inset-bottom), 10px); --tab-height: 60px; }
+    @media (display-mode: standalone) {
+        [data-ui="pocket"] { --tab-bar-gap: calc(max(env(safe-area-inset-bottom), 24px) + 8px); }
+    }
+    [data-ui="pocket"] #sidebar {
+        top: auto; bottom: var(--tab-bar-gap); left: max(14px, env(safe-area-inset-left)); right: max(14px, env(safe-area-inset-right)); transform: none;
+        width: auto; max-width: none; height: auto; border-radius: 999px;
+        padding: 4px;
+        border: 0.5px solid var(--glass-edge); box-shadow: var(--glass-shadow);
+        z-index: 25; overflow-x: auto; overflow-y: hidden; margin: 0; scrollbar-width: none;
+        flex-direction: row; align-items: center; gap: 0;
+        background: var(--glass); -webkit-backdrop-filter: var(--glass-blur); backdrop-filter: var(--glass-blur);
+    }
+    [data-ui="pocket"] .brand, [data-ui="pocket"] #side-networth { display: none; }
+    [data-ui="pocket"] #sidebar::-webkit-scrollbar { display: none; }
+    [data-ui="pocket"] #sidebar a.active::before { display: none; }
+    /* the essentials (5 tabs) share the width; with Settings > On this phone > Everything the bar scrolls */
+    [data-ui="pocket"] #sidebar a {
+        display: flex; flex: 1 0 auto; flex-direction: column; align-items: center; justify-content: center; gap: 2px; white-space: nowrap;
+        min-width: 62px; height: var(--tab-height); padding: 0 4px; border-radius: 999px;
+        font-size: 10.5px; font-weight: 600; letter-spacing: 0.01em; color: var(--text);
+    }
+    [data-ui="pocket"] #sidebar a::after {                   /* the icon: filled, like the system's tab bars */
+        content: ""; order: -1; width: 26px; height: 26px; background: currentColor;
+        -webkit-mask: var(--tab-icon-filled, var(--tab-icon)) center / 26px no-repeat; mask: var(--tab-icon-filled, var(--tab-icon)) center / 26px no-repeat;
+    }
+    [data-ui="pocket"] #sidebar a:hover { background: none; }
+    /* the open tab: tinted with the accent, on a lighter pill */
+    [data-ui="pocket"] #sidebar a.active { background: color-mix(in srgb, var(--text) 9%, transparent); color: var(--accent-2); }
+    /* Home in the middle of the tab bar, where the thumb rests: Transactions, Assets, Home, Insights, Investments */
+    [data-ui="pocket"] #sidebar a[href="#transactions"] { order: 1; }
+    [data-ui="pocket"] #sidebar a[href="#assets"] { order: 2; }
+    [data-ui="pocket"] #sidebar a[href="#home"] { order: 3; }
+
+    /* -- the round + : the page's one main action, tinted glass in the accent, above the tab bar's trailing end -- */
+    [data-ui="pocket"] .pocket-add {
+        display: grid; place-items: center;
+        position: fixed; right: 18px; bottom: calc(var(--tab-bar-gap) + var(--tab-height) + 22px); z-index: 30;
+        width: 58px; height: 58px; padding: 0; border-radius: 50%;
+        background: color-mix(in srgb, var(--accent) 88%, transparent); border: 0.5px solid color-mix(in srgb, #fff 30%, transparent);
+        color: var(--on-accent);
+        -webkit-backdrop-filter: var(--glass-blur); backdrop-filter: var(--glass-blur);
+        box-shadow: 0 8px 24px rgba(var(--accent-rgb), 0.35), 0 2px 6px rgba(0, 0, 0, 0.15);
+    }
+    [data-ui="pocket"] .pocket-add svg { width: 26px; height: 26px; }
+    [data-ui="pocket"] .pocket-add:hover { background: color-mix(in srgb, var(--accent) 88%, transparent); }
+    [data-ui="pocket"] .pocket-add:active { transform: scale(0.94); }
+
+    /* -- the content -- */
+    [data-ui="pocket"] main {
+        padding: 6px max(16px, env(safe-area-inset-right)) calc(var(--tab-bar-gap) + var(--tab-height) + 110px) max(16px, env(safe-area-inset-left));
+    }
+    [data-ui="pocket"] main h3 { margin: 24px 0 8px 16px; }
+    [data-ui="pocket"] .home-cards { grid-template-columns: 1fr 1fr; gap: 10px; }
+    [data-ui="pocket"] :is(.home-cards, section[data-page="investments"] > .cards) .card.hero { padding: 0 0 6px; }
+    [data-ui="pocket"] :is(.home-cards, section[data-page="investments"] > .cards) .card.hero strong { font-size: 46px; }
+    [data-ui="pocket"] .home-cards .home-group { padding: 14px 16px; }
+    [data-ui="pocket"] .home-cards .home-group strong { font-size: 20px; }
+    [data-ui="pocket"] .home-cards .home-group:last-child { grid-column: 1 / -1; }
+    /* Investments: invested and gain side by side under the portfolio value, like Home's groups */
+    [data-ui="pocket"] section[data-page="investments"] > .cards { gap: 10px; }
+    [data-ui="pocket"] section[data-page="investments"] > .cards .card:not(.hero) { padding: 14px 16px; }
+    [data-ui="pocket"] section[data-page="investments"] > .cards .card:not(.hero) strong { font-size: 20px; }
+    /* Assets: one column; the counted field fits the row */
+    [data-ui="pocket"] .assets-split { grid-template-columns: minmax(0, 1fr); grid-template-areas: "label" "total" "legend" "note" "reconcile" "list"; grid-template-rows: none; }
+    [data-ui="pocket"] .assets-total { font-size: 46px; margin-bottom: 16px; }
+    [data-ui="pocket"] main .assets-chart h3 { margin-top: 0; }   /* the same gap as under net worth on Home */
+    [data-ui="pocket"] .assets-list { margin-top: 18px; }
+    [data-ui="pocket"] .assets-list td input { width: 118px; padding: 8px 10px; }
+    [data-ui="pocket"] .assets-list td:first-child { white-space: normal; }
+    /* the target allocation fits the screen: value and drift in € are left out (the drift in points stays) */
+    [data-ui="pocket"] .allocation-table :is(th, td):is(:nth-child(2), :nth-child(6)) { display: none; }
+
+    /* -- dialogs: a sheet floating up from the bottom, inset from the edges, with a grabber on top -- */
+    [data-ui="pocket"] dialog {
+        margin: auto 8px calc(env(safe-area-inset-bottom) + 8px); width: calc(100vw - 16px); max-width: none; max-height: 90dvh;
+        border-radius: 34px; padding: 28px 20px 22px;
+    }
+    [data-ui="pocket"] dialog::before {
+        content: ""; position: absolute; top: 8px; left: 50%; width: 36px; height: 5px; margin-left: -18px;
+        border-radius: 3px; background: color-mix(in srgb, var(--text) 22%, transparent);
+    }
+    [data-ui="pocket"] dialog[open] { animation: pocket-sheet-up 0.32s cubic-bezier(.2, .9, .25, 1) both; }
+    [data-ui="pocket"] dialog { overscroll-behavior: contain; }   /* scrolling inside a sheet never scrolls the page behind */
+    /* the keyboard is up (JS/app/sheetPosition.js): the page didn't get shorter, only what you see did, and Safari has
+       slid the view over the page. The sheet goes to the top of what you see, as tall as what's left above the
+       keyboard at most, and scrolls inside. No rise: it would move the field while Safari is still aiming at it. */
+    :root[data-ui="pocket"].keyboard-open dialog[open] {
+        top: calc(var(--visible-top, 0px) + 8px); bottom: auto; margin: 0 8px;
+        max-height: calc(var(--visible-height, 100dvh) - 16px); animation: none;
+    }
+}
+@keyframes pocket-sheet-up { from { transform: translateY(40%); opacity: 0.4; } to { transform: none; opacity: 1; } }
+@media (max-width: 800px) and (prefers-reduced-motion: reduce) {
+    [data-ui="pocket"] dialog[open] { animation: none; }
+    [data-ui="pocket"] .pocket-add:active { transform: none; }
+}
+/* Reduce transparency (Settings > Accessibility on the iPhone, where the browser passes it on): solid instead of glass */
+@media (max-width: 800px) and (prefers-reduced-transparency: reduce) {
+    [data-ui="pocket"] { --glass: var(--surface); --glass-blur: none; }
+    [data-ui="pocket"] body.title-in-bar #phone-bar { background: var(--bg); }
+}
+
+/* ---- the icons, one per page (24 × 24 line drawings): the phone's tab bar and the computer's sidebar ---- */
+[data-ui="pocket"] #sidebar a[href="#home"] { --tab-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z'/%3E%3C/svg%3E"); }
+[data-ui="pocket"] #sidebar a[href="#assets"] { --tab-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 8a2 2 0 0 1 2-2h14v14H5a2 2 0 0 1-2-2zM3 10h18M16 15h2'/%3E%3C/svg%3E"); }
+[data-ui="pocket"] #sidebar a[href="#transactions"] { --tab-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M7 20V4M3 8l4-4 4 4M17 4v16M13 16l4 4 4-4'/%3E%3C/svg%3E"); }
+[data-ui="pocket"] #sidebar a[href="#recurring"] { --tab-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 12a8 8 0 0 1 14-5.3M20 12a8 8 0 0 1-14 5.3M18 3v4h-4M6 21v-4h4'/%3E%3C/svg%3E"); }
+[data-ui="pocket"] #sidebar a[href="#categories"] { --tab-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z'/%3E%3C/svg%3E"); }
+[data-ui="pocket"] #sidebar a[href="#investments"] { --tab-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 17l6-6 4 4 8-8M15 7h6v6'/%3E%3C/svg%3E"); }
+[data-ui="pocket"] #sidebar a[href="#insights"] { --tab-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M11 4a8 8 0 1 0 9 9h-9zM14 3a7 7 0 0 1 7 7h-7z'/%3E%3C/svg%3E"); }
+[data-ui="pocket"] #sidebar a[href="#goals"] { --tab-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 3a9 9 0 1 0 0 18a9 9 0 1 0 0-18zM12 7.5a4.5 4.5 0 1 0 0 9a4.5 4.5 0 1 0 0-9zM12 11.2a.8.8 0 1 0 0 1.6a.8.8 0 1 0 0-1.6z'/%3E%3C/svg%3E"); }
+[data-ui="pocket"] #sidebar a[href="#statements"] { --tab-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 3h9l4 4v14H6zM14 3v5h5M9 12h7M9 16h7'/%3E%3C/svg%3E"); }
+[data-ui="pocket"] #sidebar a[href="#forecast"] { --tab-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 20h18M4 16l5-5 4 3 7-8M16 6h4v4'/%3E%3C/svg%3E"); }
+[data-ui="pocket"] #sidebar a[href="#year"] { --tab-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 6h16v14H4zM4 10h16M8 3v5M16 3v5'/%3E%3C/svg%3E"); }
+[data-ui="pocket"] #sidebar a[href="#settings"] { --tab-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 7h9M17 7h3M4 17h3M11 17h9M15 5v4M9 15v4'/%3E%3C/svg%3E"); }
+[data-ui="pocket"] #sidebar a[href="#nextUp"] { --tab-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M10 6h10M10 12h10M10 18h10M4 6l1.2 1.2L7.5 5M4 12l1.2 1.2L7.5 11M4 18l1.2 1.2L7.5 17'/%3E%3C/svg%3E"); }
+
+/* the same icons filled (or drawn heavier where a filled one wouldn't read), for the phone's tab bar: the system's
+   tab bars use filled symbols */
+[data-ui="pocket"] #sidebar a[href="#home"] { --tab-icon-filled: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' stroke='black' stroke-width='1.6' stroke-linejoin='round' d='M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z'/%3E%3C/svg%3E"); }
+[data-ui="pocket"] #sidebar a[href="#assets"] { --tab-icon-filled: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' stroke='black' stroke-width='1.6' stroke-linejoin='round' fill-rule='evenodd' d='M3 8a2 2 0 0 1 2-2h14v14H5a2 2 0 0 1-2-2zM15 12.2h4v3.6h-4z'/%3E%3C/svg%3E"); }
+[data-ui="pocket"] #sidebar a[href="#insights"] { --tab-icon-filled: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' stroke='black' stroke-width='1.6' stroke-linejoin='round' d='M11 4a8 8 0 1 0 9 9h-9z'/%3E%3Cpath fill='black' stroke='black' stroke-width='1.6' stroke-linejoin='round' d='M14 3a7 7 0 0 1 7 7h-7z'/%3E%3C/svg%3E"); }
+[data-ui="pocket"] #sidebar a[href="#transactions"] { --tab-icon-filled: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round' d='M7 20V4M3 8l4-4 4 4M17 4v16M13 16l4 4 4-4'/%3E%3C/svg%3E"); }
+[data-ui="pocket"] #sidebar a[href="#investments"] { --tab-icon-filled: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round' d='M3 17l6-6 4 4 8-8M15 7h6v6'/%3E%3C/svg%3E"); }
+[data-ui="pocket"] #sidebar a[href="#recurring"] { --tab-icon-filled: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round' d='M4 12a8 8 0 0 1 14-5.3M20 12a8 8 0 0 1-14 5.3M18 3v4h-4M6 21v-4h4'/%3E%3C/svg%3E"); }
+[data-ui="pocket"] #sidebar a[href="#categories"] { --tab-icon-filled: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' stroke='black' stroke-width='1.6' stroke-linejoin='round' d='M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z'/%3E%3C/svg%3E"); }
+[data-ui="pocket"] #sidebar a[href="#goals"] { --tab-icon-filled: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' stroke='black' stroke-width='1.6' stroke-linejoin='round' fill-rule='evenodd' d='M12 3a9 9 0 1 0 0 18a9 9 0 1 0 0-18zM12 7.5a4.5 4.5 0 1 0 0 9a4.5 4.5 0 1 0 0-9z'/%3E%3Ccircle cx='12' cy='12' r='1.6' fill='black'/%3E%3C/svg%3E"); }
+[data-ui="pocket"] #sidebar a[href="#statements"] { --tab-icon-filled: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' stroke='black' stroke-width='1.6' stroke-linejoin='round' fill-rule='evenodd' d='M6 3h9l4 4v14H6zM9 11.2h7v1.6H9zM9 15.2h7v1.6H9z'/%3E%3C/svg%3E"); }
+[data-ui="pocket"] #sidebar a[href="#forecast"] { --tab-icon-filled: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round' d='M3 20h18M4 16l5-5 4 3 7-8M16 6h4v4'/%3E%3C/svg%3E"); }
+[data-ui="pocket"] #sidebar a[href="#year"] { --tab-icon-filled: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' stroke='black' stroke-width='1.6' stroke-linejoin='round' fill-rule='evenodd' d='M4 6h16v14H4zM5.5 11h13v7.5h-13z'/%3E%3Cpath fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round' d='M8 3v4M16 3v4'/%3E%3C/svg%3E"); }
+[data-ui="pocket"] #sidebar a[href="#nextUp"] { --tab-icon-filled: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round' d='M10 6h10M10 12h10M10 18h10M4 6l1.2 1.2L7.5 5M4 12l1.2 1.2L7.5 11M4 18l1.2 1.2L7.5 17'/%3E%3C/svg%3E"); }
+
+/* ---- Transactions: a list grouped by day, like a banking app ----
+       Yesterday                                   −27,90 €
+       (S)  Pizza with Marco                      −18,50 €
+            Restaurants                             Revolut
+   Each day's rows are one rounded group under the day's name; the round icon carries the category's icon (or initial) and
+   colour. The day replaces the date column, the sign and colour of the amount say the type.
+   Cells: 1 date, 2 type, 3 from, 4 to, 5 amount, 6 category, 7 description, 8 tags, 9 icon (transactionsPage.js) */
+[data-ui="pocket"] .transactions-table { display: block; background: none; border-radius: 0; overflow: visible; }
+[data-ui="pocket"] .transactions-table thead { display: none; }
+[data-ui="pocket"] .transactions-table tbody { display: block; }
+[data-ui="pocket"] #transactions-body tr:not(.day-row) {
+    display: grid; align-items: center; column-gap: 12px; row-gap: 1px; padding: 11px 16px;
+    grid-template-columns: 38px minmax(0, 1fr) auto auto;
+    grid-template-areas: "icon title tags amount" "icon sub tags account";
+    /* the line between rows starts after the icon, like iOS lists */
+    background: linear-gradient(var(--border), var(--border)) 66px 0 / calc(100% - 66px) 0.5px no-repeat, var(--surface);
+    border: 0;
+}
+[data-ui="pocket"] #transactions-body tr:not(.day-row):hover { background-color: var(--pocket-field); }
+[data-ui="pocket"] #transactions-body :is(tr.day-row + tr, tr:first-child) { background-image: none; border-radius: 14px 14px 0 0; }
+[data-ui="pocket"] #transactions-body tr:not(.day-row):is(:has(+ tr.day-row), :last-child) { border-bottom-left-radius: 14px; border-bottom-right-radius: 14px; }
+[data-ui="pocket"] #transactions-body tr.day-row + tr:is(:has(+ tr.day-row), :last-child) { border-radius: 14px; }
+[data-ui="pocket"] #transactions-body td { display: block; border: 0; padding: 0; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+[data-ui="pocket"] #transactions-body td:is(:nth-child(1), :nth-child(2)), [data-ui="pocket"] #transactions-body td:empty { display: none; }
+
+[data-ui="pocket"] #transactions-body td:nth-child(9) { grid-area: icon; overflow: visible; }
+[data-ui="pocket"] .tx-icon {
+    display: grid; place-items: center; width: 38px; height: 38px; border-radius: 50%;
+    background: var(--icon-color, color-mix(in srgb, var(--text) 45%, transparent)); color: #fff;
+    font-size: 16px; font-weight: 700;
+}
+[data-ui="pocket"] .tx-movement .tx-icon { background: var(--accent); }
+[data-ui="pocket"] .tx-icon svg { width: 21px; height: 21px; }   /* the category's drawing (JS/core/categoryIcons.js) */
+/* title: the description; the category under it (no description: the category is the title; neither: the type) */
+[data-ui="pocket"] #transactions-body td:nth-child(7) { grid-area: title; font-size: 16px; font-weight: 600; color: var(--text); }
+[data-ui="pocket"] #transactions-body td:nth-child(6) { grid-area: sub; font-size: 13.5px; color: var(--muted); }
+[data-ui="pocket"] #transactions-body .no-description td:nth-child(6) { grid-area: title; font-size: 16px; font-weight: 600; color: var(--text); }
+[data-ui="pocket"] #transactions-body .no-description.no-category td:nth-child(2) { display: block; grid-area: title; }
+[data-ui="pocket"] #transactions-body .no-description.no-category td:nth-child(2) .badge {
+    padding: 0; background: none; color: var(--text); font-size: 16px; font-weight: 600; text-transform: none; letter-spacing: 0;
+}
+/* amount on the right, the account under it: where the money came from, or went for income */
+[data-ui="pocket"] #transactions-body td:nth-child(5) { grid-area: amount; text-align: right; font-size: 16px; font-weight: 600; font-variant-numeric: tabular-nums; }
+[data-ui="pocket"] #transactions-body td:nth-child(5) .neg { color: var(--text); }       /* spending is the usual: plain, income green */
+[data-ui="pocket"] #transactions-body :is(td:nth-child(3), td:nth-child(4)) { grid-area: account; text-align: right; font-size: 13.5px; color: var(--muted); }
+[data-ui="pocket"] #transactions-body .tx-movement td:nth-child(3) { display: none; }
+[data-ui="pocket"] #transactions-body .tx-movement td:nth-child(4)::before { content: "→ "; }
+[data-ui="pocket"] #transactions-body td:nth-child(8) { grid-area: tags; align-self: center; }
+[data-ui="pocket"] #transactions-body td:nth-child(8):has(.tag-chips:empty) { display: none; }
+[data-ui="pocket"] #transactions-body .recurring-marker { color: var(--muted); font-weight: 500; margin-right: 4px; }
+[data-ui="pocket"] #transactions-body .original-amount { display: block; font-size: 12px; font-weight: 500; color: var(--muted); }
+
+[data-ui="pocket"] #transactions-body tr.day-row { display: block; padding: 0; border: 0; background: none; }
+[data-ui="pocket"] #transactions-body tr.day-row:hover { background: none; }
+[data-ui="pocket"] #transactions-body tr.day-row td {
+    display: flex; justify-content: space-between; align-items: baseline; padding: 22px 16px 7px;
+    font-size: 15px; font-weight: 700; color: var(--text); overflow: visible;
+}
+[data-ui="pocket"] #transactions-body tr.day-row:first-child td { padding-top: 6px; }
+[data-ui="pocket"] .day-total { font-size: 13.5px; font-weight: 600; color: var(--muted); font-variant-numeric: tabular-nums; }
+[data-ui="pocket"] #tx-summary { margin: 0 16px 4px; color: var(--muted); font-size: 13px; }
+/* Home's latest transactions: the same rows, without the day headers (the day is under the title instead).
+   Cells: 1 date, 2 type, 3 amount, 4 title, 5 "category · day", 6 icon (homePage.js) */
+[data-ui="pocket"] .recent-table { display: block; overflow: hidden; }
+[data-ui="pocket"] .recent-table thead { display: none; }
+[data-ui="pocket"] .recent-table tbody { display: block; }
+[data-ui="pocket"] #recent-body tr {
+    display: grid; align-items: center; column-gap: 12px; row-gap: 1px; padding: 11px 16px;
+    grid-template-columns: 38px minmax(0, 1fr) auto; grid-template-areas: "icon title amount" "icon sub amount";
+    background: linear-gradient(var(--border), var(--border)) 66px 0 / calc(100% - 66px) 0.5px no-repeat; border: 0;
+}
+[data-ui="pocket"] #recent-body tr:first-child { background-image: none; }
+[data-ui="pocket"] #recent-body td { display: block; border: 0; padding: 0; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+[data-ui="pocket"] #recent-body td:is(:nth-child(1), :nth-child(2)) { display: none; }
+[data-ui="pocket"] #recent-body td:nth-child(6) { grid-area: icon; overflow: visible; }
+[data-ui="pocket"] #recent-body td:nth-child(4) { grid-area: title; font-size: 16px; font-weight: 600; color: var(--text); }
+[data-ui="pocket"] #recent-body td:nth-child(5) { grid-area: sub; font-size: 13.5px; color: var(--muted); }
+[data-ui="pocket"] #recent-body td:nth-child(3) { grid-area: amount; text-align: right; font-size: 16px; font-weight: 600; font-variant-numeric: tabular-nums; }
+[data-ui="pocket"] #recent-body td:nth-child(3) .neg { color: var(--text); }   /* as in the Transactions list: spending plain, income green */
+[data-ui="pocket"] #recent-body td:nth-child(4):empty { display: block; }       /* keeps the title line when there's neither */
+/* the filters on a computer: the search and the quick dates on the first row, the pickers evenly on the second */
+[data-ui="pocket"] .filters { gap: 8px; margin-bottom: 14px; }
+[data-ui="pocket"] .filters #f-search { order: 0; flex: 1 1 300px; }
+[data-ui="pocket"] .filters .chips { order: 1; flex: none; margin: 0; }
+[data-ui="pocket"] .filters::before { content: ""; order: 2; flex: 0 0 100%; margin-top: -8px; }   /* the line break */
+[data-ui="pocket"] .filters > :where(select, label, input[type=number]) { order: 3; flex: 1 1 120px; min-width: 0; }   /* :where(): weak, so the two rules below can size the dates and the amounts */
+[data-ui="pocket"] .filters > label { flex: 1.25 1 175px; }
+[data-ui="pocket"] .filters > input:is(#f-min, #f-max) { flex: 0.6 1 84px; width: auto; }
+[data-ui="pocket"] .filters > label input { flex: 1 1 auto; min-width: 0; }
+[data-ui="pocket"] .filters .chips button { min-height: 0; padding: 7px 14px; }
+
+@media (max-width: 800px) {
+    [data-ui="pocket"] #transactions-body tr:not(.day-row) { padding: 10px 14px; column-gap: 11px; grid-template-columns: 36px minmax(0, 1fr) auto; grid-template-areas: "icon title amount" "icon sub account"; background-position: 61px 0; background-size: calc(100% - 61px) 0.5px; }
+    [data-ui="pocket"] .tx-icon { width: 36px; height: 36px; font-size: 15px; }
+    [data-ui="pocket"] .tx-icon svg { width: 20px; height: 20px; }
+    [data-ui="pocket"] #recent-body tr { padding: 10px 14px; column-gap: 11px; grid-template-columns: 36px minmax(0, 1fr) auto; background-position: 61px 0; background-size: calc(100% - 61px) 0.5px; }
+    [data-ui="pocket"] #transactions-body td:nth-child(8) { display: none; }   /* tags: in the transaction itself (tap it) */
+    [data-ui="pocket"] #transactions-body tr.day-row td { padding: 20px 14px 7px; }
+    [data-ui="pocket"] #transactions-body tr.day-row:first-child td { padding-top: 12px; }
+    [data-ui="pocket"] .filters::before { display: block; }   /* the line break: the search and Filters share the first row, the rest goes under them */
+    [data-ui="pocket"] .filters #f-search { flex: 1 1 0; }   /* #id: beats the 300px it gets on a computer, so Filters fits beside it */
+    [data-ui="pocket"] .filters #f-more { flex: none; padding-inline: 14px; }
+    [data-ui="pocket"] .filters > input:is(#f-min, #f-max) { order: 3; }   /* under the first row with the other pickers, not beside the search */
+    [data-ui="pocket"] .filters .chips { order: 4; flex: 1 1 100%; }
+    /* the quick dates in one row that slides sideways, under the search */
+    [data-ui="pocket"] .filters .chips { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; margin: 0 -16px; padding: 0 16px; }
+    [data-ui="pocket"] .filters .chips::-webkit-scrollbar { display: none; }
+    [data-ui="pocket"] .filters .chips button { flex: none; min-height: 34px; padding: 6px 14px; font-size: 14px; }
+    [data-ui="pocket"] #tx-summary { margin: 4px 14px 0; font-size: 12.5px; }
+}
+
+/* ---- the transaction window, drawn like an iOS form: the type as a segmented control, the amount big in the middle,
+   then grouped rows with their names on the left (Home.html's .form-group / .form-row, which Classic ignores).
+   On the phone it's a sheet with ✕ and ✓ in its top corners and Delete at the bottom; on a computer the buttons stay
+   at the bottom right. The type select is hidden: the segments drive it (transactionDialog.js). ---- */
+[data-ui="pocket"] #tx-dialog { background: var(--bg); width: min(520px, 92vw); }
+[data-ui="pocket"] #tx-form { display: flex; flex-direction: column; gap: 14px; }
+[data-ui="pocket"] #tx-form > * { flex: none; width: auto; margin: 0; }
+[data-ui="pocket"] #tx-type { display: none; }
+[data-ui="pocket"] #tx-dialog .segmented:not([hidden]) { order: 1; display: grid; }
+[data-ui="pocket"] #tx-dialog .amount-field { order: 2; }
+[data-ui="pocket"] #tx-dialog .fx-field { order: 3; }
+[data-ui="pocket"] #tx-dialog .tx-accounts { order: 4; }
+[data-ui="pocket"] #tx-dialog .tx-when { order: 5; }
+[data-ui="pocket"] #tx-dialog .tx-details { order: 6; }
+[data-ui="pocket"] #tx-dialog .tag-field { order: 7; }
+[data-ui="pocket"] #tx-dialog .tag-suggestions { order: 8; margin: -6px 16px 0; width: auto; }
+[data-ui="pocket"] #tx-dialog .hint { order: 9; margin: 0 16px; }
+[data-ui="pocket"] #tx-dialog .dialog-error { order: 10; margin: 0 16px; }
+[data-ui="pocket"] #tx-dialog .dialog-error:empty { display: none; }
+[data-ui="pocket"] #tx-dialog .actions { order: 11; }
+
+/* Expense | Income | Movement */
+[data-ui="pocket"] #tx-dialog .segmented {
+    grid-template-columns: repeat(3, 1fr); gap: 2px; padding: 3px; border-radius: 999px;
+    background: color-mix(in srgb, var(--text) 8%, transparent);
+}
+[data-ui="pocket"] #tx-type-segments button {
+    min-height: 34px; padding: 6px 8px; border: 0; border-radius: 999px; background: transparent; box-shadow: none;
+    color: var(--text); font-size: 14px; font-weight: 600;
+}
+[data-ui="pocket"] #tx-type-segments button.active { background: var(--surface); color: var(--text); box-shadow: 0 1px 4px rgba(0, 0, 0, 0.14); }
+[data-ui="pocket"] #tx-type-segments button:disabled { opacity: 0.5; }
+[data-ui="pocket"][data-theme="dark"] #tx-type-segments button.active { background: color-mix(in srgb, var(--text) 24%, var(--surface)); }   /* the surface is nearly the track's colour in dark */
+
+/* the amount: big, in the middle, − and + on its sides; green for income */
+[data-ui="pocket"] #tx-dialog .amount-field {
+    display: grid; grid-template-columns: 44px minmax(0, 1fr) 44px; grid-template-areas: "minus amount plus" "result result result";
+    align-items: center; gap: 2px 8px; padding: 4px 0;
+}
+[data-ui="pocket"] #tx-dialog .amount-field input {
+    grid-area: amount; width: 100%; padding: 0; border: 0; background: none; box-shadow: none; outline: none;
+    text-align: center; font-size: 44px; font-weight: 800; letter-spacing: -0.03em; font-variant-numeric: tabular-nums; color: var(--text);
+}
+[data-ui="pocket"] #tx-dialog .amount-field input::placeholder { color: color-mix(in srgb, var(--text) 25%, transparent); }
+[data-ui="pocket"] #tx-dialog[data-type="income"] .amount-field input { color: var(--accent-text); }   /* the colour of money in, as in the lists */
+[data-ui="pocket"] #tx-dialog .amount-operator[data-operator="-"] { grid-area: minus; }
+[data-ui="pocket"] #tx-dialog .amount-operator[data-operator="+"] { grid-area: plus; }
+[data-ui="pocket"] #tx-dialog .amount-operator {
+    width: 44px; height: 44px; padding: 0; border: 0; border-radius: 50%; background: var(--surface); color: var(--text); font-size: 20px;
+}
+[data-ui="pocket"] #tx-dialog .amount-result { grid-area: result; text-align: center; color: var(--muted); font-size: 14px; }
+[data-ui="pocket"] #tx-dialog .amount-result:empty { display: none; }
+[data-ui="pocket"] #tx-dialog .fx-field { align-items: center; gap: 8px; margin-top: -8px; }
+[data-ui="pocket"] #tx-dialog button.fx-toggle { align-self: center; border: 0; background: none; color: var(--accent); font-size: 14px; font-weight: 600; padding: 4px 8px; }
+[data-ui="pocket"] #tx-dialog .fx-inputs { width: 100%; }
+[data-ui="pocket"] #tx-dialog .fx-info { margin: 0 16px; text-align: center; }
+
+/* grouped rows: name on the left, value on the right, a thin line between them starting at the text */
+[data-ui="pocket"] #tx-dialog .form-group { display: block; background: var(--surface); border-radius: 14px; overflow: hidden; }
+[data-ui="pocket"] #tx-dialog .form-row {
+    display: flex; align-items: center; gap: 12px; min-height: 48px; padding: 0 16px; cursor: default;
+}
+[data-ui="pocket"] #tx-dialog .form-group > * + * {
+    background: linear-gradient(var(--border), var(--border)) 16px 0 / calc(100% - 16px) 0.5px no-repeat;
+}
+[data-ui="pocket"] #tx-dialog .form-group > [hidden] + * { background: none; }   /* no line above the first row shown */
+/* the most used categories as round icons above the Category row (JS/dialogs/transactionCategoryChips.js) */
+[data-ui="pocket"] #tx-dialog .category-chips:not([hidden]) {
+    display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px 6px; padding: 14px 10px 12px;
+}
+[data-ui="pocket"] #tx-dialog .category-chip {
+    display: flex; flex-direction: column; align-items: center; gap: 6px; min-width: 0; min-height: 0; padding: 0;
+    border: 0; border-radius: 12px; background: none; box-shadow: none; color: var(--muted); font-size: 12px; font-weight: 500;
+}
+[data-ui="pocket"] #tx-dialog .category-chip .category-icon { width: 44px; height: 44px; font-size: 18px; transition: transform 0.12s; }
+[data-ui="pocket"] #tx-dialog .category-chip:active .category-icon { transform: scale(0.92); }
+[data-ui="pocket"] #tx-dialog .category-chip-name { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+[data-ui="pocket"] #tx-dialog .category-chip[aria-checked="true"] { color: var(--text); font-weight: 700; }
+[data-ui="pocket"] #tx-dialog .category-chip[aria-checked="true"] .category-icon { box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px var(--text); }
+[data-ui="pocket"] #tx-dialog .form-label { display: block; flex: none; color: var(--text); font-size: 16px; font-weight: 400; }
+[data-ui="pocket"] #tx-dialog .form-row :is(input, select) {
+    flex: 1 1 auto; min-width: 0; width: auto; padding: 12px 0; border: 0; border-radius: 0; background-color: transparent; box-shadow: none;
+    color: var(--muted); font-size: 16px; text-align: right; text-align-last: right;
+}
+[data-ui="pocket"] #tx-dialog .form-row :is(input, select):focus { outline: none; box-shadow: none; color: var(--text); }
+[data-ui="pocket"] #tx-dialog .form-row select {
+    appearance: none; -webkit-appearance: none; padding-right: 18px;
+    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 16' fill='none' stroke='%238e8e93' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M2 6l3-3 3 3M2 10l3 3 3-3'/%3E%3C/svg%3E") right center / 9px 14px no-repeat;
+}
+[data-ui="pocket"] #tx-dialog .form-row input[type="date"]::-webkit-date-and-time-value { text-align: right; }
+[data-ui="pocket"] #tx-dialog .form-row input[name="description"] { text-align: left; text-align-last: left; color: var(--text); }
+[data-ui="pocket"] #tx-dialog .form-row :is(input, select):disabled { opacity: 0.6; }
+/* the account the type doesn't use isn't there at all (an expense comes from an account, income goes to one) */
+[data-ui="pocket"] #tx-dialog[data-type="expense"] .form-row:has(#tx-to),
+[data-ui="pocket"] #tx-dialog[data-type="income"] .form-row:has(#tx-from) { display: none; }
+[data-ui="pocket"] #tx-dialog[data-type="income"] .tx-accounts > * + * { background: none; }
+/* a reconciliation or a trade can't be changed much: what doesn't apply isn't drawn (its empty account, the − and +,
+   the date shortcuts when the date is locked) */
+[data-ui="pocket"] #tx-dialog .form-row:has(select:disabled > option[value=""]:checked) { display: none; }
+[data-ui="pocket"] #tx-dialog .tx-accounts:has(.form-row:first-child select:disabled > option[value=""]:checked) > * + * { background: none; }
+[data-ui="pocket"] #tx-dialog .amount-field:has(input:disabled) .amount-operator { visibility: hidden; }
+[data-ui="pocket"] #tx-dialog .tx-when:has(input:disabled) .date-chips { display: none; }
+/* Today / Yesterday / 2 days ago: inside the date's group, under it */
+[data-ui="pocket"] #tx-dialog .date-chips { display: flex; gap: 8px; margin: 0; padding: 4px 16px 12px; background: none; }
+[data-ui="pocket"] #tx-dialog .date-chips button { min-height: 0; padding: 6px 12px; font-size: 13.5px; border: 0; background: var(--pocket-field); color: var(--text); }
+[data-ui="pocket"] #tx-dialog .date-chips button.active { background: var(--text); color: var(--bg); }
+/* tags: one more row, full width */
+[data-ui="pocket"] #tx-dialog .tag-field { min-height: 48px; padding: 6px 12px; border: 0; border-radius: 14px; background: var(--surface); box-shadow: none; }
+[data-ui="pocket"] #tx-dialog .tag-field input { font-size: 16px; }
+
+/* buttons, on a computer: Delete on the left, Cancel and Add / Save on the right */
+[data-ui="pocket"] #tx-dialog .actions { display: flex; align-items: center; margin-top: 4px; }
+[data-ui="pocket"] #tx-dialog .actions :is(button, a) { white-space: nowrap; }
+[data-ui="pocket"] #tx-dialog #tx-delete { margin-right: auto; }
+[data-ui="pocket"] #tx-dialog .manage-link { margin-right: auto; font-size: 13px; }
+[data-ui="pocket"] #tx-dialog #tx-delete:not([hidden]) + .manage-link { display: none; }   /* editing: Delete takes its place */
+
+@media (max-width: 800px) {
+    [data-ui="pocket"] #tx-dialog { width: calc(100vw - 16px); padding: 20px 16px 18px; }
+    [data-ui="pocket"] #tx-dialog h3 { margin: 0 52px 16px; line-height: 40px; text-align: center; font-size: 17px; font-weight: 700; }
+    [data-ui="pocket"] #tx-dialog .amount-field input { font-size: 48px; }
+    /* ✕ and ✓ in the top corners, like an iOS sheet; their words stay for VoiceOver */
+    [data-ui="pocket"] #tx-dialog .actions { display: block; margin: 0; }
+    [data-ui="pocket"] #tx-dialog .actions :is([data-close], #tx-submit) {
+        position: absolute; top: 20px; width: 40px; height: 40px; min-height: 0; padding: 0; border: 0; border-radius: 50%;
+        font-size: 0; color: transparent; box-shadow: none;
+    }
+    [data-ui="pocket"] #tx-dialog .actions [data-close] { left: 16px; background: var(--surface); }
+    [data-ui="pocket"] #tx-dialog .actions #tx-submit { right: 16px; background: var(--accent); }
+    [data-ui="pocket"] #tx-dialog .actions :is([data-close], #tx-submit)::before {
+        content: ""; position: absolute; inset: 0; margin: auto; width: 18px; height: 18px; background: var(--text);
+        -webkit-mask: var(--sheet-icon) center / contain no-repeat; mask: var(--sheet-icon) center / contain no-repeat;
+    }
+    [data-ui="pocket"] #tx-dialog .actions [data-close] { --sheet-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.6' stroke-linecap='round'%3E%3Cpath d='M6 6l12 12M18 6L6 18'/%3E%3C/svg%3E"); }
+    [data-ui="pocket"] #tx-dialog .actions #tx-submit { --sheet-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12.5l4.5 4.5L19 7.5'/%3E%3C/svg%3E"); }
+    [data-ui="pocket"] #tx-dialog .actions #tx-submit::before { background: #fff; }
+    [data-ui="pocket"] #tx-dialog .actions #tx-submit[hidden] { display: none; }
+    /* Delete: a red row at the bottom, when editing */
+    [data-ui="pocket"] #tx-dialog #tx-delete:not([hidden]) {
+        display: block; width: 100%; min-height: 48px; margin: 6px 0 0; border: 0; border-radius: 14px;
+        background: var(--surface); color: var(--neg); font-size: 16px; font-weight: 600;
+    }
+}
+
+/* Movements on Transactions: "From → To" as the title (markRowsForPocket in transactionsPage.js), the description under it */
+.movement-route { display: none; }
+[data-ui="pocket"] #transactions-body .movement-route { display: block; overflow: hidden; text-overflow: ellipsis; }
+[data-ui="pocket"] #transactions-body .movement-route ~ * { display: block; font-size: 13.5px; font-weight: 400; color: var(--muted); overflow: hidden; text-overflow: ellipsis; }
+[data-ui="pocket"] #transactions-body .tx-movement :is(td:nth-child(3), td:nth-child(4)) { display: none; }
+
+/* Transactions on a wide window: the list stays narrow, so a description and its amount don't end up a whole screen
+   apart, and the filters move into a column on its right that stays put while the list scrolls. The column is drawn
+   like the transaction window: the search, the quick dates, then one grouped list (a row per picker, a thin line
+   between rows starting at the text, the value plain with a ⌃⌄ chevron, From and To with their name on the left) */
+@media (min-width: 1100px) {
+    [data-ui="pocket"] section[data-page="transactions"] {
+        display: grid; grid-template-columns: minmax(0, 720px) 280px; column-gap: 32px; align-items: start; justify-content: center;
+    }
+    [data-ui="pocket"] section[data-page="transactions"] > .page-head { grid-column: 1 / -1; }
+    [data-ui="pocket"] section[data-page="transactions"] > #tx-summary { grid-column: 1; grid-row: 2; margin: 0 16px 0; }
+    [data-ui="pocket"] section[data-page="transactions"] > .transactions-table { grid-column: 1; grid-row: 3; }
+
+    [data-ui="pocket"] section[data-page="transactions"] > .filters {
+        grid-column: 2; grid-row: 2 / span 2; position: sticky; top: 24px;
+        display: flex; flex-direction: column; align-items: stretch; gap: 0; margin: 0;
+    }
+    [data-ui="pocket"] section[data-page="transactions"] > .filters::before { display: none; }
+    [data-ui="pocket"] section[data-page="transactions"] > .filters > * { flex: none; width: 100%; min-width: 0; margin: 0; }
+    [data-ui="pocket"] section[data-page="transactions"] > .filters #f-search { order: 0; flex: none; box-sizing: border-box; height: 40px; background: var(--surface); }   /* #id: beats the 300px it gets in the row layout */
+    [data-ui="pocket"] section[data-page="transactions"] > .filters .chips { order: 1; display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0 18px; }
+
+    /* the grouped list: every picker is a row of it */
+    [data-ui="pocket"] section[data-page="transactions"] > .filters > :is(select, label, input[type=number]) {
+        order: 2; box-sizing: border-box; height: 44px; padding: 0 16px;
+        border: 0; border-radius: 0; box-shadow: none;
+        background: linear-gradient(var(--border), var(--border)) 16px 0 / calc(100% - 16px) 0.5px no-repeat, var(--surface);
+        color: var(--text); font-size: 15px;
+    }
+    [data-ui="pocket"] section[data-page="transactions"] > .filters > #account-select {
+        border-radius: 14px 14px 0 0; background: var(--surface);   /* the first row: no line above it */
+    }
+    [data-ui="pocket"] section[data-page="transactions"] > .filters > #f-max { border-radius: 0 0 14px 14px; }
+    [data-ui="pocket"] section[data-page="transactions"] > .filters > input:is(#f-min, #f-max) { flex: none; }   /* not the 84px they get in the row layout */
+    [data-ui="pocket"] section[data-page="transactions"] > .filters > select:is(select, input[type=number]) {   /* :is(): as strong as the row rule above, so the chevron is kept */
+        appearance: none; -webkit-appearance: none; padding-right: 34px;
+        background:
+            url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 16' fill='none' stroke='%238e8e93' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M2 6l3-3 3 3M2 10l3 3 3-3'/%3E%3C/svg%3E") right 16px center / 9px 14px no-repeat,
+            linear-gradient(var(--border), var(--border)) 16px 0 / calc(100% - 16px) 0.5px no-repeat, var(--surface);
+    }
+    [data-ui="pocket"] section[data-page="transactions"] > .filters > select#account-select {
+        background:
+            url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 16' fill='none' stroke='%238e8e93' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M2 6l3-3 3 3M2 10l3 3 3-3'/%3E%3C/svg%3E") right 16px center / 9px 14px no-repeat,
+            var(--surface);
+    }
+    [data-ui="pocket"] section[data-page="transactions"] > .filters > label { display: flex; align-items: center; gap: 12px; }
+    [data-ui="pocket"] section[data-page="transactions"] > .filters > label input {
+        flex: 1 1 auto; min-width: 0; height: 100%; padding: 0; border: 0; border-radius: 0; background: transparent; box-shadow: none;
+        color: var(--muted); font-size: 15px; text-align: right;
+    }
+    [data-ui="pocket"] section[data-page="transactions"] > .filters > label input::-webkit-date-and-time-value { text-align: right; }
+    [data-ui="pocket"] section[data-page="transactions"] > .filters > :is(select, input):focus,
+    [data-ui="pocket"] section[data-page="transactions"] > .filters > label input:focus { outline: none; box-shadow: none; }
+    [data-ui="pocket"] section[data-page="transactions"] > .filters > :is(select, label, input[type=number]):focus-within { background-color: var(--pocket-field); }
+}

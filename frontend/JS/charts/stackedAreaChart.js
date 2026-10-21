@@ -8,9 +8,12 @@
 //                      clipped to its side of the line, so one path never has to change style halfway)
 //   band               { low, high, label }: a shaded range around the total (null where there's none),
 //                      e.g. the net worth at 0% and at 8% return
+//   referenceLine      { values, label, className }: a dashed line (null where there's none), e.g. the FIRE number.
+//                      If it's far above everything else (more than twice the highest value) it would squash the
+//                      chart, so it isn't drawn: a small "↑ label" at the top says it's above the chart instead
 
 import { createElement } from "../core/domHelpers.js";
-import { euroFormatter, formatShortDate } from "../core/formatting.js";
+import { euroFormatter, wholeEuroFormatter, formatShortDate } from "../core/formatting.js";
 import { createSvgElement } from "./svgHelpers.js";
 import { chooseValueAxis, drawValueGrid, drawDateLabels, placeTooltipNearPoint, findNearestIndex } from "./chartAxis.js";
 
@@ -19,7 +22,7 @@ const CHART_MARGINS = { top: 12, right: 16, bottom: 24, left: 72 };
 // layers: [{ name, values, className }] bottom first, one value per date.
 // totalName: what the sum is called in the tooltip ("Net worth").
 // options: { forecastFromIndex, band } (see the top of the file), both optional.
-export function drawStackedAreaChart(container, dates, layers, totalName, { forecastFromIndex = null, band = null } = {}) {
+export function drawStackedAreaChart(container, dates, layers, totalName, { forecastFromIndex = null, band = null, referenceLine = null } = {}) {
   const width = container.clientWidth || 600, height = container.clientHeight || 260;
   const margins = CHART_MARGINS;
   const lastIndex = dates.length - 1;
@@ -35,7 +38,10 @@ export function drawStackedAreaChart(container, dates, layers, totalName, { fore
   const totals = edgeBelow;
 
   const bandValues = band ? [...band.low, ...band.high].filter((value) => value !== null) : [];
-  const allEdgeValues = [...layerEdges.flatMap(({ edgeBelow: below, edgeAbove: above }) => [...below, ...above]), ...bandValues];
+  const chartValues = [...layerEdges.flatMap(({ edgeBelow: below, edgeAbove: above }) => [...below, ...above]), ...bandValues];
+  const referenceValues = referenceLine ? referenceLine.values.filter((value) => value !== null) : [];
+  const isReferenceAboveChart = referenceValues.length > 0 && Math.min(...referenceValues) > 2 * Math.max(0, ...chartValues);
+  const allEdgeValues = isReferenceAboveChart ? chartValues : [...chartValues, ...referenceValues];
   const valueAxis = chooseValueAxis(Math.min(0, ...allEdgeValues), Math.max(0, ...allEdgeValues));
   const { axisBottom, axisTop } = valueAxis;
   const xOfIndex = (index) => margins.left + (lastIndex ? index / lastIndex : 0.5) * (width - margins.left - margins.right);
@@ -76,7 +82,9 @@ export function drawStackedAreaChart(container, dates, layers, totalName, { fore
     svg.append(todayLabel);
   }
 
-  const tooltip = addHoverCrosshair({ svg, dates, layers, totals, totalName, width, height, margins, xOfIndex, yOfValue, forecastFromIndex, band });
+  if (referenceLine && referenceValues.length) drawReferenceLine(svg, referenceLine, { isReferenceAboveChart, pointsOf, width, margins });
+
+  const tooltip = addHoverCrosshair({ svg, dates, layers, totals, totalName, width, height, margins, xOfIndex, yOfValue, forecastFromIndex, band, referenceLine });
   container.replaceChildren(svg, tooltip);
 }
 
@@ -97,8 +105,26 @@ function drawBand(svg, band, pointsOf) {
   svg.append(createSvgElement("path", { class: "band-edge", d: `M${lowPoints.join("L")}` }));
 }
 
+// The dashed reference line with its label at the right end, or, when it's far above the chart, only the label at the top
+function drawReferenceLine(svg, referenceLine, { isReferenceAboveChart, pointsOf, width, margins }) {
+  const className = referenceLine.className ?? "";
+  if (isReferenceAboveChart) {
+    const label = createSvgElement("text", { class: `reference-label ${className}`, x: width - margins.right, y: margins.top + 10, "text-anchor": "end" });
+    label.textContent = `↑ ${referenceLine.label} ${wholeEuroFormatter.format(Math.min(...referenceLine.values.filter((value) => value !== null)))} (above the chart)`;
+    svg.append(label);
+    return;
+  }
+  const firstIndex = referenceLine.values.findIndex((value) => value !== null);
+  const points = pointsOf(referenceLine.values.map((value) => value ?? 0)).slice(firstIndex);
+  svg.append(createSvgElement("path", { class: `reference-line ${className}`, d: `M${points.join("L")}` }));
+  const [lastX, lastY] = points.at(-1).split(",").map(Number);
+  const label = createSvgElement("text", { class: `reference-label ${className}`, x: lastX, y: lastY - 6, "text-anchor": "end" });
+  label.textContent = referenceLine.label;
+  svg.append(label);
+}
+
 // Moving the pointer over the chart shows that day's total and each part. Returns the tooltip element.
-function addHoverCrosshair({ svg, dates, layers, totals, totalName, width, height, margins, xOfIndex, yOfValue, forecastFromIndex, band }) {
+function addHoverCrosshair({ svg, dates, layers, totals, totalName, width, height, margins, xOfIndex, yOfValue, forecastFromIndex, band, referenceLine }) {
   const crosshairLine = createSvgElement("line", { class: "cross", y1: margins.top, y2: height - margins.bottom, visibility: "hidden" });
   const hoverDot = createSvgElement("circle", { class: "hover-dot", r: 5, visibility: "hidden" });
   const pointerArea = createSvgElement("rect", { x: margins.left, y: 0, width: width - margins.left - margins.right, height, fill: "transparent" });
@@ -123,8 +149,11 @@ function addHoverCrosshair({ svg, dates, layers, totals, totalName, width, heigh
     const bandRow = band && band.low[nearestIndex] !== null && nearestIndex > (forecastFromIndex ?? -1)
       ? [createElement("span", "tip-row tip-band", `${band.label}: ${euroFormatter.format(band.low[nearestIndex])} – ${euroFormatter.format(band.high[nearestIndex])}`)]
       : [];
+    const referenceRow = referenceLine && referenceLine.values[nearestIndex] !== null
+      ? [createElement("span", "tip-row tip-band", `${referenceLine.label}: ${euroFormatter.format(referenceLine.values[nearestIndex])}`)]
+      : [];
     tooltip.replaceChildren(document.createTextNode(`${isForecast ? "Forecast · " : ""}${totalName} · ${formatShortDate(dates[nearestIndex], true)}`),
-      createElement("strong", "", euroFormatter.format(totals[nearestIndex])), ...layerRows, ...bandRow);
+      createElement("strong", "", euroFormatter.format(totals[nearestIndex])), ...layerRows, ...bandRow, ...referenceRow);
     tooltip.hidden = false;
     placeTooltipNearPoint(tooltip, svg, { pointX, pointY, width, height });
   };

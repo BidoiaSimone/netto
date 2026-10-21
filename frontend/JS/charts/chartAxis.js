@@ -1,6 +1,6 @@
 // ---- value axis and date labels shared by the SVG charts ----
 
-import { formatShortDate } from "../core/formatting.js";
+import { formatShortDate, hideWhenAmountsHidden } from "../core/formatting.js";
 import { createSvgElement } from "./svgHelpers.js";
 
 // Round axis steps (1, 2, 2.5 or 5 × 10^n) so the labels read 8.500 €, 9.000 € ...
@@ -18,7 +18,8 @@ export function chooseValueAxis(lowestValue, highestValue) {
     axisBottom,
     axisTop,
     step,
-    labelFormatter: new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR", minimumFractionDigits: decimals, maximumFractionDigits: decimals }),
+    // ***** € with Hide amounts on: the lines keep their shape, the scale says nothing
+    labelFormatter: hideWhenAmountsHidden(new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR", minimumFractionDigits: decimals, maximumFractionDigits: decimals })),
   };
 }
 

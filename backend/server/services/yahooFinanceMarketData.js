@@ -78,4 +78,22 @@ async function getPriceHistoryInEuros(ticker, startDate, interval, exchangeRateH
   return historyInEuros;
 }
 
-module.exports = { getCurrentPriceInEuros, getPriceHistoryInEuros };
+// ---------- exchange rate on a given day (foreign-currency transactions) ----------
+
+// How many units of `currency` one euro bought on `date` (YYYY-MM-DD): EURJPY=X is "yen per euro", the way
+// rates are usually quoted (and precise: JPYEUR=X would be 0.0062, with few significant digits left).
+// Markets close at weekends and on holidays, so the rate is the last daily close on or before that date,
+// looking back up to 10 days. Returns { unitsPerEuro, rateDate }. Throws when Yahoo has nothing.
+async function getExchangeRateOnDate(currency, date) {
+  const dayAfter = new Date(Date.parse(date + "T00:00:00Z") + 864e5);
+  const tenDaysBefore = new Date(Date.parse(date + "T00:00:00Z") - 10 * 864e5);
+  const chart = await yahooFinance.chart(`EUR${currency}=X`, { period1: tenDaysBefore, period2: dayAfter, interval: "1d" });
+  const closesUpToDate = chart.quotes
+    .filter((quote) => quote.close != null && quote.close > 0 && toDayKey(quote.date) <= date)
+    .sort((first, second) => toDayKey(first.date).localeCompare(toDayKey(second.date)));
+  const lastClose = closesUpToDate.at(-1);
+  if (!lastClose) throw new Error(`No EUR/${currency} rate available around ${date}`);
+  return { unitsPerEuro: lastClose.close, rateDate: toDayKey(lastClose.date) };
+}
+
+module.exports = { getCurrentPriceInEuros, getPriceHistoryInEuros, getExchangeRateOnDate };

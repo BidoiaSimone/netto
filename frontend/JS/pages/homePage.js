@@ -1,21 +1,21 @@
-// ---- Home page: net worth and its three groups (liquid, investments, immobilized), accounts to check, latest transactions ----
+// ---- Home page: net worth and its three groups (liquid, investments, immobilized), latest transactions ----
+// (The accounts due to be reconciled are drawn by reconciliationReminders.js.)
 // (The net worth in the sidebar is filled here too.)
 
-import { elementById, fillTableBody, createTypeBadge } from "../core/domHelpers.js";
+import { elementById, createElement, fillTableBody, createTypeBadge } from "../core/domHelpers.js";
 import { animateEuroAmount, euroFormatter } from "../core/formatting.js";
 import { splitNetWorthIntoGroups, calculateBarWidths } from "../core/netWorthGroups.js";
 import { callApi } from "../core/apiClient.js";
-import { appState, isAccountOpen } from "../core/appState.js";
-import { createSignedAmountCell } from "../core/transactionDisplay.js";
+import { appState } from "../core/appState.js";
+import { createSignedAmountCell, createTransactionIcon, describeDay, describeMovementRoute } from "../core/transactionDisplay.js";
 import { updateReconcileDifferences } from "./assetsPage.js";
 import { makeRowsOpenTransactionEditor } from "../dialogs/transactionDialog.js";
 import { renderLiquidityInsights } from "./liquidityInsights.js";
 
-const DAYS_BEFORE_AN_ACCOUNT_NEEDS_CHECKING = 30; // an account not reconciled for this long is flagged
 const NUMBER_OF_LATEST_TRANSACTIONS = 5;
-const MILLISECONDS_PER_DAY = 864e5;
 
-// May return a warning: tickers without a live price are left out of the net worth
+// Tickers without a live price (no connection, Yahoo slow) are left out of the net worth. That's not an error, and
+// it fixes itself: a grey note on Investments and on Home's Investments card says so, not the red line on every page.
 export async function loadNetWorth() {
   const netWorth = await callApi("/net-worth");
   appState.netWorth = netWorth;
@@ -23,9 +23,26 @@ export async function loadNetWorth() {
   renderNetWorthGroups(splitNetWorthIntoGroups(netWorth));
   updateReconcileDifferences(); // its summary shows the net worth after reconciling
   renderLiquidityInsights();    // Insights > Liquidity
-  if (netWorth.failed_tickers?.length) {
-    return `No live price for ${netWorth.failed_tickers.join(", ")}: not included in net worth`;
-  }
+  const failedTickers = netWorth.failed_tickers ?? [];
+  const lastKnownNote = describeLastKnownPrices(netWorth.last_known_prices ?? []);
+  const priceNote = elementById("inv-price-note");
+  priceNote.hidden = !failedTickers.length && !lastKnownNote;
+  priceNote.textContent = [
+    failedTickers.length && `No price at all yet for ${failedTickers.join(", ")}: left out of the totals, the net worth and the target allocation until one comes.`,
+    lastKnownNote && `${lastKnownNote[0].toUpperCase()}${lastKnownNote.slice(1)} (markets closed, or Yahoo not answering right now).`,
+  ].filter(Boolean).join(" ");
+  if (failedTickers.length) elementById("h-inv-note").append(createElement("span", "price-missing", ` · no price for ${failedTickers.join(", ")}`));
+  else if (lastKnownNote) elementById("h-inv-note").append(createElement("span", "hint", ` · ${lastKnownNote}`));
+}
+
+// "last prices from ven 16 ott, 17:35" (or one per ticker when they differ): the values shown use them
+function describeLastKnownPrices(lastKnownPrices) {
+  if (!lastKnownPrices.length) return "";
+  const format = (isoDate) => new Date(isoDate).toLocaleString("it-IT", { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+  const moments = [...new Set(lastKnownPrices.map((item) => format(item.as_of).slice(0, 10)))];
+  return moments.length === 1
+    ? `last prices from ${format(lastKnownPrices[0].as_of)}`
+    : `last prices: ${lastKnownPrices.map((item) => `${item.ticker} ${format(item.as_of)}`).join(", ")}`;
 }
 
 const percentFormatter = new Intl.NumberFormat("it-IT", { style: "percent", maximumFractionDigits: 0 });
@@ -52,20 +69,15 @@ function renderNetWorthGroups(groups) {
   elementById("bar-immobilized").style.width = barWidths.immobilized + "%";
 }
 
-// "Not reconciled in 30+ days: Cash (2026-08-01), Safe (never)"
-export function renderAccountsNeedingCheck() {
-  const oldestAcceptableTime = Date.now() - DAYS_BEFORE_AN_ACCOUNT_NEEDS_CHECKING * MILLISECONDS_PER_DAY;
-  const accountsNeedingCheck = appState.accounts.filter((account) =>
-    isAccountOpen(account) && (!account.last_reconciled || Date.parse(account.last_reconciled) < oldestAcceptableTime));
-  elementById("stale").textContent = accountsNeedingCheck.length
-    ? `Not reconciled in ${DAYS_BEFORE_AN_ACCOUNT_NEEDS_CHECKING}+ days: ${accountsNeedingCheck.map((account) => `${account.name} (${account.last_reconciled ?? "never"})`).join(", ")}`
-    : "";
-}
-
+// Cells: 1 date, 2 type, 3 amount, 4 description (or the category; a movement's route, "Edenred → BBVA"); Pocket also draws 5 and 6 (Classic hides them,
+// 10-editable-rows-and-accounts.css): the line under the title ("Food · Yesterday") and the category's round icon,
+// so each row looks like one of the Transactions list.
 export function renderLatestTransactions() {
   const latestTransactions = appState.transactions.slice(0, NUMBER_OF_LATEST_TRANSACTIONS);
   fillTableBody("recent-body", latestTransactions, (transaction) => [
-    transaction.date, createTypeBadge(transaction.type), createSignedAmountCell(transaction), transaction.description ?? transaction.category,
+    transaction.date, createTypeBadge(transaction.type), createSignedAmountCell(transaction), transaction.type === "movement" ? describeMovementRoute(transaction) : transaction.description ?? transaction.category,
+    [transaction.type === "movement" ? transaction.description : transaction.description ? transaction.category : null, describeDay(transaction.date)].filter(Boolean).join(" · "),
+    createTransactionIcon(transaction),
   ]);
   makeRowsOpenTransactionEditor("recent-body", latestTransactions);
 }

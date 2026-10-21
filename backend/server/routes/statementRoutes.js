@@ -6,14 +6,7 @@ const express = require("express");
 const { buildFinancialStatements } = require("../services/financialStatements.js");
 const { parseDateOrDefaultToToday, getTodayAsLocalDate } = require("../utils/localDates.js");
 const db = require("../../db/databaseConnection.js");
-const { findFirstRecordedDate } = require("../../db/firstRecordedDate.js");
-
-// The first day anything happened: an account opening, a transaction or a trade
-function findFirstDayOfRecords() {
-  const firstTradeDay = db.prepare(`SELECT MIN(date) AS day FROM investment_trades`).get().day;
-  const firstOtherDay = findFirstRecordedDate(db);
-  return firstTradeDay && firstTradeDay < firstOtherDay ? firstTradeDay : firstOtherDay;
-}
+const { findFirstDayOfAnyRecord } = require("../../db/firstRecordedDate.js");
 
 const router = express.Router();
 
@@ -27,7 +20,7 @@ router.get("/statements", async function getStatements(request, response) {
   // "All time" asks from 1970. Before the first record everything is 0, which changes nothing in the balance sheet,
   // but the maths that counts days would: 56 years of stamp duty, an average balance diluted over decades, returns
   // spread over 20,000 days. So a period never starts before the first record (unless it ends before it too).
-  const firstDayOfRecords = findFirstDayOfRecords();
+  const firstDayOfRecords = findFirstDayOfAnyRecord(db);
   if (from < firstDayOfRecords && firstDayOfRecords <= to) from = firstDayOfRecords;
 
   try {

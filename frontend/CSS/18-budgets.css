@@ -10,8 +10,7 @@
 
 /* ---- Categories page ---- */
 /* the expense list has one column more than the income list next to it, so its fields stay compact */
-.expense-categories-table td input.budget-input { width: 88px; text-align: right; }
-.expense-categories-table td:nth-child(3) { color: var(--muted); font-size: 13px; }
+.expense-categories-table td input.budget-input { width: 108px; padding-left: 10px; padding-right: 10px; text-align: right; }
 .budgets-total { color: var(--muted); font-size: 13px; margin: -6px 0 0; }
 
 /* ---- Insights > This month > Budgets ---- */
@@ -43,7 +42,5 @@
 .st-budget-table tfoot tr.st-budget-unbudgeted td { font-weight: 400; color: var(--muted); }
 .st-budget-table .st-item small { display: block; margin-top: 2px; font-size: 12px; }
 
-/* ---- privacy mode: the budget amounts on the Categories page are amounts too ----
-   (Insights and Statements are already blurred as whole pages by 04-privacy-mode.css.)
-   A field you are typing in is shown, so a budget can still be set with amounts hidden. */
-body.private .budget-input:not(:focus), body.private .budgets-total { filter: blur(6px); }
+/* privacy mode: the budget fields show ***** until you click into one (hideAmountFieldWhenAmountsHidden in
+   JS/core/domHelpers.js), so a budget can still be set with amounts hidden */

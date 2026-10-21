@@ -26,3 +26,15 @@ button.name-link:focus-visible { outline: 2px solid var(--accent); outline-offse
 button.show-closed { padding: 6px 12px; font-size: 13px; margin-top: 4px; }
 #account-info { width: 100%; margin: 0; }
 .actions .reopen { margin-right: auto; }
+
+/* ---- the transaction window's Pocket-only parts (37-ui-pocket.css draws them): everywhere else the boxes are as if
+   they weren't there, the row names and the segmented type control don't show, and the window looks as before ---- */
+#tx-dialog :is(.form-group, .form-row) { display: contents; }
+#tx-dialog :is(.form-label, .segmented, .category-chips) { display: none; }
+
+/* ---- the transactions list's Pocket-only parts (day rows, round icons: JS/pages/transactionsPage.js) ---- */
+html:not([data-ui="pocket"]) .transactions-table tr.day-row,
+html:not([data-ui="pocket"]) #transactions-body td:nth-child(9) { display: none; }
+html:not([data-ui="pocket"]) #transactions-body tr.day-row:first-child + tr { border-top: 0; }   /* the phone's first card, as before */
+/* Home's latest transactions: the line under the title and the round icon are Pocket's too (JS/pages/homePage.js) */
+html:not([data-ui="pocket"]) #recent-body td:nth-child(n+5) { display: none; }

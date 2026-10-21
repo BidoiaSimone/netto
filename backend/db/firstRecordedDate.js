@@ -12,4 +12,12 @@ function findFirstRecordedDate(db) {
   return row.d ?? new Date().toLocaleDateString("sv-SE");
 }
 
-module.exports = { findFirstRecordedDate };
+// The first day anything happened at all: an account opening, a transaction or a trade. Statements and the Year in
+// review never start a period before it (see routes/statementRoutes.js for why).
+function findFirstDayOfAnyRecord(db) {
+  const firstTradeDay = db.prepare(`SELECT MIN(date) AS day FROM investment_trades`).get().day;
+  const firstOtherDay = findFirstRecordedDate(db);
+  return firstTradeDay && firstTradeDay < firstOtherDay ? firstTradeDay : firstOtherDay;
+}
+
+module.exports = { findFirstRecordedDate, findFirstDayOfAnyRecord };

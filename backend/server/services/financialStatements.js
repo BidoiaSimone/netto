@@ -21,7 +21,8 @@
  *
  * Balances on a past day are rebuilt the same way as the net worth chart (services/netWorthHistory.js).
  *
- * Next to the income statement: budget vs actual for the same period (services/budgetCalculator.js).
+ * Next to the income statement: budget vs actual for the same period (services/budgetCalculator.js), and the same
+ * income and expenses drawn as flows, with what went into investments and savings (services/sankeyFlows.js).
  * Also for the same period: the investments' real return, money- and time-weighted (services/investmentReturns.js),
  * and estimated Italian taxes (services/italianTaxEstimates.js). The taxes are estimates shown NEXT TO the
  * statements, never inside them: the bridge and the totals above only contain what netto recorded.
@@ -34,6 +35,7 @@ const { convertCentsToEuros } = require("../utils/moneyConversion.js");
 const { buildBudgetVsActual } = require("./budgetCalculator.js");
 const { listDaysNeededForReturns, buildInvestmentReturns } = require("./investmentReturns.js");
 const { buildItalianTaxEstimates } = require("./italianTaxEstimates.js");
+const { buildSankeyFlows } = require("./sankeyFlows.js");
 
 const LIQUIDITY_CLASS_ORDER = ["cash_and_equivalents", "restricted", "investments", "personal_use"];
 
@@ -134,7 +136,7 @@ function buildBridge({ from, to, accountRows, incomeStatement, investmentsOpenin
     { key: "starting_balances", label: "Starting balances added", amount: openingBalancesOfNewAccounts + tradesWithoutPayment },
   ];
   const explained = steps.reduce((sum, step) => sum + step.amount, 0);
-  return { opening, steps, closing, unexplained: closing - opening - explained };
+  return { opening, steps, closing, unexplained: closing - opening - explained, investmentCash };
 }
 
 // ---------- everything together ----------
@@ -171,7 +173,10 @@ async function buildFinancialStatements(from, to) {
     netWorthOpening: balanceSheet.opening, netWorthClosing: balanceSheet.closing,
   });
 
+  const sankey = buildSankeyFlows({ incomeRows: incomeStatement.income, expenseRows: incomeStatement.expenses, investmentCash: bridge.investmentCash });
+
   const toEuros = convertCentsToEuros;
+  const boxToEuros = (box) => ({ ...box, amount: toEuros(box.amount), grouped: box.grouped?.map((item) => ({ ...item, amount: toEuros(item.amount) })) });
   const categoryRowToEuros = (row) => ({ category_id: row.category_id, name: row.name, total: toEuros(row.total) });
   const netSavings = incomeStatement.totalIncome - incomeStatement.totalExpenses;
   return {
@@ -201,6 +206,13 @@ async function buildFinancialStatements(from, to) {
       unexplained: toEuros(bridge.unexplained), // should be 0: anything else is a bug
     },
     budget_vs_actual: buildBudgetVsActual(from, to),
+    money_flows: {
+      sources: sankey.sources.map(boxToEuros),
+      uses: sankey.uses.map(boxToEuros),
+      total: toEuros(sankey.total),
+      into_investments: toEuros(sankey.netIntoInvestments), // net cash from the accounts into trades (− = sold more)
+      savings: toEuros(sankey.savings),                     // income − expenses − into investments (− = taken from savings)
+    },
     investment_returns: investmentReturns,
     tax_estimates: taxEstimates, // estimates only: not in any total above
     failed_tickers: tickersValuedAtCost, // no price history: valued at what they cost

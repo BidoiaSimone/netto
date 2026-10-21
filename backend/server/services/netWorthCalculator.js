@@ -3,7 +3,7 @@
  */
 
 const db = require("../../db/databaseConnection.js");
-const { getCurrentPriceInEuros } = require("./yahooFinanceMarketData.js");
+const { getPriceInEurosOrLastKnown } = require("./livePrices.js");
 const { convertCentsToEuros } = require("../utils/moneyConversion.js");
 const { ACCOUNT_KINDS } = require("../../config/accountKinds.js");
 
@@ -23,13 +23,15 @@ async function calculateNetWorth() {
 
   // One failing ticker must not hide the whole net worth, so it is reported instead
   const exchangeRateCache = new Map();
-  const prices = await Promise.allSettled(holdings.map((holding) => getCurrentPriceInEuros(holding.ticker, exchangeRateCache)));
+  const prices = await Promise.allSettled(holdings.map((holding) => getPriceInEurosOrLastKnown(holding.ticker, exchangeRateCache)));
 
   let investmentsValue = 0;
   const failedTickers = [];
+  const lastKnownPrices = []; // no live price right now: valued at the last one (weekend, Yahoo not answering)
   prices.forEach((price, index) => {
-    if (price.status === "fulfilled") investmentsValue += holdings[index].shares * price.value;
-    else failedTickers.push(holdings[index].ticker);
+    if (price.status !== "fulfilled") return failedTickers.push(holdings[index].ticker);
+    investmentsValue += holdings[index].shares * price.value.price;
+    if (price.value.as_of) lastKnownPrices.push({ ticker: holdings[index].ticker, as_of: price.value.as_of });
   });
 
   return {
@@ -38,7 +40,8 @@ async function calculateNetWorth() {
     investments_value: investmentsValue,
     // the same total, from most to least liquid
     by_liquidity: { ...sumAccountsByLiquidity(), investments: investmentsValue },
-    failed_tickers: failedTickers, // not included in the totals above
+    failed_tickers: failedTickers, // never had a price: not included in the totals above
+    last_known_prices: lastKnownPrices, // included, at their last price
   };
 }
 

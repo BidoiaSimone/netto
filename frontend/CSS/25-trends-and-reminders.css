@@ -1,0 +1,63 @@
+/* Insights > Category trends (table and sparklines), the reconciliation reminders (Home, Next up, the quick
+   reconcile dialog) and the number settings of the Settings page.
+   One of the numbered files in this folder: Home.html loads them in number order, and later files
+   win over earlier ones when two rules are equally specific, so keep that order when adding files. */
+
+/* ---- Insights > Category trends ---- */
+.trends-head { align-items: center; }
+.trends-toggle { display: inline-flex; align-items: center; gap: 6px; margin: 0; cursor: pointer; }
+.trends-toggle input { width: 16px; height: 16px; padding: 0; accent-color: var(--accent); }
+.trends-table td:nth-child(n+2):not(:last-child), .trends-table th:nth-child(n+2):not(:last-child) { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.trends-table td:last-child { padding-top: 4px; padding-bottom: 4px; }
+.trends-table tr.running-hot td:first-child { box-shadow: inset 3px 0 0 var(--warn); }
+.trend-name { display: inline-flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+.trend-pill { font-size: 11px; padding: 1px 8px; }
+.trend-hot { color: var(--warn); font-weight: 600; }
+.trend-normal { color: var(--muted); }
+
+/* sparkline (JS/charts/sparkline.js) */
+.sparkline { display: block; overflow: visible; }
+.sparkline-line { fill: none; stroke: var(--accent-2); stroke-width: 1.6; stroke-linejoin: round; stroke-linecap: round; }
+.sparkline.hot .sparkline-line { stroke: var(--warn); }
+.sparkline-reference { stroke: var(--muted); stroke-width: 1; stroke-dasharray: 3 3; opacity: 0.8; }
+.sparkline-dot { fill: var(--accent-2); }
+.sparkline.hot .sparkline-dot { fill: var(--warn); }
+.sparkline-dot.partial { fill: var(--surface); stroke: var(--accent-2); stroke-width: 1.4; }
+.sparkline.hot .sparkline-dot.partial { stroke: var(--warn); }
+
+/* ---- reminders: Home ---- */
+.home-reminders { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 14px 0 4px; }
+.reminder-badge {
+    padding: 4px 10px; border-radius: 99px; font-size: 12px; font-weight: 600;
+    color: var(--warn); background: rgba(var(--warn-rgb), 0.12); border: 1px solid rgba(var(--warn-rgb), 0.4);
+}
+button.reminder-chip { display: inline-flex; align-items: baseline; gap: 6px; padding: 6px 12px; font-size: 13px; }
+button.reminder-chip strong { color: var(--text); font-weight: 600; }
+.reminder-when { color: var(--muted); font-size: 12px; }
+
+/* ---- reminders: Next up ---- */
+.reminder-list { margin-bottom: 22px; }
+/* name and "16 days overdue" on the left, one above the other; the button on the right */
+.reminder-list .reminder-item {
+    display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 2px 12px; padding: 8px 10px 8px 14px;
+    border-color: rgba(var(--warn-rgb), 0.45);
+}
+.reminder-item .reminder-text { font-weight: 600; }
+.reminder-item .reminder-when { grid-row: 2; }
+.reminder-item button.reminder-open { grid-column: 2; grid-row: 1 / span 2; padding: 6px 12px; font-size: 13px; }
+
+/* ---- quick reconcile dialog ---- */
+.quick-reconcile-recorded { width: 100%; margin: 0 0 4px; }
+.quick-reconcile-recorded strong { color: var(--text); font-variant-numeric: tabular-nums; }
+
+/* ---- Settings > Reminders and highlights ---- */
+.settings-numbers { display: grid; gap: 10px; max-width: 640px; }
+.setting-number { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 14px; color: var(--muted); }
+.setting-number > span:last-child { display: inline-flex; align-items: center; gap: 8px; width: 150px; }
+.setting-number input { width: 96px; text-align: right; }
+
+/* phones: 16px inputs (iOS zooms into smaller ones), the dialog buttons may wrap */
+@media (max-width: 700px) {
+    .setting-number input, #quick-reconcile-form input { font-size: 16px; }
+    #quick-reconcile-form .actions { flex-wrap: wrap; }
+}

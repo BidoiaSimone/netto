@@ -1,0 +1,38 @@
+/* Investments > Target allocation: the targets table, the drift highlight and "Where to put new money".
+   One of the numbered files in this folder: Home.html loads them in number order, and later files
+   win over earlier ones when two rules are equally specific, so keep that order when adding files. */
+
+.allocation-table td:nth-child(n+2), .allocation-table th:nth-child(n+2) { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.allocation-table tfoot td { font-weight: 600; border-top: 1px solid var(--border); }
+.allocation-target-cell { display: inline-flex; align-items: center; gap: 4px; }
+td input.allocation-target-input { width: 78px; text-align: right; }
+.allocation-percent-sign { color: var(--muted); }
+/* a drift over the threshold (a setting): amber, like the budgets at 80% */
+.allocation-drift.over { color: var(--warn); font-weight: 600; }
+
+.allocation-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 4px; }
+.allocation-actions #allocation-target-status { flex: 1 1 200px; margin: 0; }
+.allocation-actions button:disabled { opacity: 0.4; cursor: not-allowed; box-shadow: none; transform: none; }
+.allocation-add-form { flex-wrap: nowrap; gap: 8px; }
+.allocation-add-form input { width: 230px; max-width: 60vw; }
+.allocation-threshold { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 12px; }
+.allocation-threshold input { width: 80px; padding: 6px 10px; }
+
+.allocation-calculator-title { margin: 22px 0 10px; color: var(--muted); font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; }
+.allocation-new-money { display: flex; align-items: center; gap: 8px; font-size: 15px; }
+.allocation-new-money input { width: 140px; font-size: 16px; }
+.allocation-buys { display: grid; gap: 6px; margin: 12px 0; }
+.allocation-buys:empty { display: none; }
+/* ticker | amount | shares and where it lands: one line on a wide screen, wrapping on a phone */
+.allocation-buy {
+    display: grid; grid-template-columns: 110px 110px 1fr; align-items: baseline; gap: 4px 12px;
+    padding: 8px 12px; border-radius: 10px; background: var(--surface-2);
+}
+.allocation-buy-amount { font-weight: 700; color: var(--accent-2); font-variant-numeric: tabular-nums; text-align: right; }
+.allocation-buy-detail { color: var(--muted); font-size: 13px; }
+
+@media (max-width: 700px) {
+    .allocation-buy { grid-template-columns: 1fr auto; }
+    .allocation-buy-detail { grid-column: 1 / -1; }
+    td input.allocation-target-input, .allocation-threshold input, .allocation-add-form input { font-size: 16px; }
+}

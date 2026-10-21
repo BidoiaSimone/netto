@@ -1,0 +1,61 @@
+/* Goals page and the goal dialog.
+   One of the numbered files in this folder: Home.html loads them in number order, and later files
+   win over earlier ones when two rules are equally specific, so keep that order when adding files. */
+
+/* ---- the cards, one per goal, in queue order ---- */
+.goals-list { display: grid; gap: 16px; margin-top: 18px; }
+.goal-card {
+    background: linear-gradient(160deg, var(--surface-2), var(--surface));
+    border: 1px solid var(--border); border-radius: 16px; padding: 18px 22px;
+}
+.goal-card.reached { border-color: rgba(var(--accent-rgb), 0.55); box-shadow: var(--glow); }
+.goal-card.waiting, .goal-card.not_started { opacity: 0.75; }
+
+.goal-head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.goal-name { margin: 0; font-size: 18px; color: var(--text); }
+.goal-position { color: var(--muted); font-weight: 500; margin-right: 8px; font-size: 14px; }
+.goal-buttons { margin-left: auto; display: flex; gap: 6px; }
+.goal-buttons button { padding: 6px 12px; font-size: 13px; }
+.goal-buttons .goal-move { width: 34px; padding: 6px 0; }
+.goal-buttons button:disabled { opacity: 0.3; cursor: default; }
+.status-pill.good { color: var(--accent-2); border-color: rgba(var(--accent-rgb), 0.45); background: rgba(var(--accent-rgb), 0.1); }
+
+.goal-progress { margin: 14px 0 10px; }
+.goal-amounts { display: flex; align-items: baseline; gap: 4px; margin-bottom: 8px; font-variant-numeric: tabular-nums; }
+.goal-amounts strong { font-size: 24px; }
+.goal-share { margin-left: auto; font-weight: 600; color: var(--accent-2); }
+.goal-track { height: 12px; border-radius: 99px; background: var(--surface-2); overflow: hidden; }
+.goal-track span { display: block; height: 100%; border-radius: 99px; background: var(--accent); opacity: 0.8;
+                   transition: width 0.8s cubic-bezier(.2, .8, .2, 1); }
+.goal-track span.done { opacity: 1; background: linear-gradient(90deg, var(--grad-from), var(--grad-to)); }
+
+.goal-categories, .goal-outlook { margin: 6px 0; font-size: 14px; }
+.goal-outlook { color: var(--muted); }
+.goal-outlook strong { font-weight: 600; }
+
+.goal-purchase { display: flex; gap: 8px; margin-top: 10px; }
+.goal-purchase:empty { display: none; }
+.goal-purchase select { flex: 1 1 0; min-width: 0; width: 100%; max-width: 420px; padding: 7px 10px; font-size: 13px; }
+.goal-purchase button { padding: 7px 12px; font-size: 13px; }
+
+.goal-months { margin-top: 12px; }
+.goal-months summary { cursor: pointer; color: var(--muted); font-size: 13px; }
+.goal-months-scroll { overflow-x: auto; max-width: 100%; }
+.goal-months small { white-space: nowrap; }
+.goal-months table { margin: 10px 0 4px; font-variant-numeric: tabular-nums; }
+.goal-months td:not(:first-child), .goal-months th:not(:first-child) { text-align: right; white-space: nowrap; }
+.goal-months p { margin: 0; }
+
+/* ---- the dialog: one row per expense category ---- */
+.goal-category-list { display: grid; gap: 6px; max-height: 260px; overflow-y: auto; padding: 2px; }
+.goal-category-row { display: flex; align-items: center; gap: 10px; color: var(--text); font-size: 14px; cursor: pointer; }
+dialog form .goal-category-row > input[type=checkbox] { flex: none; width: auto; }
+.goal-category-name { flex: 1 1 auto; }
+dialog form .goal-category-row > input.goal-baseline { flex: 0 0 100px; width: 100px; padding: 6px 10px; text-align: right; }
+.goal-category-row .hint { font-size: 12px; }
+.goal-baseline-source { display: block; font-size: 11px; line-height: 1.3; }
+
+@media (max-width: 800px) {
+    .goal-buttons { margin-left: 0; width: 100%; }
+    .goal-purchase { flex-wrap: wrap; }
+}

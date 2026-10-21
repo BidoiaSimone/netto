@@ -14,7 +14,8 @@
 
 const db = require("../../db/databaseConnection.js");
 const { findFirstRecordedDate } = require("../../db/firstRecordedDate.js");
-const { getCurrentPriceInEuros, getPriceHistoryInEuros } = require("./yahooFinanceMarketData.js");
+const { getPriceHistoryInEuros } = require("./yahooFinanceMarketData.js");
+const { getPriceInEurosOrLastKnown } = require("./livePrices.js");
 const { replayTrades } = require("./holdingsCalculator.js");
 const { getTodayAsLocalDate } = require("../utils/localDates.js");
 
@@ -149,7 +150,7 @@ async function calculateTickerValuePerDay(ticker, tradesOfTicker, chartDays, int
   // Only when the last day IS today: the Statements page also asks for days in the past.
   if (chartDays[chartDays.length - 1] === getTodayAsLocalDate()) {
     try {
-      pricesOnEachDay[pricesOnEachDay.length - 1] = await getCurrentPriceInEuros(ticker, exchangeRateCache);
+      pricesOnEachDay[pricesOnEachDay.length - 1] = (await getPriceInEurosOrLastKnown(ticker, exchangeRateCache)).price;
     } catch {
       // keep the last close
     }

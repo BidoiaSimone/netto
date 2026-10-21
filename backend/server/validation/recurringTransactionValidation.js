@@ -40,6 +40,8 @@ function validateRecurringTransaction(requestBody = {}, accountIdsAlreadyUsed = 
       toAccountId: transaction.toAccountId,
       categoryId: transaction.categoryId,
       description: transaction.description,
+      originalCurrency: transaction.originalCurrency,     // a subscription billed in dollars (migration 14)
+      originalAmountMinor: transaction.originalAmountMinor,
       repeatUnit: requestBody.repeat_unit,
       repeatInterval,
       startDate: requestBody.start_date,

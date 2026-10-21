@@ -1,0 +1,28 @@
+/* Home > the month's wrap-up (JS/pages/monthWrapUp.js).
+   One of the numbered files in this folder: Home.html loads them in number order, and later files
+   win over earlier ones when two rules are equally specific, so keep that order when adding files. */
+
+.wrap-up {
+    margin: 0 0 18px; padding: 16px 20px; border-radius: 16px;
+    border: 1px solid rgba(var(--accent-rgb), 0.45);
+    background: linear-gradient(160deg, rgba(var(--accent-rgb), 0.12), var(--surface));
+    transition: opacity 0.25s, transform 0.25s;
+}
+.wrap-up.closing { opacity: 0; transform: translateY(-6px); }
+.wrap-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.wrap-head h4 { margin: 0; font-size: 17px; color: var(--text); }
+.wrap-head h4 small { font-weight: 400; font-size: 13px; }
+.wrap-head button { padding: 6px 14px; font-size: 13px; white-space: nowrap; }
+.wrap-headline { margin: 10px 0 8px; font-size: 18px; }
+.wrap-line { margin: 4px 0; font-size: 14px; display: grid; grid-template-columns: 130px 1fr; gap: 10px; }
+.wrap-label { color: var(--muted); }
+/* Settings > Month wrap-ups */
+.wrap-up-picker { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.wrap-up-picker select { min-width: 180px; }
+#wrap-up-again .wrap-up { margin-top: 4px; }
+
+@media (max-width: 800px) {
+    .wrap-up { padding: 14px 16px; }
+    .wrap-line { grid-template-columns: 1fr; gap: 0; margin: 6px 0; }
+    .wrap-label { font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; }
+}

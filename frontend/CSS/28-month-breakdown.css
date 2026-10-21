@@ -1,0 +1,25 @@
+/* Insights > This month: the breakdown inside the "Spent so far" and "Projected spending" cards
+   (JS/pages/monthProjection.js). A thin bar in three colours, then one row per part:
+     recurring       blue    (from the Recurring page)
+     habitual        green   (projected at this month's pace)
+     one-off         amber   (counted as spent)
+   One of the numbered files in this folder: Home.html loads them in number order, and later files
+   win over earlier ones when two rules are equally specific, so keep that order when adding files. */
+
+.month-breakdown { margin-top: 14px; text-transform: none; letter-spacing: 0; }
+.month-breakdown-bar { display: flex; height: 6px; border-radius: 99px; overflow: hidden; background: var(--surface-2); margin-bottom: 10px; }
+.month-breakdown-bar span { height: 100%; transition: width 0.8s cubic-bezier(.2, .8, .2, 1); }
+
+.month-breakdown-row { display: flex; align-items: baseline; gap: 8px; padding: 3px 0; font-size: 13px; color: var(--muted); }
+.month-breakdown-dot { flex: none; width: 8px; height: 8px; border-radius: 50%; align-self: center; }
+.month-breakdown-label { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.card .month-breakdown-label small { display: inline; margin: 0 0 0 6px; font-size: 11px; opacity: 0.8; }
+.month-breakdown-amount { color: var(--text); font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+.month-breakdown .recurring { --part-color: var(--info); }
+.month-breakdown .habitual { --part-color: var(--accent); }
+.month-breakdown .one-off { --part-color: var(--warn); }
+.month-breakdown-bar span, .month-breakdown-dot { background: var(--part-color); }
+
+.card .month-breakdown + small { display: block; margin-top: 8px; font-size: 11px; }
+.card .month-breakdown + small:empty { display: none; }

@@ -9,14 +9,88 @@
 .categories-list td:nth-child(2) { color: var(--muted); }
 .categories-list td:last-child { text-align: right; }
 .categories-list td:first-child { min-width: 130px; }
+/* income names are longer ("Salary - Chiosco") and that list has room to spare */
+.categories-columns > .categories-list:last-child td:first-child { min-width: 160px; }
 .category-actions { display: inline-flex; gap: 6px; }
-.category-actions button { padding: 6px 10px; white-space: nowrap; }
+.category-actions button { padding: 6px 9px; font-size: 13px; white-space: nowrap; }
+.category-use { color: var(--muted); font-size: 13px; }
+
+/* every row the same height, in both lists: one line of text per cell (the "Used by" text used to wrap
+   on some rows only, "1 transaction · 1 recurring"), and the fields and buttons all exactly as tall */
+.categories-list td { padding: 8px 10px; vertical-align: middle; white-space: nowrap; }
+.categories-list th { padding-left: 10px; padding-right: 10px; }
+.categories-list td :is(input, select, button) { box-sizing: border-box; height: 34px; padding-top: 0; padding-bottom: 0; line-height: 32px; }
+.categories-list td .pace-select { padding: 0 6px; font-size: 13px; }
 .manage-link { margin-right: auto; align-self: center; color: var(--muted); font-size: 13px; }
 .manage-link:hover { color: var(--accent-2); }
 
 /* expense and income lists side by side; one under the other in a narrow window.
    Also used by the two "by category" tables on Insights. */
 .categories-columns, .insights-columns { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 24px; align-items: start; }
-/* the category rows also hold two buttons, so the two lists need more room before sitting side by side */
-.categories-columns { grid-template-columns: repeat(auto-fit, minmax(470px, 1fr)); }
+/* the expense list has two columns more (budget, spent) than the income one, so it gets more of the width; when
+   both don't fit side by side, the income list goes underneath */
+.categories-columns { display: flex; flex-wrap: wrap; }
+.categories-columns > .categories-list { flex: 2 1 360px; }
+.categories-columns > .categories-list:first-child { flex: 3 1 620px; }
 .categories-list h3 { margin-top: 0; }
+
+/* ---- each category's icon and colour (migration 21): a white line drawing on a solid colour circle ----
+   The round button before each name, and in the "Add" forms, opens the picker (JS/dialogs/categoryLookDialog.js).
+   --icon-color is set by JS/core/categoryIcons.js; without one (a category never seen yet) the circle is grey. */
+.category-icon {
+    display: grid; place-items: center; flex: none; width: 32px; height: 32px; border-radius: 50%;
+    background: var(--icon-color, color-mix(in srgb, var(--text) 40%, transparent)); color: #fff;
+    font-size: 14px; font-weight: 700; line-height: 1;
+}
+.category-icon svg { width: 60%; height: 60%; }
+.category-icon.large { width: 64px; height: 64px; font-size: 26px; }
+.category-icon.is-empty { background: none; border: 1.5px dashed var(--muted); color: transparent; }
+.category-name-cell { display: flex; align-items: center; gap: 10px; }
+.category-name-cell input { min-width: 0; }
+/* the button is just the circle: none of the usual button look (two classes: Pocket's button rule counts as one) */
+:is(.cat-add, .category-name-cell) button.category-look-button, .categories-list td button.category-look-button {
+    flex: none; width: 32px; height: 32px; padding: 0; border: 0; border-radius: 50%; background: none; line-height: 1;
+}
+:is(.cat-add, .category-name-cell) button.category-look-button:hover { background: none; box-shadow: none; transform: scale(1.06); }
+.cat-add .category-look-button { align-self: center; }
+
+/* ---- the picker: preview on top, the colours, then every icon drawn in the colour it would have ---- */
+.category-look-dialog { width: min(470px, 92vw); }
+.category-look-dialog form > * { width: 100%; }
+.look-preview { display: flex; flex-direction: column; align-items: center; gap: 8px; margin-bottom: 10px; }
+.look-preview strong { font-size: 15px; }
+.look-section-title { display: block; margin-bottom: 8px; color: var(--muted); font-size: 13px; font-weight: 600; }
+.look-colors { display: grid; grid-template-columns: repeat(auto-fill, minmax(32px, 1fr)); gap: 8px; justify-items: center; }
+.look-icons {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(42px, 1fr)); gap: 10px; justify-items: center;
+    max-height: min(312px, 40vh); overflow-y: auto; padding: 4px;
+}
+.category-look-dialog :is(.look-swatch, .look-tile) {
+    display: grid; place-items: center; padding: 0; border: 0; border-radius: 50%; min-height: 0;
+    background: var(--icon-color); color: #fff; font-weight: 700; line-height: 1; box-shadow: none;
+}
+.category-look-dialog .look-swatch { width: 28px; height: 28px; font-size: 11px; }
+.category-look-dialog .look-swatch.auto { background: conic-gradient(#e0484e, #b77900, #2f9e44, #1597b8, #5b5bd6, #d6408a, #e0484e); }
+.category-look-dialog .look-tile { width: 40px; height: 40px; font-size: 16px; }
+.category-look-dialog .look-tile svg { width: 22px; height: 22px; }
+.category-look-dialog :is(.look-swatch, .look-tile):hover { transform: scale(1.08); background: var(--icon-color); box-shadow: none; }
+.category-look-dialog .look-swatch.auto:hover { background: conic-gradient(#e0484e, #b77900, #2f9e44, #1597b8, #5b5bd6, #d6408a, #e0484e); }
+/* the chosen one: a ring around it, with a gap in the dialog's colour */
+.category-look-dialog :is(.look-swatch, .look-tile)[aria-checked="true"] { box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px var(--text); }
+
+/* ---- the small icons in front of category names elsewhere (JS/core/categoryIcons.js createCategoryLabel):
+   Insights' tables, budget bars, category trends, Recurring, Goals, Home's quick add. Pocket only, like the
+   transaction lists' icons: Classic shows the names as before. ---- */
+.category-label { display: inline-flex; align-items: center; gap: 8px; min-width: 0; max-width: 100%; vertical-align: middle; }
+.category-label-text { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.category-icon.small { width: 24px; height: 24px; font-size: 11px; }
+/* no category: a grey "?" */
+:is(.category-icon, .tx-icon).uncategorized { background: color-mix(in srgb, var(--text) 32%, transparent); }
+html:not([data-ui="pocket"]) :is(.category-label, .goal-category-row, .quick-add-button) > .category-icon { display: none; }
+html:not([data-ui="pocket"]) .category-label { display: inline; }
+/* Home's quick add in Pocket: the icon on the left, the name on its own line, the amount and the account under it */
+[data-ui="pocket"] .quick-add-button:has(> .quick-add-icon) { grid-template-columns: auto auto minmax(0, 1fr); align-items: center; column-gap: 10px; }
+[data-ui="pocket"] .quick-add-button > .quick-add-icon { grid-row: 1 / span 2; width: 30px; height: 30px; font-size: 13px; }
+[data-ui="pocket"] .quick-add-button:has(> .quick-add-icon) strong { grid-column: 2 / -1; grid-row: 1; }
+[data-ui="pocket"] .quick-add-button:has(> .quick-add-icon) .quick-add-amount { grid-column: 2; grid-row: 2; font-size: 13px; }
+[data-ui="pocket"] .quick-add-button:has(> .quick-add-icon) small { grid-column: 3; grid-row: 2; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: right; }

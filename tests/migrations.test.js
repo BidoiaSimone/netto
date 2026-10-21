@@ -12,6 +12,7 @@ const os = require("os");
 const path = require("path");
 const Database = require("better-sqlite3");
 const { runPendingMigrations, LATEST_DATABASE_VERSION } = require("../backend/db/migrations/migrationRunner.js");
+const { allMigrationsInOrder } = require("../backend/db/migrations/allMigrationsInOrder.js");
 const { listAllBalanceProblems } = require("./helpers/balanceRule.js");
 
 // The migrations print one line per version; useful in the app, noise in the test output
@@ -69,7 +70,7 @@ test("an empty database migrates to the latest version", () => {
 
   assert.equal(db.pragma("user_version", { simple: true }), LATEST_DATABASE_VERSION);
   const tableNames = db.prepare(`SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%' ORDER BY name`).all().map((row) => row.name);
-  assert.deepEqual(tableNames, ["accounts", "categories", "category_budgets", "forecast_assumptions", "forecast_events", "forecast_phases", "investment_trades", "investments", "recurring_transactions", "tags", "todos", "transaction_tags", "transactions"]);
+  assert.deepEqual(tableNames, ["accounts", "app_settings", "categories", "category_budgets", "forecast_assumptions", "forecast_events", "forecast_phases", "investment_targets", "investment_trades", "investments", "last_known_prices", "offline_submissions", "recurring_transactions", "savings_goal_categories", "savings_goals", "tags", "todos", "transaction_tags", "transactions"]);
   assert.deepEqual(db.pragma("foreign_key_check"), []);
   assert.equal(db.pragma("integrity_check", { simple: true }), "ok");
 
@@ -144,4 +145,23 @@ test("a database newer than the code is refused instead of being damaged", () =>
   const db = openDatabase(":memory:");
   db.pragma(`user_version = ${LATEST_DATABASE_VERSION + 1}`);
   assert.throws(() => runMigrationsQuietly(db), /only knows up to/);
+});
+
+test("migration 21 gives the categories netto already had their icon and colour, and leaves the others empty", () => {
+  const db = openDatabase(":memory:");
+  // a database as it was at version 20: the latest one, without what 21 added
+  runMigrationsQuietly(db);
+  assert.equal(allMigrationsInOrder[20].name, "addCategoryIconsAndColors");
+  db.exec(`ALTER TABLE categories DROP COLUMN icon; ALTER TABLE categories DROP COLUMN color;`);
+  db.pragma("user_version = 20");
+  db.exec(`INSERT INTO categories (name, kind) VALUES ('grocery', 'expense'), ('Gift', 'expense'), ('Gifts received', 'income'),
+                                                    ('Medicine', 'income'), ('Books', 'expense')`);
+  runMigrationsQuietly(db);
+
+  const lookOf = (name, kind) => ({ ...db.prepare(`SELECT icon, color FROM categories WHERE name = ? AND kind = ?`).get(name, kind) });
+  assert.deepEqual(lookOf("grocery", "expense"), { icon: "cart", color: "#2f9e44" }, "names match whatever their capitalisation");
+  assert.deepEqual(lookOf("Gift", "expense"), { icon: "gift", color: "#8e5bd6" });
+  assert.deepEqual(lookOf("Gifts received", "income"), { icon: "gift", color: "#8e5bd6" });
+  assert.deepEqual(lookOf("Medicine", "income"), { icon: null, color: null }, "only the kind it was listed under");
+  assert.deepEqual(lookOf("Books", "expense"), { icon: null, color: null });
 });

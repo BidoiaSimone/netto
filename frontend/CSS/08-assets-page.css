@@ -4,7 +4,7 @@
 
 /* ---- assets page: pie on the left (fixed), list on the right (the only part that scrolls) ---- */
 /* while Assets is open, main is exactly one screen tall, so the page itself never scrolls */
-body:has([data-page="assets"]:not([hidden])) main { height: 100vh; height: 100dvh; display: flex; flex-direction: column; padding-bottom: 36px; }
+@media (min-width: 801px) { body:has([data-page="assets"]:not([hidden])) main { height: 100vh; height: 100dvh; display: flex; flex-direction: column; padding-bottom: 36px; } }
 [data-page="assets"]:not([hidden]) { flex: 1; min-height: 0; display: flex; flex-direction: column; }
 .assets-split { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(260px, 340px) minmax(0, 1fr); gap: 24px; }
 

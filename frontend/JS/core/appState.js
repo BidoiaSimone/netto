@@ -12,6 +12,10 @@ export const appState = {
   holdings: [],          // GET /investments: what is held, with live prices
   trades: [],            // GET /investments/trades: every buy and sell, newest first
   recurringTransactions: [], // GET /recurring-transactions
+  settings: {},          // GET /settings: values stored with the data (drift threshold, reminders...)
+  settingDefinitions: {}, // and their defaults and ranges
+  reconciliationReminders: [], // GET /reconciliation-reminders: open accounts due to be counted again
+  currencies: [],        // GET /currencies: the foreign currencies a transaction can be paid in (loaded once)
   // Reconcile inputs on the Assets page, by account id, kept across auto refreshes and renames
   countedAmountByAccountId: {},
 };

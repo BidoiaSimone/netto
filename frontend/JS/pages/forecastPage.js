@@ -13,6 +13,7 @@ import { euroFormatter, wholeEuroFormatter } from "../core/formatting.js";
 import { callApi } from "../core/apiClient.js";
 import { drawStackedAreaChart } from "../charts/stackedAreaChart.js";
 import { renderForecastPlan, initializeForecastPlanEditor } from "./forecastPlanEditor.js";
+import { renderFireNumber, initializeFireNumber, getFireLineValues } from "./fireNumber.js";
 
 const REDRAW_DELAY_AFTER_RESIZE_MILLISECONDS = 150;
 const percentFormatter = new Intl.NumberFormat("it-IT", { style: "percent", maximumFractionDigits: 1 });
@@ -111,6 +112,7 @@ function renderChart() {
   ], "Net worth", {
     forecastFromIndex: history.length,
     band: showBand ? { low: bandOf(forecast.band.low), high: bandOf(forecast.band.high), label: `${percentFormatter.format(forecast.band.low_return)} – ${percentFormatter.format(forecast.band.high_return)} return` } : null,
+    referenceLine: getFireLineValues(forecast, moneyView),
   });
   elementById("fc-band-label").textContent = `${percentFormatter.format(forecast.band.low_return)} – ${percentFormatter.format(forecast.band.high_return)} return`;
 }
@@ -121,6 +123,7 @@ function renderForecastResults() {
   highlightSelectedChip(elementById("fc-years"), String(yearsShown));
   renderKeyNumbers();
   renderWarnings();
+  renderFireNumber(forecast, moneyView);
   renderChart();
 }
 
@@ -143,6 +146,7 @@ export function initializeForecastPage() {
   });
   elementById("fc-show-band").addEventListener("change", renderChart);
   initializeForecastPlanEditor({ getYearsShown: () => yearsShown, onForecastChanged: showForecast });
+  initializeFireNumber({ reloadForecast: () => loadForecast().catch((error) => { elementById("fc-error").textContent = error.message; }) });
 
   // drawn at the real pixel size: redraw when the window (or the page) changes size
   let resizeTimer;

@@ -4,7 +4,7 @@
  */
 
 const db = require("../../db/databaseConnection.js");
-const { getCurrentPriceInEuros } = require("./yahooFinanceMarketData.js");
+const { getPriceInEurosOrLastKnown } = require("./livePrices.js");
 const { convertCentsToEuros } = require("../utils/moneyConversion.js");
 
 // "  vwce.mi " -> "VWCE.MI"; anything that isn't text -> ""
@@ -23,12 +23,13 @@ const convertHoldingRowForApi = (holdingRow) => ({
 
 // Adds live market data to a holding already converted for the API. All money values are in EUR.
 async function addLiveMarketValue(holding, exchangeRateCache) {
-  const currentPrice = await getCurrentPriceInEuros(holding.ticker, exchangeRateCache);
+  const { price: currentPrice, as_of: priceAsOf } = await getPriceInEurosOrLastKnown(holding.ticker, exchangeRateCache);
   const currentValue = currentPrice * holding.shares;
   const gain = currentValue - holding.amount_invested;
   return {
     ...holding,
     current_price: currentPrice,
+    price_as_of: priceAsOf, // null: live; else the last price kept (services/livePrices.js), and when it was fetched
     current_value: currentValue,
     gain,
     gain_pct: holding.amount_invested > 0 ? (gain / holding.amount_invested) * 100 : null,

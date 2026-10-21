@@ -1,8 +1,29 @@
 // ---- how numbers and dates are shown (Italian style: 1.234,56 €) ----
 
-export const euroFormatter = new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR" });
-export const wholeEuroFormatter = new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR", maximumFractionDigits: 0 });
-export const shareCountFormatter = new Intl.NumberFormat("it-IT", { maximumFractionDigits: 6 });
+// ---- Hide amounts (privacy mode): amounts become ***** € ----
+// Every amount on the page is written by one of the formatters below, so they check the switch themselves:
+// while amounts are hidden they write ***** € instead (always five stars, so not even the number of digits
+// shows). Percentages, dates and the shapes of the charts stay as they are: you can still see how things are
+// going, just not how much money that is. Turning the switch reloads every page (settings/privacyMode.js).
+// Single transactions are the exception, as before the switch hid them: the Transactions and Recurring pages,
+// the latest transactions on Home and the add / edit windows use the visible... formatters, so you can still
+// add and check them in public.
+let amountsHidden = false;
+export const setAmountsHidden = (hidden) => { amountsHidden = hidden; };
+export const areAmountsHidden = () => amountsHidden;
+export const HIDDEN_AMOUNT = "*****";
+
+// A formatter that writes ***** € (or ***** for a number of shares) while amounts are hidden
+export function hideWhenAmountsHidden(formatter, hiddenText = `${HIDDEN_AMOUNT} €`) {
+  return { format: (number) => (amountsHidden ? hiddenText : formatter.format(number)) };
+}
+
+export const visibleEuroFormatter = new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR" });
+export const euroFormatter = hideWhenAmountsHidden(visibleEuroFormatter);
+export const wholeEuroFormatter = hideWhenAmountsHidden(new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }));
+// how many shares you hold says how much they're worth, once you know the price
+export const shareCountFormatter = hideWhenAmountsHidden(new Intl.NumberFormat("it-IT", { maximumFractionDigits: 6 }), HIDDEN_AMOUNT);
+// a price per share is the market's, not yours: always shown
 export const pricePerShareFormatter = new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR", minimumFractionDigits: 2, maximumFractionDigits: 4 });
 
 const signOf = (number) => (number > 0 ? "+" : number < 0 ? "−" : "");

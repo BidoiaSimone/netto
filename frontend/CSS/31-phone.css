@@ -1,0 +1,247 @@
+/* Phones (and any window narrower than 800px): the sidebar becomes a menu that slides in from the left,
+   a bar at the top shows the page's name, the menu button and Hide amounts (JS/app/phoneMenu.js),
+   and wide tables scroll sideways inside their own box instead of making the whole page wider.
+   One of the numbered files in this folder: Home.html loads them in number order, and later files
+   win over earlier ones when two rules are equally specific, so keep that order when adding files. */
+
+#phone-bar, #phone-menu-backdrop, .phone-only, #phone-pending-badge, #phone-settings-button { display: none; }
+.phone-only-setting { display: none; }       /* Settings > On this phone: only on a phone */
+
+/* pull to refresh (JS/app/phoneMenu.js): a small round arrow that comes down with the finger, turns around when
+   letting go will reload, and spins while it does */
+#pull-to-reload {
+    position: fixed; top: calc(env(safe-area-inset-top) + 8px); left: 50%; z-index: 60;
+    width: 36px; height: 36px; margin-left: -18px; border-radius: 50%;
+    display: grid; place-items: center; color: var(--muted);
+    background: var(--surface); border: 1px solid var(--border); box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15);
+    opacity: 0; pointer-events: none;
+    transform: translateY(calc(var(--pull, 0) * 0.6px - 44px));
+    transition: opacity 0.15s, color 0.15s;
+}
+#pull-to-reload svg { transition: transform 0.2s; }
+#pull-to-reload.visible { opacity: 1; }
+#pull-to-reload.ready { color: var(--accent-2); }
+#pull-to-reload.ready svg { transform: rotate(180deg); }
+#pull-to-reload.reloading svg { animation: pull-to-reload-spin 0.8s linear infinite; }
+@keyframes pull-to-reload-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+/* The phone keeps to the essentials (JS/core/phoneFeatures.js): what's marked class="desktop-only" in Home.html
+   stays on the computer, unless Settings > On this phone > Everything. !important: it must win over each part's
+   own display (grid, flex), whatever file sets it, like the light edition's full-only. */
+@media (max-width: 800px) {
+    :root:not([data-phone-features="all"]) .desktop-only { display: none !important; }
+    .phone-only-setting { display: flex; }
+}
+
+@media (max-width: 800px) {
+    /* Goals: the month-by-month table fits the card */
+    .goal-card { padding: 16px 14px; min-width: 0; }
+    .goal-months th, .goal-months td { padding: 8px 6px; font-size: 12.5px; }
+    .goal-months th { font-size: 10px; letter-spacing: 0.04em; white-space: normal; }
+    .goal-months table { display: table; }
+    .goal-months td:first-child small { display: block; }
+    .offline-bar.only-offline { display: none; } /* the top bar's "offline" badge says it, and retries when tapped */
+    /* ---- the bar at the top ---- */
+    #phone-bar {
+        display: flex; align-items: center; gap: 8px;
+        position: sticky; top: 0; z-index: 30;
+        padding: calc(env(safe-area-inset-top) + 8px) 12px 8px;  /* below the iPhone's notch in the home-screen app */
+        background: var(--sidebar-bg); border-bottom: 1px solid var(--border);
+        -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px);
+    }
+    #phone-bar button { display: grid; place-items: center; width: 42px; height: 42px; padding: 0; border-radius: 12px; color: var(--text); }
+    /* the page's name is also the reload button (no ⌘R on a phone, and the home-screen app has no reload of its own) */
+    #phone-bar #phone-page-title {
+        flex: 1; width: auto; height: 42px; display: block; text-align: center;
+        font-weight: 700; font-size: 17px; background: none; border: 0; color: var(--text); box-shadow: none; transform: none;
+    }
+    #phone-bar #phone-page-title.reloading { opacity: 0.4; }
+    #phone-bar #phone-pending-badge { width: auto; min-width: 42px; padding: 0 10px; font-size: 13px; font-weight: 700;
+        color: var(--warn); border-color: rgba(var(--warn-rgb), 0.5); background: rgba(var(--warn-rgb), 0.12); }
+    #phone-bar #phone-pending-badge.refused { color: var(--neg); border-color: rgba(var(--neg-rgb), 0.5); background: rgba(var(--neg-rgb), 0.12); }
+    #phone-bar #phone-pending-badge[hidden] { display: none; }
+    #phone-privacy-button .eye-closed, #phone-privacy-button.active .eye-open { display: none; }
+    #phone-privacy-button.active .eye-closed { display: block; }
+    #phone-privacy-button.active { color: var(--accent-2); border-color: var(--accent); }
+
+    /* ---- the sidebar: off the left edge until the menu button slides it in ---- */
+    #sidebar {
+        position: fixed; top: 0; bottom: 0; left: 0; z-index: 50;
+        width: min(280px, 82vw); overflow-y: auto;
+        padding: calc(env(safe-area-inset-top) + 20px) 14px calc(env(safe-area-inset-bottom) + 16px);
+        background: var(--surface); border-right: 1px solid var(--border);
+        transform: translateX(-102%); transition: transform 0.25s ease;
+        box-shadow: none;
+    }
+    body.phone-menu-open #sidebar { transform: none; box-shadow: var(--dialog-shadow); }
+    #sidebar a { padding: 12px 14px; }                       /* fingers need a bit more room than a mouse */
+    #sidebar a:hover { transform: none; }
+    #side-networth { margin-top: 16px; }
+    #phone-menu-backdrop { display: block; position: fixed; inset: 0; z-index: 40; background: var(--backdrop); }
+    #phone-menu-backdrop[hidden] { display: none; }
+    body.phone-menu-open { overflow: hidden; }               /* the page behind doesn't scroll under the menu */
+
+    /* ---- the page ---- */
+    main { margin-left: 0; padding: 12px 14px calc(env(safe-area-inset-bottom) + 40px); }
+    #error:empty { display: none; }                          /* the red line takes no room until there's an error */
+    #error { margin: 0 0 12px; }
+    .page-head h2 { display: none; }                         /* the bar at the top already says which page this is */
+    .page-head { justify-content: flex-end; margin-bottom: 12px; }
+    /* a page head with only its title (Categories, Insights, Settings...) has nothing left to show: no gap either */
+    .page-head:not(:has(> :not(h2))) { display: none; }
+    section > .page-head + :is(h3, p, div) { margin-top: 0; }
+    section > .page-head:not(:has(> :not(h2))) + h3 { margin-top: 0; }
+    section > :is(ul, p):empty { display: none; }             /* lists and notes not filled (yet): their margins leave gaps */
+    .add-btn { width: 100%; }
+    .add-btn kbd, #side-networth kbd { display: none; }       /* no keyboard shortcuts on a phone */
+    h2 { font-size: 24px; }
+    .cards { grid-template-columns: 1fr; gap: 12px; }
+    .card { padding: 16px 18px; }
+    .card:hover { transform: none; }
+    section > p.hint { font-size: 13px; }
+
+    /* ---- tables: as wide as their card; a wider one scrolls sideways in its own box (JS/app/phoneTables.js puts
+           each table in a .table-scroll), so the page itself never gets wider than the screen ---- */
+    main .table-scroll > table { box-sizing: border-box; }
+    main th, main td { padding: 9px 6px; }
+    main th:first-child, main td:first-child { padding-left: 10px; }
+    main th:last-child, main td:last-child { padding-right: 10px; }
+    main th { font-size: 11px; letter-spacing: 0.05em; }
+    main td { white-space: nowrap; font-size: 15px; }
+    main td input, main td select { max-width: 160px; }
+
+    /* the columns a phone can do without (the full table is on the computer, and in each item's own window) */
+    #assets-body td:is(:nth-child(2), :nth-child(4), :nth-child(6)), .assets-list th:is(:nth-child(2), :nth-child(4), :nth-child(6)) { display: none; }  /* kind, last verified, difference (the total change is under the table) */
+    .assets-list td input { width: 110px; }
+    /* Recurring: each rule a small card, like the transactions
+           Rent                          −250,00 €
+           every month · BBVA             next 5 nov
+       Cells: 1 description, 2 type, 3 amount, 4 account, 5 repeats, 6 next */
+    table:has(#recurring-body) thead { display: none; }
+    #recurring-body tr { display: grid; grid-template-columns: 1fr auto; column-gap: 12px; padding: 10px 14px; border-top: 1px solid var(--border); }
+    #recurring-body tr:first-child { border-top: 0; }
+    main #recurring-body td { border: 0; padding: 0; white-space: normal; }
+    #recurring-body td:nth-child(2) { display: none; }
+    #recurring-body td:nth-child(1) { grid-area: 1 / 1; font-weight: 600; }
+    #recurring-body td:nth-child(3) { grid-area: 1 / 2; text-align: right; white-space: nowrap; }
+    #recurring-body td:nth-child(5) { grid-area: 2 / 1; color: var(--muted); font-size: 13px; }
+    #recurring-body td:nth-child(6) { grid-area: 2 / 2; color: var(--muted); font-size: 13px; text-align: right; }
+    #recurring-body td:nth-child(4) { grid-area: 3 / 1; color: var(--muted); font-size: 13px; }
+    table:has(#recurring-body), #recurring-body { display: block; }
+    /* Categories: each one a small card: the name on its own line, then budget, type and the buttons
+       Expense cells: 1 name, 2 budget, 3 type, 4 used by, 5 buttons · Income cells: 1 name, 2 used by, 3 buttons */
+    :is(.expense-categories-table, table:has(#income-categories-body)) thead { display: none; }
+    :is(.expense-categories-table, table:has(#income-categories-body)), :is(#expense-categories-body, #income-categories-body) { display: block; }
+    :is(#expense-categories-body, #income-categories-body) tr { display: grid; align-items: center; gap: 8px 10px; padding: 10px 12px; border-top: 1px solid var(--border); }
+    #expense-categories-body tr { grid-template-columns: auto auto 1fr; grid-template-areas: "name name name" "budget type buttons"; }
+    #income-categories-body tr { grid-template-columns: 1fr auto; grid-template-areas: "name buttons" "used used"; }
+    :is(#expense-categories-body, #income-categories-body) tr:first-child { border-top: 0; }
+    main :is(#expense-categories-body, #income-categories-body) td { border: 0; padding: 0; white-space: nowrap; min-width: 0; }
+    main :is(#expense-categories-body, #income-categories-body) td:first-child { grid-area: name; }
+    main :is(#expense-categories-body, #income-categories-body) td:first-child input { width: 100%; max-width: none; }
+    main :is(#expense-categories-body, #income-categories-body) td:last-child { grid-area: buttons; justify-self: end; }
+    main :is(#expense-categories-body, #income-categories-body) td:last-child button { padding: 6px 8px; font-size: 13px; line-height: 1.2; }
+    #expense-categories-body td:nth-child(2) { grid-area: budget; }
+    #expense-categories-body td:nth-child(3) { grid-area: type; }
+    #income-categories-body td:nth-child(2) { grid-area: used; }
+    #expense-categories-body td:nth-child(4) { display: none; }
+    #income-categories-body td:nth-child(2) { color: var(--muted); font-size: 13px; }
+    table:has(#investments-body) :is(th, td):is(:nth-child(3), :nth-child(4), :nth-child(7), :nth-child(8)) { display: none; } /* avg price, invested, gain %, Buy / Sell (the button at the top does it) */
+    table:has(#trades-body) :is(th, td):is(:nth-child(2), :nth-child(5), :nth-child(6), :nth-child(8), :nth-child(9)) { display: none; } /* type, price, fees, account, realized */
+    table:has(#liq-body) :is(th, td):nth-child(2) { display: none; }                                /* what's in it */
+    table:has(#liq-body) td:first-child, #liq-body .liq-class { white-space: normal; }
+    .trends-table :is(th, td):is(:nth-child(3), :nth-child(4), :nth-child(5)) { display: none; }    /* heading to, last month, usual */
+    .trends-table td:nth-child(6):not(:last-child) { white-space: normal; min-width: 76px; font-size: 13px; line-height: 1.3; }
+    :is(table:has(#months-body), .allocation-table) :is(th, td) { padding-left: 4px; padding-right: 4px; }
+    table:has(#months-body) td { font-size: 13px; }
+    table:has(#months-body) th { white-space: normal; }
+    .allocation-table td input { width: 64px; }
+    table:has(#trades-body) td { font-size: 14px; }
+    .trends-table td:last-child svg { width: 48px; }
+    .st-returns-table :is(th, td):is(:nth-child(2), :nth-child(3), :nth-child(4), :nth-child(6)) { display: none; } /* start, bought, sold, gain */
+    .st-returns-table td:is(:nth-child(7), :nth-child(8)) { white-space: normal; min-width: 72px; font-size: 13px; line-height: 1.3; }
+    .st-budget-table :is(th, td):is(:nth-child(2), :nth-child(5)) { display: none; }               /* budget (left / over says it), used */
+    :is(.st-budget-table, .st-balance-table) :is(th, td) { padding-left: 6px; padding-right: 6px; font-size: 13px; }
+    .st-balance-table :is(th, td):nth-child(4) { display: none; }                                  /* change: end − start */
+    /* long texts wrap instead of pushing the numbers off the screen */
+    .st-taxes-table td:nth-child(2) { white-space: normal; min-width: 150px; font-size: 13px; }
+    .st-taxes-table td:first-child { white-space: normal; }
+    .st-balance-table td:first-child, .st-balance-table td:first-child * { white-space: normal; min-width: 0; }
+    .expense-categories-table td input.budget-input { width: 82px; padding-left: 8px; padding-right: 8px; }
+    .expense-categories-table td select { padding: 8px 4px; }
+
+    /* Forecast: each phase / event a small card, every field with its name above it */
+    :is(.fc-phases-table, .fc-events-table) thead { display: none; }
+    :is(.fc-phases-table, .fc-events-table) tbody, :is(.fc-phases-table, .fc-events-table) tfoot { display: block; }
+    :is(.fc-phases-table, .fc-events-table) tr { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 10px; padding: 12px; border-top: 1px solid var(--border); }
+    :is(.fc-phases-table, .fc-events-table) tr:first-child { border-top: 0; }
+    main :is(.fc-phases-table, .fc-events-table) td { display: flex; flex-direction: column; gap: 3px; padding: 0; border: 0; white-space: normal; min-width: 0; text-align: left; }
+    :is(.fc-phases-table, .fc-events-table) td:first-child { grid-column: 1 / -1; }
+    :is(.fc-phases-table, .fc-events-table) td input, :is(.fc-phases-table, .fc-events-table) td select { max-width: none; width: 100%; min-width: 0; }
+    :is(.fc-phases-table, .fc-events-table) td:empty { display: none; }
+    :is(.fc-phases-table, .fc-events-table) td::before { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
+    .fc-phases-table td:nth-child(2)::before { content: "From"; }
+    .fc-phases-table td:nth-child(3)::before { content: "Until"; }
+    .fc-phases-table td:nth-child(4)::before { content: "Income / month"; }
+    .fc-phases-table td:nth-child(5)::before { content: "Expenses / month"; }
+    .fc-phases-table td:nth-child(6)::before { content: "Saves / month"; }
+    .fc-events-table td:nth-child(2)::before { content: "Month"; }
+    .fc-events-table td:nth-child(3)::before { content: "Amount"; }
+    .fc-events-table td:nth-child(4)::before { content: "Linked to"; }
+    main :is(.fc-phases-table, .fc-events-table) td:last-child { justify-content: flex-end; }
+    main :is(.fc-phases-table, .fc-events-table) td input { text-align: left; }
+
+    /* Statements: the two dates share the row; Categories: the tag form's dates one under the other */
+    .st-dates { display: flex; align-items: center; gap: 6px; width: 100%; flex: 1 1 100%; }
+    .st-dates input { flex: 1 1 0; min-width: 0; }
+    .tag-add-form label { flex: 1 1 100%; display: flex; align-items: center; gap: 10px; }
+    .tag-add-form label input { flex: 1 1 0; min-width: 0; }
+
+    /* ---- transactions: each one a small card instead of a wide row ----
+           Category                      −3,50 €
+           Description
+           2026-10-15                     Cash
+       The sign and colour of the amount already say the type; To and Tags are in the transaction itself (tap it).
+       Cells: 1 date, 2 type, 3 from, 4 to, 5 amount, 6 category, 7 description, 8 tags */
+    .transactions-table { display: block; overflow: visible; }
+    .transactions-table thead { display: none; }
+    .transactions-table tbody { display: block; }
+    .transactions-table tr { display: grid; grid-template-columns: 1fr auto; column-gap: 12px; padding: 10px 14px; border-top: 1px solid var(--border); }
+    .transactions-table tr:first-child { border-top: 0; }
+    .transactions-table td { border: 0; padding: 0; white-space: normal; }
+    .transactions-table td:is(:nth-child(2), :nth-child(4), :nth-child(8)), .transactions-table td:empty { display: none; }
+    .transactions-table td:nth-child(6) { grid-area: 1 / 1; font-weight: 600; }
+    .transactions-table td:nth-child(5) { grid-area: 1 / 2; text-align: right; white-space: nowrap; }
+    .transactions-table td:nth-child(7) { grid-area: 2 / 1 / 3 / 3; color: var(--muted); font-size: 14px; }
+    .transactions-table td:nth-child(1) { grid-area: 3 / 1; color: var(--muted); font-size: 13px; margin-top: 2px; }
+    .transactions-table td:nth-child(3) { grid-area: 3 / 2; color: var(--muted); font-size: 13px; margin-top: 2px; text-align: right; }
+    .recent-table { display: table; }                         /* three short columns: fits without scrolling */
+    .recent-table th:nth-child(2), .recent-table td:nth-child(2) { display: none; }
+    .recent-table td:nth-child(4) { white-space: normal; min-width: 120px; }
+
+    /* Assets: the pie panel and the list one under the other, neither wider than the screen. A grid column of "1fr"
+       is at least as wide as its widest content (the legend, the table), so it's capped at the screen with minmax(0, 1fr) */
+    .assets-split { grid-template-columns: minmax(0, 1fr); }
+    .assets-side, .assets-list { min-width: 0; padding-right: 0; }
+    .assets-list thead th { position: static; }
+    #assets-pie { display: none; }                            /* no pie on the phone: the total and the legend (share and amount
+                                                                of each account) say the same, and the table slides sideways */
+    .pie-legend { margin-top: 4px; font-size: 14px; }
+
+    /* Categories: the two lists one under the other */
+    .categories-columns > .categories-list, .categories-columns > .categories-list:first-child { flex: 1 1 100%; min-width: 0; }
+    .categories-columns, .insights-columns { grid-template-columns: minmax(0, 1fr); }
+    .cat-add input { flex: 1 1 0; min-width: 0; }
+
+    /* the filters: search and the date chips stay, the rest folds away behind "Filters" */
+    .filters .phone-only { display: inline-block; }
+    .filters:not(.open) > :is(select, label, #f-min, #f-max) { display: none; }
+    .filters #f-search { flex: 1 1 0; min-width: 0; }
+
+    /* inputs at 16px: below that, iPhone Safari zooms the page in when you tap one */
+    input, select, textarea { font-size: 16px; }
+
+    /* dialogs: nearly full width, scrolling if the keyboard leaves little room */
+    dialog { width: calc(100vw - 20px); max-height: calc(100dvh - 20px); overflow-y: auto; padding: 20px 18px; }
+    dialog form .field { flex-basis: 100%; }
+}

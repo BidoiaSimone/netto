@@ -66,10 +66,10 @@
 .fc-phases-table td:nth-child(3) { color: var(--muted); white-space: nowrap; }
 .fc-phases-table :is(th, td):is(:nth-child(4), :nth-child(5), :nth-child(6)) { text-align: right; white-space: nowrap; }
 
-/* events: Name | Month | Amount | Sells | button */
+/* events: Name | Month | Amount | Linked to | button */
 .fc-events-table th:nth-child(2) { width: 165px; }
 .fc-events-table th:nth-child(3) { width: 150px; }
-.fc-events-table th:nth-child(4) { width: 220px; }
+.fc-events-table th:nth-child(4) { width: 290px; } /* fits "Investments (− buys, + sells)" */
 .fc-events-table th:last-child { width: 125px; }
 .fc-events-table :is(th, td):nth-child(3) { text-align: right; }
 
@@ -90,5 +90,4 @@
 .fc-add-row td button { background: var(--accent); border-color: var(--accent); color: var(--on-accent); white-space: nowrap; }
 .fc-add-row td button:hover { background: var(--accent-hover); }
 
-/* ---- privacy mode: like Insights and Statements, every amount on the page is blurred ---- */
-body.private [data-page="forecast"] > :not(.page-head) { filter: blur(9px); user-select: none; pointer-events: none; }
+/* privacy mode: amounts become ***** € (JS/core/formatting.js); the plan's amount fields show ***** until clicked */

@@ -18,7 +18,8 @@ let priceHistoryRequestKey = null; // what that answer was for: range + holdings
 // History is slow (one download per ticker), so it is only fetched when the range or the holdings change
 export async function loadPriceHistoryIfChanged(holdings, forceReload) {
   const requestKey = selectedRange + JSON.stringify(holdings.map((holding) => [holding.ticker, holding.shares, holding.amount_invested]));
-  if (!forceReload && requestKey === priceHistoryRequestKey) return;
+  // nothing new to fetch: just redraw (Hide amounts may have changed how the amounts are written)
+  if (!forceReload && requestKey === priceHistoryRequestKey) return priceHistory ? renderPriceHistory() : undefined;
   priceHistoryRequestKey = requestKey;
   highlightSelectedChip(elementById("inv-range"), selectedRange, "invRange");
   if (!holdings.length) {

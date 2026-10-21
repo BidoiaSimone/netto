@@ -4,7 +4,7 @@
 
 const express = require("express");
 const chalk = require("chalk");
-const { getDailyBackupStatus } = require("../services/automaticDailyBackups.js");
+const { getDailyBackupStatus, copyNewestBackupOffsite } = require("../services/automaticDailyBackups.js");
 const { saveJsonBackupCopy, saveDatabaseCopyBeforeImport, revealBackupsFolderInFinder } = require("../services/backupsFolder.js");
 const { buildJsonBackupFileName, buildFullJsonBackup } = require("../services/jsonBackupExport.js");
 const { isValidBackupShape, replaceAllDataWithBackup, countImportedRows } = require("../services/jsonBackupImport.js");
@@ -12,7 +12,9 @@ const { isValidBackupShape, replaceAllDataWithBackup, countImportedRows } = requ
 const router = express.Router();
 
 // The automatic daily backups, for the Settings page
+// (also copies the newest backup to iCloud Drive if it isn't there yet: the setting may have just been turned on)
 router.get("/backups", function getBackupStatus(request, response) {
+  copyNewestBackupOffsite();
   response.json(getDailyBackupStatus());
 });
 

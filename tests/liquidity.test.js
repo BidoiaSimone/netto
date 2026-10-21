@@ -71,6 +71,29 @@ test("a ticker without a price is reported, left out of every total, and the res
   }
 });
 
+test("no live price, but one kept from before: counted at that last price, and said so (services/livePrices.js)", async () => {
+  db.prepare(`INSERT INTO investments (ticker, shares, amount_invested) VALUES ('CLOSED.MI', 4, 40000)`).run();
+  db.prepare(`INSERT INTO last_known_prices (ticker, price_in_euros, fetched_at) VALUES ('CLOSED.MI', 110.5, '2026-10-16T15:30:00.000Z')`).run();
+  try {
+    const before = (await call("GET", "/net-worth")).investments_value;
+    const netWorth = await call("GET", "/net-worth");
+    assert.deepEqual(netWorth.failed_tickers, []);
+    assert.deepEqual(netWorth.last_known_prices, [{ ticker: "CLOSED.MI", as_of: "2026-10-16T15:30:00.000Z" }]);
+    assert.equal(netWorth.investments_value, before);
+    const holding = (await call("GET", "/investments")).find((candidate) => candidate.ticker === "CLOSED.MI");
+    assert.deepEqual([holding.current_value, holding.price_as_of], [4 * 110.5, "2026-10-16T15:30:00.000Z"]);
+  } finally {
+    db.prepare(`DELETE FROM investments WHERE ticker = 'CLOSED.MI'`).run();
+    db.prepare(`DELETE FROM last_known_prices WHERE ticker = 'CLOSED.MI'`).run();
+  }
+});
+
+test("a live price is kept as the last known one", async () => {
+  await call("GET", "/net-worth");
+  const kept = db.prepare(`SELECT ticker FROM last_known_prices ORDER BY ticker`).all().map((row) => row.ticker);
+  assert.ok(kept.includes("VWCE.MI"), `kept: ${kept.join(", ")}`);
+});
+
 test("today's balance sheet closes at the same net worth as /net-worth", async () => {
   const today = getTodayAsLocalDate();
   const netWorth = await call("GET", "/net-worth");

@@ -8,6 +8,7 @@
  *                                         migrations build it, and it vanishes when the test file ends.
  *                                         Your real money.db is never opened.
  *   2. NETTO_BACKUPS_DIRECTORY            a temporary folder, so no test can write into backend/db/backups.
+ *      NETTO_OFFSITE_BACKUPS_DIRECTORY    another one inside it, so no test copies anything to your iCloud Drive.
  *   3. the Yahoo Finance module           is replaced by fakeYahooFinanceMarketData.js (fixed prices, no
  *                                         internet), so the results never depend on the market or the network.
  *
@@ -22,6 +23,7 @@ const Module = require("module");
 const TEMPORARY_BACKUPS_DIRECTORY = fs.mkdtempSync(path.join(os.tmpdir(), "netto-test-backups-"));
 process.env.NETTO_DATABASE_FILE = ":memory:";
 process.env.NETTO_BACKUPS_DIRECTORY = TEMPORARY_BACKUPS_DIRECTORY;
+process.env.NETTO_OFFSITE_BACKUPS_DIRECTORY = path.join(TEMPORARY_BACKUPS_DIRECTORY, "offsite", "netto backups");
 
 // Node keeps every module it has loaded in require.cache, keyed by its full path, and hands that copy to
 // anyone who requires the same path later. Putting the fake there under the REAL file's path means every

@@ -7,12 +7,20 @@
 import { elementById, createElement } from "../core/domHelpers.js";
 import { euroFormatter } from "../core/formatting.js";
 import { callApi } from "../core/apiClient.js";
+import { createCategoryLabel } from "../core/categoryIcons.js";
 
 const percentFormatter = new Intl.NumberFormat("it-IT", { style: "percent", maximumFractionDigits: 0 });
 const widthPercent = (share) => `${Math.min(Math.max(share, 0), 1) * 100}%`;
 
+let lastProgress = null; // kept to draw again with the icons, when the categories arrive after it
+
 export async function loadBudgetProgress() {
-  renderBudgetProgress(await callApi("/budgets/this-month"));
+  lastProgress = await callApi("/budgets/this-month");
+  renderBudgetProgress(lastProgress);
+}
+
+export function redrawBudgetProgress() {
+  if (lastProgress) renderBudgetProgress(lastProgress);
 }
 
 // The line under each bar: what's left, or by how much it's over (or heading over)
@@ -30,7 +38,7 @@ function createBudgetRow(category, isEarlyInTheMonth) {
   const row = createElement("div", `budget-row ${category.status}`);
   const head = createElement("div", "budget-row-head");
   head.append(
-    createElement("span", "budget-name", category.name),
+    createCategoryLabel(category.category_id, category.name),
     createElement("span", "budget-amounts", `${euroFormatter.format(category.spent)} of ${euroFormatter.format(category.limit)} · ${percentFormatter.format(category.share_used)}`),
   );
   const track = createElement("div", "budget-track");

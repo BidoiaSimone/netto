@@ -24,7 +24,9 @@ function validatePhase(requestBody = {}) {
   return { phase: { name, fromMonth: requestBody.from_month, monthlyIncome, monthlyExpenses } };
 }
 
-// { name, month, amount (+ in / − out), sells_account_id? } -> { event } (cents) or { error }
+// { name, month, amount (+ in / − out), sells_account_id?, transfers_with_investments? } -> { event } (cents) or { error }
+// transfers_with_investments: the money moves between cash and investments instead of arriving or leaving
+// (− buys investments, + sells them; see migration 13)
 function validateEvent(requestBody = {}) {
   const name = cleanName(requestBody.name);
   if (!name) return { error: "an event needs a name (e.g. Sell the Polo)" };
@@ -38,7 +40,12 @@ function validateEvent(requestBody = {}) {
     if (!account) return { error: `Unknown account id: ${requestBody.sells_account_id}` };
     if (account.kind !== "asset") return { error: `${account.name} isn't a personal-use asset: only those can be sold in the forecast` };
   }
-  return { event: { name, month: requestBody.month, amount, sellsAccountId } };
+  const transfersWithInvestments = requestBody.transfers_with_investments === true || requestBody.transfers_with_investments === 1
+    || requestBody.transfers_with_investments === "true" || requestBody.transfers_with_investments === "1";
+  if (transfersWithInvestments && sellsAccountId !== null) {
+    return { error: "an event can sell a personal-use asset or move money to/from investments, not both" };
+  }
+  return { event: { name, month: requestBody.month, amount, sellsAccountId, transfersWithInvestments } };
 }
 
 // Only the fields sent are changed: { yearly_return?, yearly_inflation?, savings_go_to?, yearly_depreciation? }

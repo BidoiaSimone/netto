@@ -2,14 +2,17 @@
  * Each piece lives in its own file; this one only decides the order they run in.
  */
 
+const path = require("path");
 const express = require("express");
 const { SERVER_PORT, SERVER_HOST, MAXIMUM_REQUEST_BODY_SIZE } = require("../config/serverSettings.js");
-const { FRONTEND_DIRECTORY } = require("../config/projectPaths.js");
+const { FRONTEND_DIRECTORY, DATABASE_FILE } = require("../config/projectPaths.js");
+const { IS_LIGHT_EDITION } = require("../config/edition.js");
 const { createRejectRequestsFromOtherHosts } = require("./middleware/rejectRequestsFromOtherHosts.js");
 const { handleWindowSessionConnection, startExitTimerForWhenNoWindowOpens } = require("./appWindow/openWindowSessions.js");
 const { startFrontendLiveReload } = require("./appWindow/frontendLiveReload.js");
 const { startAutomaticDailyBackups } = require("./services/automaticDailyBackups.js");
 const { startRecurringTransactionPoster } = require("./services/recurringTransactionPoster.js");
+const { keepMacAwakeWhileRunning } = require("./appWindow/keepMacAwake.js");
 const apiRouter = require("./routes/apiRouter.js");
 
 const app = express();
@@ -19,6 +22,9 @@ app.set("json spaces", 2);
 app.use(createRejectRequestsFromOtherHosts(SERVER_PORT)); // first: nothing below runs for a foreign Host
 
 app.get("/session", handleWindowSessionConnection); // one connection per open app window
+// "are you there?": answered at once, no database, no Yahoo. The phone's service worker asks it when an answer is
+// slow, to tell a slow server from an unreachable one (frontend/serviceWorker.js)
+app.get("/ping", (request, response) => response.set("Cache-Control", "no-store").json({ ok: true }));
 startFrontendLiveReload();
 startExitTimerForWhenNoWindowOpens();
 
@@ -37,9 +43,10 @@ app.listen(SERVER_PORT, SERVER_HOST, function onServerStarted(error) {
     console.error(error);
     process.exit(1);
   }
-  console.log(`Server listening on http://localhost:${SERVER_PORT}`);
+  console.log(`${IS_LIGHT_EDITION ? "netto light" : "netto"} listening on http://localhost:${SERVER_PORT} (data: ${path.basename(DATABASE_FILE)})`);
   startAutomaticDailyBackups();      // one copy of the database per day
   startRecurringTransactionPoster(); // adds the recurring transactions that are due, now and every new day
+  keepMacAwakeWhileRunning();        // so the phone can reach it: appWindow/keepMacAwake.js
 });
 
 module.exports = app;

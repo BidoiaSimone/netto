@@ -1,0 +1,19 @@
+/* netto light: the same page with the extras left out.
+   One of the numbered files in this folder: Home.html loads them in number order, and later files
+   win over earlier ones when two rules are equally specific, so keep that order when adding files.
+
+   GET /edition.js sets <html data-edition="light"> for `npm run light` (backend/config/edition.js).
+   In Home.html, class="full-only" marks what only the full app shows (Forecast, Goals, budgets, projections...)
+   and class="light-only" what only netto light shows (its simpler This month on Insights, the "light" badge).
+   !important: these must win over each part's own display (grid, flex) whatever file sets it. */
+
+:root[data-edition="light"] .full-only { display: none !important; }
+:root:not([data-edition="light"]) .light-only { display: none !important; }
+
+/* "light" next to the logo in the sidebar */
+:root[data-edition="light"] .brand { display: flex; align-items: flex-end; gap: 8px; }
+.brand .edition-badge {
+    font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
+    color: var(--accent-2); background: rgba(var(--accent-rgb), 0.12); border: 1px solid rgba(var(--accent-rgb), 0.35);
+    border-radius: 99px; padding: 2px 8px; margin-bottom: 2px;
+}

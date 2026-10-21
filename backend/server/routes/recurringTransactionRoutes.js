@@ -12,17 +12,22 @@ const { getTodayAsLocalDate } = require("../utils/localDates.js");
 const { validateRecurringTransaction } = require("../validation/recurringTransactionValidation.js");
 const { getNextOccurrenceDate, countOccurrencesUpTo } = require("../services/recurrenceSchedule.js");
 const { postAllDueRecurringTransactions, getPostingBlocker } = require("../services/recurringTransactionPoster.js");
+const { describeForeignAmount } = require("../services/foreignCurrencyAmounts.js");
 
 const router = express.Router();
 
 const selectRuleById = db.prepare(`SELECT * FROM recurring_transactions WHERE id = ?`);
 const selectLastPostedDate = db.prepare(`SELECT MAX(date) AS lastDate FROM transactions WHERE recurring_transaction_id = ?`);
 
-// DB row (cents) -> API (euros), with what the page shows next to it
-function convertRuleRowForApi(ruleRow) {
+// DB row (cents) -> API (euros), with what the page shows next to it.
+// A rule billed in another currency has original_currency and original_amount (e.g. 9.99 USD), like a transaction.
+function convertRuleRowForApi({ original_amount_minor, ...ruleRow }) {
   const blocker = getPostingBlocker(ruleRow);
+  const { original_currency, original_amount } = describeForeignAmount({ ...ruleRow, original_amount_minor });
   return {
     ...ruleRow,
+    original_currency,
+    original_amount,
     amount: convertCentsToEuros(ruleRow.amount),
     paused: ruleRow.paused === 1,
     next_date: getNextOccurrenceDate(ruleRow),                   // null = ended
@@ -74,10 +79,12 @@ router.post("/recurring-transactions", function addRecurringTransaction(request,
     const result = db.transaction(() => {
       const { lastInsertRowid } = db.prepare(`
         INSERT INTO recurring_transactions (type, amount, from_account_id, to_account_id, category_id, description,
-                                            repeat_unit, repeat_interval, start_date, end_date, paused, created_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                                            repeat_unit, repeat_interval, start_date, end_date, paused, created_at,
+                                            original_currency, original_amount_minor)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `).run(rule.type, rule.amount, rule.fromAccountId, rule.toAccountId, rule.categoryId, rule.description,
-             rule.repeatUnit, rule.repeatInterval, rule.startDate, rule.endDate, rule.paused, getTodayAsLocalDate());
+             rule.repeatUnit, rule.repeatInterval, rule.startDate, rule.endDate, rule.paused, getTodayAsLocalDate(),
+             rule.originalCurrency, rule.originalAmountMinor);
       return { id: lastInsertRowid, added: postAllDueRecurringTransactions() };
     })();
     response.status(201).json({ message: "Recurring transaction added", ...result });
@@ -100,11 +107,12 @@ router.put("/recurring-transactions/:id", function editRecurringTransaction(requ
       db.prepare(`
         UPDATE recurring_transactions
         SET type = ?, amount = ?, from_account_id = ?, to_account_id = ?, category_id = ?, description = ?,
-            repeat_unit = ?, repeat_interval = ?, start_date = ?, end_date = ?, paused = ?, posted_count = ?
+            repeat_unit = ?, repeat_interval = ?, start_date = ?, end_date = ?, paused = ?, posted_count = ?,
+            original_currency = ?, original_amount_minor = ?
         WHERE id = ?
       `).run(rule.type, rule.amount, rule.fromAccountId, rule.toAccountId, rule.categoryId, rule.description,
              rule.repeatUnit, rule.repeatInterval, rule.startDate, rule.endDate, rule.paused,
-             calculatePostedCountAfterEdit(existingRule, rule), ruleId);
+             calculatePostedCountAfterEdit(existingRule, rule), rule.originalCurrency, rule.originalAmountMinor, ruleId);
       return postAllDueRecurringTransactions();
     })();
     response.json({ message: "Recurring transaction updated", id: ruleId, added });

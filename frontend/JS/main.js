@@ -22,20 +22,38 @@ import { initializePriceHistoryChart } from "./pages/investmentPriceHistoryChart
 import { initializeNetWorthHistoryChart } from "./pages/netWorthHistoryChart.js";
 import { initializeNextUpPage, loadTodos } from "./pages/nextUpPage.js";
 import { initializeStatementsPage } from "./pages/statementsPage.js";
+import { initializeMoneyFlows } from "./pages/moneyFlows.js";
+import { initializeYearInReviewPage } from "./pages/yearInReviewPage.js";
 import { initializeForecastPage } from "./pages/forecastPage.js";
+import { initializeTargetAllocation } from "./pages/targetAllocation.js";
+import { initializeCategoryTrends } from "./pages/categoryTrends.js";
+import { initializeQuickReconcileDialog } from "./dialogs/quickReconcileDialog.js";
 import { initializeTransactionDialog, updateTransactionFieldsForType } from "./dialogs/transactionDialog.js";
 import { initializeAccountDialog } from "./dialogs/accountDialog.js";
 import { initializeTradeDialog } from "./dialogs/tradeDialog.js";
 import { initializeReconcileDialog } from "./dialogs/reconcileDialog.js";
 import { initializeRecurringTransactionDialog } from "./dialogs/recurringTransactionDialog.js";
+import { initializeGoalDialog } from "./dialogs/goalDialog.js";
+import { initializeCategoryLookDialog } from "./dialogs/categoryLookDialog.js";
+import { initializeOfflineStatus } from "./app/offlineStatus.js";
+import { initializePhoneMenu } from "./app/phoneMenu.js";
+import { initializeSheetPosition } from "./app/sheetPosition.js";
+import { initializeWrapUpSettings } from "./pages/monthWrapUp.js";
 import { initializePrivacyMode, setPrivacyMode, shouldStartInPrivacyMode } from "./settings/privacyMode.js";
 import { initializeThemeAndAccentColor } from "./settings/themeAndAccentColor.js";
 import { initializeAutoRefreshButton, restoreSavedAutoRefresh } from "./settings/autoRefresh.js";
 import { initializeBackupSettings } from "./settings/backupSettings.js";
+import { initializeOldTrackerImport } from "./settings/oldTrackerImport.js";
 import { loadAllData } from "./core/dataRefresh.js";
+import { loadCurrencies } from "./core/currencies.js";
 import { showErrorMessage } from "./core/errorBanner.js";
+import { askServiceWorkerToRetry } from "./core/connectionState.js";
+import { initializeDecimalInputs } from "./core/decimalInputs.js";
+import { initializePhoneTables } from "./app/phoneTables.js";
 
 // ---- connect buttons, forms and shortcuts ----
+initializeDecimalInputs(); // first: phones get decimal fields that take "12,50"
+initializePhoneTables();   // and tables that scroll in their own box
 initializePageNavigation();
 initializePriceHistoryChart();
 initializeNetWorthHistoryChart();
@@ -47,22 +65,43 @@ initializeTransactionDialog();
 initializeTradeDialog();
 initializeReconcileDialog();
 initializeRecurringTransactionDialog();
+initializeGoalDialog();
+initializeCategoryLookDialog();
+initializeOfflineStatus();
+initializeWrapUpSettings();
 initializePrivacyMode();
 initializeDialogWindows();
+initializeSheetPosition();
 initializeKeyboardShortcuts();
 initializeTransactionsPage();
 initializeNextUpPage();
 initializeStatementsPage();
+initializeMoneyFlows();
+initializeYearInReviewPage();
 initializeForecastPage();
+initializeTargetAllocation();
+initializeCategoryTrends();
+initializeQuickReconcileDialog();
 initializeAutoRefreshButton();
 initializeThemeAndAccentColor();
 initializeBackupSettings();
+initializeOldTrackerImport();
 connectToServerSession();
 
 // ---- first display ----
-setPrivacyMode(shouldStartInPrivacyMode()); // hidden at launch; see Settings > Hide amounts for reloads
+setPrivacyMode(shouldStartInPrivacyMode(), { redrawPages: false }); // hidden at launch; see Settings > Hide amounts for reloads
 updateTransactionFieldsForType();
 restoreSavedAutoRefresh();
 showPageFromUrl();
+initializePhoneMenu(); // after showPageFromUrl: the bar takes the page's name from the active link
 loadTodos().catch((error) => showErrorMessage(error.message));
+loadCurrencies().catch((error) => showErrorMessage(error.message)); // the list never changes: once is enough
+askServiceWorkerToRetry(); // a (re)load always really tries the Mac, even right after it failed
 loadAllData();
+
+// The service worker keeps copies of the pages and data, so netto still opens (and new transactions can be added)
+// when the server can't be reached: see serviceWorker.js. Browsers only allow it on https:// (the phone, through
+// Tailscale) and on localhost.
+if ("serviceWorker" in navigator && window.isSecureContext) {
+  navigator.serviceWorker.register("/serviceWorker.js").catch((error) => console.warn("Service worker not registered:", error));
+}

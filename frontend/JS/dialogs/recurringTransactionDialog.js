@@ -2,13 +2,15 @@
 // The same <dialog id="recurring-dialog"> does both: switchRecurringDialogMode() changes its title and buttons.
 
 import { elementById } from "../core/domHelpers.js";
-import { euroFormatter, formatShortDate, getTodayAsLocalDate } from "../core/formatting.js";
+// single transactions stay readable with Hide amounts on (see core/formatting.js)
+import { visibleEuroFormatter as euroFormatter, formatShortDate, getTodayAsLocalDate } from "../core/formatting.js";
 import { callApi } from "../core/apiClient.js";
 import { loadAllData } from "../core/dataRefresh.js";
 import { addClosedAccountOptionIfMissing } from "../core/accountPickers.js";
 import { fillCategoryPicker } from "../core/categoryPickers.js";
 import { getOccurrenceDate, listUpcomingDates, describeRepeat } from "../core/recurrenceDates.js";
 import { openDialog } from "../app/dialogWindows.js";
+import { fillCurrencyPicker } from "../core/currencies.js";
 
 const NUMBER_OF_DATES_PREVIEWED = 3;
 
@@ -35,6 +37,8 @@ export function prepareNewRecurringTransaction() {
   form.start_date.value = getTodayAsLocalDate();
   form.repeat_interval.value = 1;
   form.repeat_unit.value = "month";
+  fillCurrencyPicker(form.original_currency, { emptyOptionLabel: "Euros" });
+  form.original_currency.value = "";
   updateRecurringDialog();
 }
 
@@ -54,6 +58,9 @@ export function openRecurringTransactionEditor(rule) {
   form.start_date.value = rule.start_date;
   form.end_date.value = rule.end_date ?? "";
   form.paused.checked = rule.paused;
+  fillCurrencyPicker(form.original_currency, { emptyOptionLabel: "Euros" });
+  form.original_currency.value = rule.original_currency ?? "";
+  form.original_amount.value = rule.original_amount ?? "";
   updateRecurringDialog(); // fills the category list for this type: pick the category after it
   form.category_id.value = rule.category_id ?? "";
   form.amount.focus();
@@ -74,7 +81,20 @@ function readRecurringForm() {
     start_date: form.start_date.value,
     end_date: form.end_date.value || null,
     paused: form.paused.checked,
+    // billed in another currency (a subscription in dollars): both, or neither
+    original_currency: form.original_currency.value || null,
+    original_amount: form.original_currency.value && form.original_amount.value !== "" ? Number(form.original_amount.value) : null,
   };
+}
+
+// The foreign amount only matters once a currency is picked
+function updateCurrencyFields() {
+  const form = elementById("recurring-form");
+  const currencyCode = form.original_currency.value;
+  elementById("rec-original-amount-field").hidden = !currencyCode;
+  elementById("rec-currency-note").hidden = !currencyCode;
+  form.original_amount.required = Boolean(currencyCode);
+  elementById("rec-original-amount-label").textContent = currencyCode ? `Amount in ${currencyCode}` : "Amount in that currency";
 }
 
 // Income only has a destination, expense only a source, movement has both (like a normal transaction);
@@ -128,6 +148,7 @@ function updatePreview(schedule) {
 function updateRecurringDialog() {
   const rule = readRecurringForm();
   updateAccountAndCategoryFieldsForType();
+  updateCurrencyFields();
   updateRepeatUnitLabels();
   highlightMatchingPreset(rule);
   updatePreview(rule);

@@ -6,6 +6,7 @@ const db = require("../../db/databaseConnection.js");
 const { convertEurosToCents } = require("../utils/moneyConversion.js");
 const { getTodayAsLocalDate, parseDateOrDefaultToToday } = require("../utils/localDates.js");
 const { parseOptionalId } = require("../utils/httpErrors.js");
+const { NETTO_CURRENCY, isForeignCurrency, convertToMinorUnits, getCurrencyDecimals } = require("../../config/currencies.js");
 
 // Which accounts each type needs: income only has a destination, expense only a source, movement both
 const REQUIRED_ACCOUNTS_BY_TYPE = {
@@ -50,7 +51,25 @@ function validateTransaction(requestBody, accountIdsAlreadyUsed = []) {
 
   const details = validateTransactionDetails(requestBody, requestBody.type);
   if (details.error) return details;
-  return { transaction: { fromAccountId, toAccountId, type: requestBody.type, amount, ...details.details } };
+  const foreign = validateForeignAmount(requestBody);
+  if (foreign.error) return foreign;
+  return { transaction: { fromAccountId, toAccountId, type: requestBody.type, amount, ...details.details, ...foreign.foreignAmount } };
+}
+
+// What it cost in a foreign currency (migration 14), optional: { original_currency: "JPY", original_amount: 1200 }.
+// No currency (or an empty one) = paid in euros, and any amount sent with it is ignored.
+// Returns { error } or { foreignAmount: { originalCurrency, originalAmountMinor } } (both null for euros).
+function validateForeignAmount(requestBody) {
+  const currency = typeof requestBody.original_currency === "string" ? requestBody.original_currency.trim().toUpperCase() : requestBody.original_currency;
+  if (currency === undefined || currency === null || currency === "") return { foreignAmount: { originalCurrency: null, originalAmountMinor: null } };
+  if (currency === NETTO_CURRENCY) return { error: "the euro amount is already the transaction's amount: leave the other currency empty" };
+  if (!isForeignCurrency(currency)) return { error: `Unknown currency: ${currency}` };
+  const originalAmountMinor = convertToMinorUnits(requestBody.original_amount, currency);
+  if (!(originalAmountMinor > 0)) {
+    const smallestAmount = (1 / 10 ** getCurrencyDecimals(currency)).toFixed(getCurrencyDecimals(currency));
+    return { error: `the amount in ${currency} must be at least ${smallestAmount}` };
+  }
+  return { foreignAmount: { originalCurrency: currency, originalAmountMinor } };
 }
 
 // The part every transaction has, reconciliation adjustments included: date, category, description.
@@ -75,4 +94,4 @@ function validateTransactionDetails(requestBody, type = null) {
   return { details: { date, categoryId, description: requestBody.description?.trim() || null } };
 }
 
-module.exports = { validateTransaction, validateTransactionDetails };
+module.exports = { validateTransaction, validateTransactionDetails, validateForeignAmount };

@@ -6,7 +6,6 @@ import { callApi } from "../core/apiClient.js";
 import { appState, isAccountOpen } from "../core/appState.js";
 import { refreshAccountPickers } from "../core/accountPickers.js";
 import { renderAssetsPieChart } from "./assetsPieChart.js";
-import { renderAccountsNeedingCheck } from "./homePage.js";
 import { openAccountEditor } from "../dialogs/accountDialog.js";
 import { getAccountKindLabel } from "../core/accountKinds.js";
 
@@ -17,7 +16,6 @@ export async function loadAccounts() {
   appState.accounts = await callApi("/accounts");
   renderAssetsPage();
   refreshAccountPickers();
-  renderAccountsNeedingCheck();
 }
 
 export function renderAssetsPage() {

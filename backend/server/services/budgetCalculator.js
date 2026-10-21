@@ -48,17 +48,17 @@ function listMonthsOfPeriod(from, to) {
 // ---------- the limit in effect ----------
 
 // Every expense category that has (or had) a budget, with its rows oldest first:
-// Map category id -> { name, rows: [{ from_month, monthly_limit }] }
+// Map category id -> { name, spendingPace, rows: [{ from_month, monthly_limit }] }
 function loadBudgetHistory() {
   const historyByCategoryId = new Map();
   const rows = db.prepare(`
-    SELECT b.category_id, c.name, b.from_month, b.monthly_limit
+    SELECT b.category_id, c.name, c.spending_pace, b.from_month, b.monthly_limit
     FROM category_budgets b JOIN categories c ON c.id = b.category_id
     WHERE c.kind = 'expense'          -- a category moved to the income list keeps its rows, but they don't count
     ORDER BY c.name COLLATE NOCASE, b.from_month
   `).all();
   for (const row of rows) {
-    if (!historyByCategoryId.has(row.category_id)) historyByCategoryId.set(row.category_id, { name: row.name, rows: [] });
+    if (!historyByCategoryId.has(row.category_id)) historyByCategoryId.set(row.category_id, { name: row.name, spendingPace: row.spending_pace, rows: [] });
     historyByCategoryId.get(row.category_id).rows.push(row);
   }
   return historyByCategoryId;
@@ -100,6 +100,7 @@ function sumRecurringExpensesStillDue(today, monthEnd) {
 
 // For each budgeted category: spent so far, the limit, and the month-end projection, worked out like the
 // "Projected spending" card: recurring (already added + still due) + the rest at this month's daily pace.
+// An 'occasional' category (migration 16: rent, gifts...) gets no pace: its other spending stays as it is.
 // today: YYYY-MM-DD (a parameter so the tests can pick the day). Money in euros.
 function buildMonthBudgetProgress(today) {
   const month = today.slice(0, 7);
@@ -126,7 +127,8 @@ function buildMonthBudgetProgress(today) {
   for (const [categoryId, limit] of limits) {
     const spending = spendingByCategoryId.get(categoryId) ?? { recurring: 0, variable: 0 };
     const spent = spending.recurring + spending.variable;
-    const projected = Math.round(spending.recurring + (stillDueByCategoryId.get(categoryId) ?? 0) + (spending.variable / dayOfMonth) * daysInMonth);
+    const variableByTheEnd = history.get(categoryId).spendingPace === "occasional" ? spending.variable : (spending.variable / dayOfMonth) * daysInMonth;
+    const projected = Math.round(spending.recurring + (stillDueByCategoryId.get(categoryId) ?? 0) + variableByTheEnd);
     const status = spent > limit ? "over" : spent >= NEAR_THE_LIMIT_SHARE * limit ? "near" : "ok";
     categories.push({
       category_id: categoryId,
@@ -208,4 +210,4 @@ function buildBudgetVsActual(from, to) {
   };
 }
 
-module.exports = { listMonthsOfPeriod, findLimitsInEffect, buildMonthBudgetProgress, buildBudgetVsActual };
+module.exports = { listMonthsOfPeriod, findLimitsInEffect, buildMonthBudgetProgress, buildBudgetVsActual, sumRecurringExpensesStillDue };

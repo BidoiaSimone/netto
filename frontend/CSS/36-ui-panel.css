@@ -1,0 +1,274 @@
+/* Settings > Layout > Panel: the same pages drawn like an HMI screen (ISA-101 "high-performance" style).
+   Loaded after every other file and only active with <html data-ui="panel"> (JS/themeBeforeFirstPaint.js), so
+   it changes nothing for Classic. Delete this file and its <link> in Home.html to remove the layout.
+
+   The ideas, from the control-room screens it borrows from:
+     - neutral grey everywhere; colour only where it means something: green in, red out, amber warning, the
+       accent for "selected" and for the main action. No glows, no gradients, no hover lifts, no fade-in.
+     - a screen-selector bar across the top (the sidebar's links) and a status bar along the bottom
+       (net worth and Hide amounts), both dark in either theme.
+     - every block is a faceplate: a flat box with a title tab (the h3 above it).
+     - numbers in DIN (built into macOS and iOS), with digits of equal width so columns line up;
+       net worth sits in an inset numeric readout, the one bold thing on the screen.
+   Phones: the screen buttons become a strip under the top bar that scrolls sideways, the status bar stays. */
+
+/* ---- colours: only the neutrals change; the accent, green, red and amber come from 01-theme-colors.css ---- */
+:root[data-ui="panel"]:not([data-theme="light"]) {
+    --bg: #22272a;
+    --surface: #2d3236;
+    --surface-2: #353b3f;
+    --border: #444b50;
+    --text: #e3e6e7;
+    --muted: #9aa2a6;
+    --sidebar-bg: #16191b;
+    --panel-edge: #5a6268;          /* faceplate and field outlines */
+    --panel-title: #4a5257;         /* the title tab of a faceplate */
+    --panel-title-text: #eef0f1;
+    --panel-field: #1d2124;         /* input fields: darker than the plate, like a sunken entry box */
+    --panel-button-top: #454c51;    /* buttons: a slight raise, top to bottom */
+    --panel-button-bottom: #3a4045;
+    --panel-chrome: #16191b;        /* the screen bar and the status bar */
+    --panel-chrome-text: #a7afb3;
+    --panel-chrome-active: #2d3236;
+    --panel-readout: #0e1113;       /* the inset display that holds net worth */
+    --glow: none;
+    --dialog-shadow: 0 18px 50px rgba(0, 0, 0, 0.55);
+    --backdrop: rgba(10, 12, 13, 0.6);
+}
+:root[data-ui="panel"][data-theme="light"] {
+    --bg: #d3d6d6;
+    --surface: #e9ebeb;
+    --surface-2: #dde0e0;
+    --border: #bfc4c5;
+    --text: #1b1f21;
+    --muted: #586064;
+    --sidebar-bg: #2f3437;
+    --panel-edge: #969da0;
+    --panel-title: #5d6569;
+    --panel-title-text: #ffffff;
+    --panel-field: #f8f9f9;
+    --panel-button-top: #f3f4f4;
+    --panel-button-bottom: #dadede;
+    --panel-chrome: #2f3437;
+    --panel-chrome-text: #c3c9cb;
+    --panel-chrome-active: #474e52;
+    --panel-readout: #15191b;
+    --glow: none;
+    --dialog-shadow: 0 18px 50px rgba(27, 31, 33, 0.28);
+    --backdrop: rgba(27, 31, 33, 0.45);
+}
+
+/* ---- type: DIN for everything, equal-width digits ---- */
+[data-ui="panel"] body {
+    font-family: "DIN Alternate", "DIN 2014", Bahnschrift, "D-DIN", "Roboto Condensed", "Arial Narrow", system-ui, sans-serif;
+    font-variant-numeric: tabular-nums;
+    background: var(--bg);
+    font-size: 15px;
+}
+[data-ui="panel"] section:not([hidden]),
+[data-ui="panel"] dialog[open] { animation: none; }   /* screens switch at once, like on a panel */
+
+/* ---- the screen-selector bar: the sidebar, across the top ---- */
+[data-ui="panel"] #sidebar {
+    top: 0; left: 0; right: 0; bottom: auto; width: auto; height: 52px; z-index: 20;
+    flex-direction: row; align-items: stretch; gap: 0;
+    padding: 0 12px 0 18px;
+    background: var(--panel-chrome); border: 0; border-bottom: 1px solid #000;
+    overflow-x: auto; scrollbar-width: none;
+}
+[data-ui="panel"] #sidebar::-webkit-scrollbar { display: none; }
+[data-ui="panel"] .brand { margin: 0 18px 0 0; display: flex; align-items: center; flex: none; }
+[data-ui="panel"] .brand img { width: auto; height: 22px; }
+[data-ui="panel"] #sidebar .logo-dark { display: block; }   /* the bar is dark in both themes */
+[data-ui="panel"] #sidebar .logo-light { display: none; }
+[data-ui="panel"] #sidebar a {
+    display: flex; align-items: center; flex: none;
+    padding: 0 14px; border-radius: 0;
+    color: var(--panel-chrome-text); font-size: 14px; white-space: nowrap;
+    border-left: 1px solid rgba(255, 255, 255, 0.06);
+    border-bottom: 3px solid transparent; border-top: 3px solid transparent;
+    transition: none;
+}
+[data-ui="panel"] #sidebar a:hover { transform: none; color: #fff; background: rgba(255, 255, 255, 0.05); }
+[data-ui="panel"] #sidebar a.active {
+    color: #fff; background: var(--panel-chrome-active); font-weight: 600;
+    border-bottom-color: var(--accent);
+}
+[data-ui="panel"] #sidebar a.active::before { display: none; }
+
+/* ---- the status bar along the bottom: net worth and Hide amounts (the sidebar's box) ---- */
+[data-ui="panel"] #side-networth {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 20;
+    display: flex; align-items: center; gap: 12px;
+    margin: 0; height: 38px; padding: 0 18px;
+    background: var(--panel-chrome); border: 0; border-top: 1px solid #000; border-radius: 0;
+    color: var(--panel-chrome-text); font-size: 13px; text-transform: none; letter-spacing: 0.02em;
+}
+[data-ui="panel"] #side-networth strong {
+    display: inline-block; margin: 0; padding: 3px 10px;
+    font-size: 16px; color: var(--accent);
+    background: var(--panel-readout); border: 1px solid #000; border-radius: 2px;
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.6);
+}
+[data-ui="panel"] #side-networth .switch { margin: 0 0 0 auto; font-size: 13px; color: var(--panel-chrome-text); }
+[data-ui="panel"] #side-networth .switch i { background: #2a2f32; border-color: #50585d; }
+[data-ui="panel"] #side-networth .switch kbd { background: #2a2f32; color: var(--panel-chrome-text); }
+
+/* ---- the screen itself ---- */
+[data-ui="panel"] main { margin: 0 auto; padding: 78px 32px 80px; max-width: 1280px; }
+[data-ui="panel"] h2 { font-size: 26px; font-weight: 600; letter-spacing: 0; }
+[data-ui="panel"] .page-head { padding-bottom: 14px; border-bottom: 1px solid var(--panel-edge); }
+[data-ui="panel"] .hint { color: var(--muted); }
+[data-ui="panel"] #error:empty { margin: 0; min-height: 0; }   /* no empty line above the title until there's an error */
+
+/* other boxes: the wrap-up, goals, reminders, quick add, the to-do list: the same hard-edged plate */
+[data-ui="panel"] :is(.wrap-up, .goal-card, .todo-list li, .quick-add > *) { border-radius: 2px; }
+[data-ui="panel"] .wrap-up {
+    background: var(--surface); border: 1px solid var(--panel-edge); border-left: 4px solid var(--accent);
+}
+[data-ui="panel"] .goal-card { background: var(--surface); border-color: var(--panel-edge); }
+[data-ui="panel"] :is(.goal-track, .goal-track span, .budget-track, .budget-track span, .st-budget-track, .st-budget-track span) { border-radius: 0; }
+[data-ui="panel"] :is(.goal-track, .budget-track) { box-shadow: inset 0 0 0 1px var(--panel-edge); }
+
+/* a faceplate's title tab: the h3 sits on the box under it */
+[data-ui="panel"] main h3 {
+    display: table; margin: 30px 0 0; padding: 5px 12px 4px;
+    background: var(--panel-title); color: var(--panel-title-text);
+    font-size: 13px; font-weight: 600; text-transform: none; letter-spacing: 0.02em;
+    border-radius: 2px 2px 0 0;
+}
+[data-ui="panel"] main h3 + :is(table, .panel, .cards, div, ul) { margin-top: 0; }
+[data-ui="panel"] main h3 + table,
+[data-ui="panel"] main h3 + .table-scroll > table,
+[data-ui="panel"] main h3 + .panel { border-top-left-radius: 0; }
+[data-ui="panel"] main h3 + :is(p, .hint) { margin-top: 10px; }
+/* inside a faceplate, a title is a plain line */
+[data-ui="panel"] main :is(.panel, .card, .yr-card) h3 {
+    display: block; padding: 0; background: none; color: var(--muted); border-radius: 0; margin-top: 0;
+}
+
+/* faceplates: flat boxes with a hard edge */
+[data-ui="panel"] :is(table, .panel) {
+    background: var(--surface); border: 1px solid var(--panel-edge); border-radius: 2px;
+}
+/* :where() keeps these as weak as the base table rules, so the phone's card layouts (31-phone.css) still win */
+:where([data-ui="panel"]) th {
+    background: var(--surface-2); color: var(--text);
+    font-size: 12.5px; font-weight: 600; text-transform: none; letter-spacing: 0.02em;
+    border-bottom: 1px solid var(--panel-edge);
+}
+:where([data-ui="panel"]) td { border-top: 1px solid var(--border); padding-top: 9px; padding-bottom: 9px; }
+:where([data-ui="panel"]) tbody tr:first-child td { border-top: 0; }
+[data-ui="panel"] tbody tr:hover { background: rgba(var(--accent-rgb), 0.07); }
+
+[data-ui="panel"] .card {
+    background: var(--surface); border: 1px solid var(--panel-edge); border-radius: 2px;
+    color: var(--muted); font-size: 13px; text-transform: none; letter-spacing: 0.02em;
+    transition: none;
+}
+[data-ui="panel"] .card:hover { transform: none; box-shadow: none; border-color: var(--panel-edge); }
+[data-ui="panel"] .card strong { font-size: 26px; font-weight: 600; }
+[data-ui="panel"] .home-group { border-top: 4px solid var(--home-group-color); }
+
+/* net worth: the inset numeric readout */
+[data-ui="panel"] .card.hero {
+    background: var(--panel-readout); border: 1px solid #000;
+    box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.7), 0 0 0 3px var(--surface-2), 0 0 0 4px var(--panel-edge);
+    color: #8d979c;
+}
+[data-ui="panel"] .card.hero strong {
+    font-size: 40px; font-weight: 600; letter-spacing: 0.03em;
+    background: none; -webkit-background-clip: border-box; background-clip: border-box;
+    color: var(--accent); text-shadow: 0 0 12px rgba(var(--accent-rgb), 0.35);
+}
+[data-ui="panel"] .card.hero .home-card-note { color: #6f797e; }
+[data-ui="panel"] .home-cards { gap: 14px; margin-left: 4px; }
+
+/* bars: square ends, an outline like a bar graph on a faceplate */
+[data-ui="panel"] .bar { border-radius: 0; height: 12px; box-shadow: 0 0 0 1px var(--panel-edge); }
+[data-ui="panel"] .bar span { border-radius: 0; }
+
+/* ---- controls: flat entry boxes and slightly raised buttons ----
+   The button rules use :where() so they stay as weak as the base ones: buttons with their own look (the account
+   names on Assets, the tag chips, Delete) keep it. */
+[data-ui="panel"] :is(input, select) {
+    background: var(--panel-field); border: 1px solid var(--panel-edge); border-radius: 2px;
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.12);
+}
+[data-ui="panel"] :is(input, select):focus { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(var(--accent-rgb), 0.35); }
+:where([data-ui="panel"]) :is(button, a.button) {
+    background: linear-gradient(var(--panel-button-top), var(--panel-button-bottom));
+    border: 1px solid var(--panel-edge); border-radius: 3px;
+    color: var(--text); font-weight: 600;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18);
+    transition: none;
+}
+:where([data-ui="panel"]) :is(button, a.button):hover { transform: none; box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18); filter: brightness(1.06); background: linear-gradient(var(--panel-button-top), var(--panel-button-bottom)); }
+:where([data-ui="panel"]) :is(button, a.button):active { box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3); filter: none; }
+[data-ui="panel"] button:focus-visible, [data-ui="panel"] a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+[data-ui="panel"] button.ghost {
+    background: linear-gradient(var(--panel-button-top), var(--panel-button-bottom));
+    border-color: var(--panel-edge); color: var(--text); font-weight: 600;
+}
+[data-ui="panel"] button.ghost:hover { background: linear-gradient(var(--panel-button-top), var(--panel-button-bottom)); color: var(--text); }
+/* the main action (a page's "+ Add", a form's or dialog's confirm button): the only filled buttons */
+[data-ui="panel"] :is(.add-btn, .reconcile-apply, button[type="submit"], form button:not([type]):not(.ghost, .danger, .name-link, .tag-chip), .actions > button:not(.ghost, .danger)) {
+    background: var(--accent); border-color: rgba(0, 0, 0, 0.35); color: var(--on-accent);
+}
+[data-ui="panel"] :is(.add-btn, .reconcile-apply, button[type="submit"], form button:not([type]):not(.ghost, .danger, .name-link, .tag-chip), .actions > button:not(.ghost, .danger)):hover { background: var(--accent); }
+[data-ui="panel"] kbd { background: rgba(0, 0, 0, 0.15); }
+/* selected chip: pressed in, with the accent */
+/* every selected chip (some pages set theirs by id, like #fc-years: the "#selected-chip" in :is() is never on the
+   page, it only lifts this rule to the same strength as those, so it applies to them too) */
+[data-ui="panel"] :is(main, dialog, #selected-chip) button.active {
+    background: var(--panel-field); color: var(--text);
+    border-color: var(--accent); box-shadow: inset 0 2px 3px rgba(0, 0, 0, 0.25), inset 0 -3px 0 var(--accent);
+}
+:where([data-ui="panel"]) td button { background: transparent; border-color: rgba(var(--neg-rgb), 0.55); color: var(--neg); box-shadow: none; }
+[data-ui="panel"] .badge { border-radius: 2px; font-weight: 600; }
+
+/* ---- dialogs: a faceplate that pops up, its title as a bar across the top ---- */
+[data-ui="panel"] dialog {
+    border: 1px solid var(--panel-edge); border-radius: 3px; padding: 0 22px 20px;
+    background: var(--surface); box-shadow: var(--dialog-shadow);
+}
+[data-ui="panel"] dialog::backdrop { backdrop-filter: none; }
+[data-ui="panel"] dialog h3 {
+    margin: 0 -22px 18px; padding: 11px 22px;
+    background: var(--panel-title); color: var(--panel-title-text);
+    font-size: 16px; font-weight: 600;
+}
+
+/* ---- phones: the screen buttons under the top bar, the status bar at the bottom ---- */
+@media (max-width: 800px) {
+    [data-ui="panel"] #phone-bar { background: var(--panel-chrome); border-bottom: 1px solid #000; }
+    [data-ui="panel"] #phone-bar button,
+    [data-ui="panel"] #phone-bar #phone-page-title { color: #fff; background: none; border-color: transparent; box-shadow: none; }
+    [data-ui="panel"] #phone-menu-button, [data-ui="panel"] #phone-menu-backdrop { display: none !important; }
+
+    /* the bar of screen buttons: right under the top bar, scrolls sideways */
+    [data-ui="panel"] #sidebar {
+        position: sticky; top: calc(env(safe-area-inset-top) + 58px); z-index: 25;
+        width: auto; height: 44px; padding: 0 4px;
+        transform: none; box-shadow: none; overflow-y: hidden;
+        background: var(--panel-chrome-active); border-right: 0; border-bottom: 1px solid #000;
+    }
+    [data-ui="panel"] .brand { display: none; }
+    [data-ui="panel"] #sidebar a { padding: 0 13px; font-size: 14px; border-left: 0; }
+    [data-ui="panel"] #sidebar a.active { background: var(--panel-chrome); }
+
+    [data-ui="panel"] #side-networth {
+        height: auto; padding: 8px 14px calc(env(safe-area-inset-bottom) + 8px);
+        margin: 0;
+    }
+    [data-ui="panel"] #side-networth .switch { display: none; } /* the eye in the top bar does it */
+
+    [data-ui="panel"] main { padding: 14px 12px calc(env(safe-area-inset-bottom) + 70px); }
+    [data-ui="panel"] .page-head { border-bottom: 0; padding-bottom: 0; }
+    [data-ui="panel"] main h3 { margin-top: 22px; }
+    [data-ui="panel"] .card.hero strong { font-size: 34px; }
+    [data-ui="panel"] .home-cards { margin-left: 0; }
+    [data-ui="panel"] .card.hero { margin: 4px; }
+    [data-ui="panel"] dialog { padding: 0 16px 18px; }
+    [data-ui="panel"] dialog h3 { margin: 0 -16px 16px; padding: 12px 16px; }
+}

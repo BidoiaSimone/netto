@@ -46,13 +46,7 @@ td button:hover { background: rgba(var(--neg-rgb), 0.12); box-shadow: none; }
 
 #error { color: var(--neg); min-height: 1.2em; }
 
-@media (max-width: 800px) {
-    #sidebar { position: static; width: auto; flex-direction: row; flex-wrap: wrap; border-right: 0; }
-    #sidebar a.active::before, .brand { display: none; }
-    #side-networth { margin-top: 0; width: 100%; }
-    main { margin-left: 0; padding: 20px; }
-    .cards { grid-template-columns: 1fr; }
-}
+/* phones: the sidebar, the page and the tables are rearranged in 31-phone.css */
 
 /* ---- quick add ---- */
 .add-btn { font-size: 15px; padding: 12px 20px; }

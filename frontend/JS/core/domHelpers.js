@@ -1,5 +1,8 @@
 // ---- small helpers to find and build page elements ----
 
+import { areAmountsHidden, HIDDEN_AMOUNT } from "./formatting.js";
+import { makeDecimalFieldCommaFriendly } from "./decimalInputs.js";
+
 export const elementById = (id) => document.getElementById(id);
 
 // createElement("span", "pos", "+5,00 €") -> <span class="pos">+5,00 €</span>
@@ -53,4 +56,27 @@ export function makeTableRowsOpenItems(tableBodyId, items, openItem, getTitle = 
 // Chip rows (Settings, chart ranges): marks the chip whose data-value is selected
 export function highlightSelectedChip(chipContainer, selectedValue, dataAttributeName = "value") {
   for (const chip of chipContainer.children) chip.classList.toggle("active", chip.dataset[dataAttributeName] === selectedValue);
+}
+
+// An amount field filled in from your data (a budget, a forecast phase, a counted balance): with Hide amounts on it
+// shows ***** until you click into it, then the real value to edit, and ***** again when you leave. Editing works
+// as usual: the field's own "change" handler sees the real value, since the stars are only put back on blur.
+export function hideAmountFieldWhenAmountsHidden(input) {
+  makeDecimalFieldCommaFriendly(input); // first: on phones the field's real type is text (core/decimalInputs.js)
+  if (!areAmountsHidden() || input.value === "") return;
+  const realType = input.type;
+  let realValue = input.value;
+  const showStars = () => {
+    if (!areAmountsHidden() || input.value === "") return;
+    realValue = input.value;
+    input.type = "text";
+    input.value = HIDDEN_AMOUNT;
+  };
+  input.addEventListener("focus", () => {
+    if (input.value !== HIDDEN_AMOUNT) return;
+    input.type = realType;
+    input.value = realValue;
+  });
+  input.addEventListener("blur", showStars);
+  showStars();
 }

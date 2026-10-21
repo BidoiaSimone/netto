@@ -27,5 +27,3 @@
     .liquidity-cards { grid-template-columns: 1fr; }
 }
 
-/* "This month" uses the same cards; its note sits right under them */
-.month-hint { margin: -6px 0 0; }

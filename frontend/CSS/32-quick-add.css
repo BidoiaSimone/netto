@@ -1,0 +1,43 @@
+/* Home > quick add: the one-tap buttons of your most frequent transactions, and the Undo line after a tap
+   (JS/pages/quickAdd.js).
+   One of the numbered files in this folder: Home.html loads them in number order, and later files
+   win over earlier ones when two rules are equally specific, so keep that order when adding files. */
+
+.quick-add { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; margin: 0 0 18px; }
+.quick-add-button {
+    display: grid; grid-template-columns: 1fr auto; align-items: baseline; gap: 2px 8px; text-align: left;
+    padding: 10px 12px; border-radius: 12px; font-weight: 400;
+    background: var(--surface); border: 1px solid var(--border); color: var(--text);
+}
+.quick-add-button:hover { background: var(--surface-2); border-color: rgba(var(--accent-rgb), 0.5); }
+.quick-add-button:active { transform: scale(0.97); }
+.quick-add-button:disabled { opacity: 0.5; }
+.quick-add-button strong { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.quick-add-amount { font-variant-numeric: tabular-nums; color: var(--neg); font-weight: 600; white-space: nowrap; }
+.quick-add-button.income .quick-add-amount { color: var(--accent-text); }
+.quick-add-button small { grid-column: 1 / -1; color: var(--muted); font-size: 12px; }
+
+.quick-add-toast {
+    /* centred with margins, not transform: the "rise" animation sets transform itself */
+    position: fixed; left: 0; right: 0; margin: 0 auto; bottom: calc(env(safe-area-inset-bottom) + 18px); z-index: 60;
+    display: flex; align-items: center; gap: 10px; width: max-content; max-width: calc(100vw - 24px);
+    padding: 10px 12px 10px 16px; border-radius: 14px; font-size: 14px;
+    background: var(--surface); border: 1px solid var(--border); box-shadow: var(--dialog-shadow);
+    animation: rise 0.2s ease both;
+}
+.quick-add-toast span { flex: 1 1 auto; }
+.quick-add-toast button { padding: 6px 12px; font-size: 13px; white-space: nowrap; }
+@media (max-width: 800px) {
+    .quick-add { grid-template-columns: 1fr 1fr; gap: 8px; }
+}
+
+/* "Today: 5,90 € spent · 3 expenses" under the buttons */
+.today-spent { margin: -8px 0 18px; font-size: 14px; color: var(--muted); }
+.today-spent strong { color: var(--text); }
+
+/* the amount field of the transaction dialog: the field, a + for sums, and the result of a sum under it */
+dialog form .amount-field { flex: 1 1 45%; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+dialog form .amount-field input { flex: 1 1 0; min-width: 0; }
+.amount-field .amount-operator { flex: none; width: 42px; padding: 9px 0; font-size: 18px; line-height: 1; }
+.amount-result { width: 100%; color: var(--muted); font-size: 12px; }
+.amount-result:empty { display: none; }
