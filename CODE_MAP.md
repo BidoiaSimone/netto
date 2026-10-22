@@ -44,13 +44,13 @@ backend/
 │   ├── migrations/
 │   │   ├── migrationRunner.js       runs the migrations the database hasn't had yet (PRAGMA user_version)
 │   │   ├── allMigrationsInOrder.js  the list; position = migration number
-│   │   └── 001-…js … 021-…js        one file per schema change, never edited once applied (010: tags, 011: budgets, 012: forecast,
+│   │   └── 001-…js … 022-…js        one file per schema change, never edited once applied (010: tags, 011: budgets, 012: forecast,
 │   │                                013: forecast events linked to investments, 014: foreign currency, 015: investment targets + settings,
 │   │                                016: spending pace of a category, daily / occasional, for the month projections,
 │   │                                017: goals paid for by cutting back, 018: ids of transactions sent later by the phone,
 │   │                                019: the imported "Old tracker" account is cash, not a bank account,
 │   │                                020: the last price of each investment, for when Yahoo doesn't answer,
-│   │                                021: each category's icon and colour)
+│   │                                021: each category's icon and colour, 022: income linked to a goal)
 │   ├── tools/
 │   │   ├── printDatabaseTables.js   npm run db:print
 │   │   ├── clearDatabase.js         npm run db:clear -- --yes   (deletes everything!)
@@ -189,6 +189,9 @@ baseline (cents a month) fixed when the goal is made. `services/savingsGoals.js`
 goal (prorated in partial months, negative when over); a category shared by two goals pays the first one in the queue
 until it's full, and what a goal collects above its target goes on to the next. A goal's purchase never counts as
 spending in any goal's categories. Routes: `savingsGoalRoutes.js`.
+An income can be linked to a goal (migration 22, `savings_goal_incomes`; from the goal's card on the Goals page,
+`POST /savings-goals/:id/incomes`): its whole amount goes to that goal in its month, on top of the cutting back. Income not linked never
+counts toward a goal; a linked one is still ordinary income everywhere else. The pace counts the cutting back only.
 
 **Year in review** (no migration). `yearInReview.js` calls `buildFinancialStatements` for the year (clamped to your
 first record exactly like Statements, `findFirstDayOfAnyRecord` in `db/firstRecordedDate.js`), so the two pages always
@@ -255,7 +258,7 @@ frontend/JS/
 │   ├── insightsPage.js  + netWorthHistoryChart.js + liquidityInsights.js + monthProjection.js + tagInsights.js
 │   │                       + budgetProgress.js (This month > Budgets: a bar per budgeted category)
 │   │                       + categoryTrends.js (each category vs its usual, with a sparkline)
-│   ├── goalsPage.js                 Goals: a card per goal (bar, categories, pace, month by month, link the purchase), the queue
+│   ├── goalsPage.js                 Goals: a card per goal (bar, categories, pace, link income and the purchase, month by month), the queue
 │   ├── forecastPage.js              key numbers, warnings, the real + forecast chart  + forecastPlanEditor.js (phases, events, sliders)
 │   │                                + fireNumber.js (the FIRE panel and its line on the chart)
 │   ├── statementsPage.js            bridge, investment returns, income statement + estimated taxes, budget vs actual, balance sheet (+ after tax)
@@ -387,6 +390,7 @@ tests/
 ├── yearInReview.test.js                every total equals Statements for the same year, trips, investments, the year before
 ├── monthWrapUp.test.js                 totals = the month's transactions, shown once until closed, months before any record
 ├── savingsGoals.test.js                baseline − spent, overspending, the queue and what's passed on, the purchase left out, API, merging
+├── goalIncome.test.js                  income linked to a goal: counted on top, passed on above the target, only income, edits, backup
 ├── liquidity.test.js                   /net-worth by_liquidity adds up to net_worth
 └── homeNetWorthGroups.test.js          Home's liquid + investments + immobilized = net worth, the car only in immobilized, bar = 100%
 ```

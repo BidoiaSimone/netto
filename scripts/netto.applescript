@@ -16,7 +16,9 @@
 --
 -- Save this in Script Editor as an Application, WITHOUT "Stay open after run handler".
 
-property launcher : "/Users/bidoiasimone/Documents/GitHub/money-tracker/scripts/launch.sh"
+-- If the project folder is renamed or moved, change this path and save the application again (File > Save):
+-- the saved app keeps the path it was saved with.
+property launcher : "/Users/bidoiasimone/Documents/GitHub/Netto/scripts/launch.sh"
 
 on run
 	do shell script "/bin/bash " & quoted form of launcher & " start"

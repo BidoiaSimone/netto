@@ -5,6 +5,8 @@
  *   PUT    /savings-goals/order          { goal_ids: [...] } the whole queue, first = filled first
  *   PUT    /savings-goals/:id            the whole goal again, like adding one
  *   PUT    /savings-goals/:id/purchase   { transaction_id } the expense that bought it (its amount becomes the target), or null to unlink it
+ *   POST   /savings-goals/:id/incomes    { transaction_id } an income that pays into it (selling the old MacBook), migration 22
+ *   DELETE /savings-goals/:id/incomes/:transactionId   unlinks that income (the income itself stays)
  *   DELETE /savings-goals/:id
  * Money in euros in and out; cents in the database.
  */
@@ -25,8 +27,10 @@ const goalToApi = (goal) => ({
   planned_target: toEuros(goal.planned_target),
   saved: toEuros(goal.saved),
   monthly_pace: toEuros(goal.monthly_pace),
+  income_total: toEuros(goal.income_total),
+  incomes: goal.incomes.map((income) => ({ ...income, amount: toEuros(income.amount) })),
   categories: goal.categories.map((category) => ({ ...category, monthly_baseline: toEuros(category.monthly_baseline), saved: toEuros(category.saved) })),
-  months: goal.months.map((row) => ({ ...row, baseline: toEuros(row.baseline), spent: toEuros(row.spent), saved: toEuros(row.saved), carried_in: toEuros(row.carried_in) })),
+  months: goal.months.map((row) => ({ ...row, baseline: toEuros(row.baseline), spent: toEuros(row.spent), saved: toEuros(row.saved), income: toEuros(row.income), carried_in: toEuros(row.carried_in) })),
   purchase: goal.purchase && { ...goal.purchase, amount: toEuros(goal.purchase.amount) },
 });
 
@@ -99,6 +103,26 @@ router.put("/savings-goals/:id/purchase", function linkPurchase(request, respons
   if (otherGoal) return response.status(409).json({ error: `that expense already paid for ${otherGoal.name}` });
   db.prepare(`UPDATE savings_goals SET purchase_transaction_id = ? WHERE id = ?`).run(transactionId, goalId);
   response.json({ id: goalId, purchase_transaction_id: transactionId });
+});
+
+// Only an income, and into one goal at most. Linking one that's already in another goal moves it here.
+router.post("/savings-goals/:id/incomes", function linkIncome(request, response) {
+  const goalId = Number(request.params.id);
+  if (!selectGoal.get(goalId)) return response.status(404).json({ error: "Goal not found" });
+  const transactionId = Number(request.body?.transaction_id);
+  const transaction = db.prepare(`SELECT id, type FROM transactions WHERE id = ?`).get(transactionId);
+  if (!transaction) return response.status(404).json({ error: "Transaction not found" });
+  if (transaction.type !== "income") return response.status(400).json({ error: "only an income can pay into a goal" });
+  db.prepare(`INSERT INTO savings_goal_incomes (transaction_id, goal_id) VALUES (?, ?)
+              ON CONFLICT (transaction_id) DO UPDATE SET goal_id = excluded.goal_id`).run(transactionId, goalId);
+  response.status(201).json({ id: goalId, transaction_id: transactionId });
+});
+
+router.delete("/savings-goals/:id/incomes/:transactionId", function unlinkIncome(request, response) {
+  const { changes } = db.prepare(`DELETE FROM savings_goal_incomes WHERE goal_id = ? AND transaction_id = ?`)
+    .run(Number(request.params.id), Number(request.params.transactionId));
+  if (!changes) return response.status(404).json({ error: "That income isn't linked to this goal" });
+  response.status(204).end();
 });
 
 // The goals after it move up one place

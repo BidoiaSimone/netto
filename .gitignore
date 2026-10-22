@@ -82,6 +82,7 @@ backend/db/backups/
 backend/db/light-backups/
 # Downloaded "Download backup (JSON)" files: they hold ALL your financial data
 money-tracker-*.json
+netto-*.json
 # Stray SQLite test databases created without the .db extension
 foobar
 foobar-*

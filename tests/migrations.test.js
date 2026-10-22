@@ -70,7 +70,7 @@ test("an empty database migrates to the latest version", () => {
 
   assert.equal(db.pragma("user_version", { simple: true }), LATEST_DATABASE_VERSION);
   const tableNames = db.prepare(`SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%' ORDER BY name`).all().map((row) => row.name);
-  assert.deepEqual(tableNames, ["accounts", "app_settings", "categories", "category_budgets", "forecast_assumptions", "forecast_events", "forecast_phases", "investment_targets", "investment_trades", "investments", "last_known_prices", "offline_submissions", "recurring_transactions", "savings_goal_categories", "savings_goals", "tags", "todos", "transaction_tags", "transactions"]);
+  assert.deepEqual(tableNames, ["accounts", "app_settings", "categories", "category_budgets", "forecast_assumptions", "forecast_events", "forecast_phases", "investment_targets", "investment_trades", "investments", "last_known_prices", "offline_submissions", "recurring_transactions", "savings_goal_categories", "savings_goal_incomes", "savings_goals", "tags", "todos", "transaction_tags", "transactions"]);
   assert.deepEqual(db.pragma("foreign_key_check"), []);
   assert.equal(db.pragma("integrity_check", { simple: true }), "ok");
 
@@ -149,10 +149,10 @@ test("a database newer than the code is refused instead of being damaged", () =>
 
 test("migration 21 gives the categories netto already had their icon and colour, and leaves the others empty", () => {
   const db = openDatabase(":memory:");
-  // a database as it was at version 20: the latest one, without what 21 added
+  // a database as it was at version 20: the latest one, without what 21 (and later) added
   runMigrationsQuietly(db);
   assert.equal(allMigrationsInOrder[20].name, "addCategoryIconsAndColors");
-  db.exec(`ALTER TABLE categories DROP COLUMN icon; ALTER TABLE categories DROP COLUMN color;`);
+  db.exec(`DROP TABLE savings_goal_incomes; ALTER TABLE categories DROP COLUMN icon; ALTER TABLE categories DROP COLUMN color;`); // and without 22
   db.pragma("user_version = 20");
   db.exec(`INSERT INTO categories (name, kind) VALUES ('grocery', 'expense'), ('Gift', 'expense'), ('Gifts received', 'income'),
                                                     ('Medicine', 'income'), ('Books', 'expense')`);
@@ -164,4 +164,20 @@ test("migration 21 gives the categories netto already had their icon and colour,
   assert.deepEqual(lookOf("Gifts received", "income"), { icon: "gift", color: "#8e5bd6" });
   assert.deepEqual(lookOf("Medicine", "income"), { icon: null, color: null }, "only the kind it was listed under");
   assert.deepEqual(lookOf("Books", "expense"), { icon: null, color: null });
+});
+
+test("migration 22 links income to goals: deleting the income or the goal removes the link", () => {
+  const db = openDatabase(":memory:");
+  runMigrationsQuietly(db);
+  assert.equal(allMigrationsInOrder[21].name, "createSavingsGoalIncomesTable");
+  db.exec(`
+    INSERT INTO accounts (id, name, kind, opening_balance, balance, open_date) VALUES (1, 'Cash', 'cash', 0, 0, '2026-01-01');
+    INSERT INTO transactions (id, to_account_id, type, amount, date) VALUES (1, 1, 'income', 40000, '2026-03-15'), (2, 1, 'income', 5000, '2026-03-16');
+    INSERT INTO savings_goals (id, name, target, start_date, position, created_at) VALUES (1, 'MacBook', 166000, '2026-03-01', 1, '2026-03-01'),
+                                                                                       (2, 'Trip', 50000, '2026-03-01', 2, '2026-03-01');
+    INSERT INTO savings_goal_incomes (transaction_id, goal_id) VALUES (1, 1), (2, 2);
+  `);
+  assert.throws(() => db.exec(`INSERT INTO savings_goal_incomes (transaction_id, goal_id) VALUES (1, 2)`), /UNIQUE|PRIMARY/, "one goal per income");
+  db.exec(`DELETE FROM transactions WHERE id = 1; DELETE FROM savings_goals WHERE id = 2;`);
+  assert.equal(db.prepare(`SELECT COUNT(*) AS n FROM savings_goal_incomes`).get().n, 0);
 });

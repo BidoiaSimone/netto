@@ -9,7 +9,7 @@
  * and the forecast plan before version 12 (no phases or events, the default assumptions). Transactions from before
  * version 14 were all paid in euros: their foreign-currency columns stay empty. Backups from before version 15 have
  * no investment targets and no stored settings: the import then has no targets, and the settings keep their defaults.
- * Backups from before version 17 have no goals: the import then has none.
+ * Backups from before version 17 have no goals: the import then has none. Before version 22 no income is linked to a goal.
  *
  * Everything happens in one database transaction: on any bad row the old data stays untouched.
  */
@@ -61,6 +61,7 @@ const insertForecastEvent = db.prepare(`INSERT INTO forecast_events (id, name, m
 const insertSavingsGoal = db.prepare(`INSERT INTO savings_goals (id, name, target, start_date, position, purchase_transaction_id, created_at)
   VALUES (@id, @name, @target, @start_date, @position, @purchase_transaction_id, @created_at)`);
 const insertSavingsGoalCategory = db.prepare(`INSERT INTO savings_goal_categories (goal_id, category_id, monthly_baseline) VALUES (@goal_id, @category_id, @monthly_baseline)`);
+const insertSavingsGoalIncome = db.prepare(`INSERT INTO savings_goal_incomes (transaction_id, goal_id) VALUES (@transaction_id, @goal_id)`);
 const insertInvestmentTarget = db.prepare(`INSERT INTO investment_targets (ticker, target_basis_points) VALUES (@ticker, @target_basis_points)`);
 const insertAppSetting = db.prepare(`INSERT INTO app_settings (key, value) VALUES (@key, @value)`);
 const insertTodo = db.prepare(`INSERT INTO todos (id, text, done, created_at, done_at) VALUES (@id, @text, @done, @created_at, @done_at)`);
@@ -212,6 +213,7 @@ function importSavingsGoals(backupData) {
     insertSavingsGoal.run(pickColumns(goal, ["id", "name", "target", "start_date", "position", "purchase_transaction_id", "created_at"], { created_at: getTodayAsLocalDate() }));
   }
   for (const row of backupData.savings_goal_categories ?? []) insertSavingsGoalCategory.run(pickColumns(row, ["goal_id", "category_id", "monthly_baseline"]));
+  for (const row of backupData.savings_goal_incomes ?? []) insertSavingsGoalIncome.run(pickColumns(row, ["transaction_id", "goal_id"])); // from version 22
 }
 
 // ---------- the Next up list ----------
@@ -230,7 +232,7 @@ function importTodos(backupData) {
 
 // All or nothing: throws (and changes nothing) on any bad row
 const replaceAllDataWithBackup = db.transaction((backupData) => {
-  db.exec(`DELETE FROM savings_goal_categories; DELETE FROM savings_goals;
+  db.exec(`DELETE FROM savings_goal_incomes; DELETE FROM savings_goal_categories; DELETE FROM savings_goals;
            DELETE FROM investment_targets; DELETE FROM app_settings;
            DELETE FROM forecast_events; DELETE FROM forecast_phases;
            DELETE FROM category_budgets; DELETE FROM transaction_tags; DELETE FROM tags;

@@ -293,6 +293,8 @@
         color: var(--text);
     }
     [data-ui="pocket"] #phone-bar :is(#phone-settings-button, #phone-privacy-button).active { color: var(--accent-2); }
+    /* the "offline" / "↑ 2" badge at the left edge of the bar, away from Settings and the eye */
+    [data-ui="pocket"] #phone-bar #phone-pending-badge { order: -1; margin-right: auto; }
     [data-ui="pocket"] #sidebar a[href="#settings"] { display: none; }   /* Settings is in the top bar instead */
 
     /* -- the large title: the page's own heading, at the top of the page -- */

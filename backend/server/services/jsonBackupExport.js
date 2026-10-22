@@ -7,7 +7,7 @@ const db = require("../../db/databaseConnection.js");
 const { LATEST_DATABASE_VERSION } = require("../../db/migrations/migrationRunner.js");
 const { getTodayAsLocalDate } = require("../utils/localDates.js");
 
-const buildJsonBackupFileName = () => `money-tracker-${getTodayAsLocalDate()}.json`; // local date, not UTC
+const buildJsonBackupFileName = () => `netto-${getTodayAsLocalDate()}.json`; // local date, not UTC
 
 function buildFullJsonBackup() {
   return {
@@ -30,6 +30,7 @@ function buildFullJsonBackup() {
     app_settings: db.prepare(`SELECT * FROM app_settings ORDER BY key`).all(),
     savings_goals: db.prepare(`SELECT * FROM savings_goals ORDER BY position, id`).all(),          // from version 17
     savings_goal_categories: db.prepare(`SELECT * FROM savings_goal_categories ORDER BY goal_id, category_id`).all(),
+    savings_goal_incomes: db.prepare(`SELECT * FROM savings_goal_incomes ORDER BY goal_id, transaction_id`).all(), // from version 22
   };
 }
 

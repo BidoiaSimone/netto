@@ -4,6 +4,8 @@
  * Tags (migration 10) are saved with the transaction, in the same database transaction: both or neither.
  * A transaction paid in another currency (migration 14) also keeps its foreign amount and that day's market rate;
  * the euro amount stays the real one in every balance and total.
+ * An income can be linked to a goal (migration 22, on the Goals page: savingsGoalRoutes.js). Edited into an expense
+ * or a movement, it's unlinked: only income goes to a goal.
  */
 
 const express = require("express");
@@ -20,6 +22,8 @@ const router = express.Router();
 // The cash side of an investment trade belongs to the trade: changing it here would make the
 // holding and the account disagree. It is edited or deleted with its trade (investmentTradeRoutes.js).
 const INVESTMENT_TRANSACTION_IS_LOCKED = "This is the cash side of an investment trade: change or delete the trade on the Investments page.";
+
+const deleteGoalLink = db.prepare(`DELETE FROM savings_goal_incomes WHERE transaction_id = ?`);
 
 const selectTransactionById = db.prepare(`SELECT type, from_account_id, to_account_id, date, original_currency, original_market_rate FROM transactions WHERE id = ?`);
 
@@ -156,12 +160,13 @@ async function editWholeTransaction(transactionId, existingTransaction, requestB
            transaction.categoryId, transaction.description, transaction.date,
            transaction.originalCurrency, transaction.originalAmountMinor, marketRate, transactionId);
     saveTagsOfTransaction(transactionId, tagSelection);
+    if (transaction.type !== "income") deleteGoalLink.run(transactionId); // no longer an income: no longer in a goal
   })();
   if (transaction.originalCurrency && marketRate === null) fillMissingMarketRatesInBackground();
   response.json({ message: "Transaction updated", id: transactionId });
 }
 
-// Delete a transaction. The delete trigger puts the money back on its accounts; its tag links go too (ON DELETE CASCADE).
+// Delete a transaction. The delete trigger puts the money back on its accounts; its tag and goal links go too (ON DELETE CASCADE).
 router.delete("/transactions/:id", function deleteTransaction(request, response) {
   const transactionId = Number(request.params.id);
   const existingTransaction = selectTransactionById.get(transactionId);

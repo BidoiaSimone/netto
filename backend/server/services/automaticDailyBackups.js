@@ -25,7 +25,7 @@ const fs = require("fs");
 const path = require("path");
 const Database = require("better-sqlite3");
 const db = require("../../db/databaseConnection.js");
-const { BACKUPS_DIRECTORY, OFFSITE_BACKUPS_DIRECTORY, OFFSITE_BACKUPS_PARENT_DIRECTORY } = require("../../config/projectPaths.js");
+const { BACKUPS_DIRECTORY, OFFSITE_BACKUPS_DIRECTORY, OFFSITE_BACKUPS_PARENT_DIRECTORY, isProjectFolderStillThere, makeBackupsDirectory } = require("../../config/projectPaths.js");
 const { readSetting } = require("./appSettings.js");
 const { getTodayAsLocalDate } = require("../utils/localDates.js");
 
@@ -74,9 +74,15 @@ function copyNewestBackupOffsite() {
 
 async function makeTodaysBackupIfMissing() {
   if (isBackupRunning) return;
+  // The project folder was renamed or moved while this server was running (config/projectPaths.js): this server is
+  // running code that isn't there anymore. It stops, freeing port 3000 for the one started from the new place.
+  if (!isProjectFolderStillThere()) {
+    console.error("netto's folder was renamed or moved: this server stops. Start it from the new place: bash scripts/service.sh install");
+    process.exit(1);
+  }
   isBackupRunning = true;
   try {
-    fs.mkdirSync(BACKUPS_DIRECTORY, { recursive: true });
+    makeBackupsDirectory();
     const todaysBackupFile = path.join(BACKUPS_DIRECTORY, `auto-${getTodayAsLocalDate()}.db`);
     if (!fs.existsSync(todaysBackupFile)) await writeBackupSafely(todaysBackupFile);
     deleteDailyBackupsBeyondTheKeptOnes();

@@ -29,7 +29,10 @@
                    transition: width 0.8s cubic-bezier(.2, .8, .2, 1); }
 .goal-track span.done { opacity: 1; background: linear-gradient(90deg, var(--grad-from), var(--grad-to)); }
 
-.goal-categories, .goal-outlook { margin: 6px 0; font-size: 14px; }
+.goal-categories, .goal-outlook, .goal-income-list { margin: 6px 0; font-size: 14px; }
+/* the incomes linked to the goal, each with its × to unlink it */
+.goal-income-unlink { background: none; border: none; padding: 0 4px; margin-left: 2px; font: inherit; font-weight: 400; color: var(--muted); cursor: pointer; }
+.goal-income-unlink:hover { background: none; box-shadow: none; transform: none; color: var(--neg); }
 .goal-outlook { color: var(--muted); }
 .goal-outlook strong { font-weight: 600; }
 
@@ -59,3 +62,7 @@ dialog form .goal-category-row > input.goal-baseline { flex: 0 0 100px; width: 1
     .goal-buttons { margin-left: 0; width: 100%; }
     .goal-purchase { flex-wrap: wrap; }
 }
+
+/* "Best case: spending nothing in these categories…" under the pace (goalsPage.js) */
+.goal-best-case { margin: 2px 0 6px; font-size: 13px; }
+.goal-best-case strong { font-weight: 600; color: var(--text); }

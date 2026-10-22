@@ -3,6 +3,7 @@
  * Moving a folder means changing one line here instead of hunting for path.join() calls.
  */
 
+const fs = require("fs");
 const path = require("path");
 const os = require("os");
 const { IS_LIGHT_EDITION } = require("./edition.js");
@@ -40,4 +41,18 @@ const OFFSITE_BACKUPS_DIRECTORY = process.env.NETTO_OFFSITE_BACKUPS_DIRECTORY ||
 // created somewhere it's never synced from
 const OFFSITE_BACKUPS_PARENT_DIRECTORY = path.dirname(OFFSITE_BACKUPS_DIRECTORY);
 
-module.exports = { PROJECT_ROOT_DIRECTORY, FRONTEND_DIRECTORY, DATABASE_FILE, BACKUPS_DIRECTORY, OFFSITE_BACKUPS_DIRECTORY, OFFSITE_BACKUPS_PARENT_DIRECTORY };
+// A running server only knows the paths it worked out when it started. If the project folder is renamed or moved
+// while it runs (money-tracker -> Netto, Oct 2026), those paths point to a folder that is gone, and creating the
+// backups folder "recursively" would quietly rebuild an empty money-tracker/backend/db/backups next to the real
+// project. So before creating any backups folder, the server checks its own folder is still there.
+const isProjectFolderStillThere = () => fs.existsSync(path.join(PROJECT_ROOT_DIRECTORY, "backend/server/app.js"));
+
+// The backups folder, created if needed, but only while the project folder is still where the server started from
+function makeBackupsDirectory(directory = BACKUPS_DIRECTORY) {
+  if (!isProjectFolderStillThere()) {
+    throw new Error(`netto's folder is no longer at ${PROJECT_ROOT_DIRECTORY} (renamed or moved?): run bash scripts/service.sh install from its new place`);
+  }
+  fs.mkdirSync(directory, { recursive: true });
+}
+
+module.exports = { isProjectFolderStillThere, makeBackupsDirectory, PROJECT_ROOT_DIRECTORY, FRONTEND_DIRECTORY, DATABASE_FILE, BACKUPS_DIRECTORY, OFFSITE_BACKUPS_DIRECTORY, OFFSITE_BACKUPS_PARENT_DIRECTORY };

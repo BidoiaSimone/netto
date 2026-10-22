@@ -1,8 +1,9 @@
 #!/bin/bash
 
-PROJECT_DIR="/Users/bidoiasimone/Documents/GitHub/money-tracker"
+# The project folder, worked out from where this script is (scripts/..), so renaming or moving it needs no change here
+PROJECT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 PORT=3000
-LOG="/tmp/moneytracker.log"
+LOG="/tmp/netto.log"
 # The standalone app made once with Safari > File > Add to Dock (see the setup notes in netto.applescript)
 WEBAPP="$HOME/Applications/netto.app"
 

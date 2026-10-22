@@ -29,6 +29,13 @@
  * Nothing else changes: on Insights and Statements the purchase is an ordinary expense. Over the months
  * you were saving, you spent what you would have spent anyway: that's the point.
  *
+ * LINKED INCOME (migration 22): an income can be linked to a goal (selling the old MacBook pays for part of the
+ * new one). Its whole amount goes to that goal in the month it came in, on top of what cutting back saved,
+ * whether or not the goal is collecting from its categories that month. If that takes the goal above its target,
+ * the extra is passed on like any other (above). Income that isn't linked never counts toward a goal, and a
+ * linked one is still an ordinary income everywhere else (Insights, Statements, the forecast).
+ * The pace ("about 60 € a month") is the cutting back only: a one-off sale says nothing about the months ahead.
+ *
  * Money is in cents here; the routes convert to euros.
  */
 
@@ -89,6 +96,14 @@ const selectSpentInCategory = db.prepare(`
 `);
 const sumSpentInCategory = (categoryId, firstDay, lastDay) => selectSpentInCategory.get(categoryId, firstDay, lastDay).total;
 
+// Every income linked to a goal (cents), oldest first
+const selectLinkedIncomes = db.prepare(`
+  SELECT gi.goal_id, t.id AS transaction_id, t.date, t.amount, t.description, c.name AS category
+  FROM savings_goal_incomes gi JOIN transactions t ON t.id = gi.transaction_id
+  LEFT JOIN categories c ON c.id = t.category_id
+  ORDER BY t.date, t.id
+`);
+
 // ---------- the maths ----------
 
 // The days of `yearMonth` a goal counts: from its start (or the 1st) to today (or the month's end). The
@@ -104,13 +119,16 @@ function findCountedDays(goal, yearMonth, today) {
 function calculateGoalProgress(today) {
   const goals = loadGoals();
   const state = new Map(goals.map((goal) => [goal.id, {
-    saved: 0, daysCounted: 0, months: [],
+    saved: 0, savedByCuttingBack: 0, daysCounted: 0, months: [], incomes: [],
     savedByCategory: new Map(goal.categories.map((category) => [category.category_id, 0])),
   }]));
+  const linkedIncomes = selectLinkedIncomes.all().filter((income) => income.date <= today);
+  for (const income of linkedIncomes) state.get(income.goal_id).incomes.push(income);
 
   const startedGoals = goals.filter((goal) => goal.start_date <= today);
-  if (startedGoals.length) {
-    const firstMonth = startedGoals.map((goal) => goal.start_date.slice(0, 7)).sort()[0];
+  const firstMonths = [...startedGoals.map((goal) => goal.start_date.slice(0, 7)), ...linkedIncomes.map((income) => income.date.slice(0, 7))];
+  if (firstMonths.length) {
+    const firstMonth = firstMonths.sort()[0];
     const currentMonth = today.slice(0, 7);
     for (let month = firstMonth; month <= currentMonth; month = nextMonth(month)) {
       const isFullAtMonthStart = new Map(goals.map((goal) => [goal.id, state.get(goal.id).saved >= goal.target]));
@@ -128,16 +146,26 @@ function calculateGoalProgress(today) {
           categoryTaken.add(category.category_id);
           const baseline = Math.round(category.monthly_baseline * share);
           const spent = sumSpentInCategory(category.category_id, days.firstDay, days.lastDay);
-          const row = monthRowOf.get(goal.id) ?? { month, baseline: 0, spent: 0, saved: 0, carried_in: 0, partial: share < 1 };
+          const row = monthRowOf.get(goal.id) ?? newMonthRow(month, share < 1);
           row.baseline += baseline;
           row.spent += spent;
           row.saved += baseline - spent;
           monthRowOf.set(goal.id, row);
           const goalState = state.get(goal.id);
           goalState.saved += baseline - spent;
+          goalState.savedByCuttingBack += baseline - spent;
           goalState.savedByCategory.set(category.category_id, goalState.savedByCategory.get(category.category_id) + baseline - spent);
         }
         if (monthRowOf.has(goal.id)) state.get(goal.id).daysCounted += countDaysBetween(days.firstDay, days.lastDay);
+      }
+
+      // the income linked to a goal goes to it, collecting or not (a full one passes it on just below)
+      for (const income of linkedIncomes) {
+        if (income.date.slice(0, 7) !== month) continue;
+        const row = monthRowOf.get(income.goal_id) ?? newMonthRow(month, false);
+        row.income += income.amount;
+        monthRowOf.set(income.goal_id, row);
+        state.get(income.goal_id).saved += income.amount;
       }
 
       // what a goal collected above its target goes on to the next goal in the queue that's collecting
@@ -150,7 +178,7 @@ function calculateGoalProgress(today) {
         goalState.saved -= extra;
         monthRowOf.get(goal.id).carried_in -= extra;
         state.get(nextGoal.id).saved += extra;
-        const nextRow = monthRowOf.get(nextGoal.id) ?? { month, baseline: 0, spent: 0, saved: 0, carried_in: 0, partial: false };
+        const nextRow = monthRowOf.get(nextGoal.id) ?? newMonthRow(month, false);
         nextRow.carried_in += extra;
         monthRowOf.set(nextGoal.id, nextRow);
       }
@@ -161,6 +189,10 @@ function calculateGoalProgress(today) {
 
   return goals.map((goal) => describeGoal(goal, state.get(goal.id), today));
 }
+
+// One row of a goal's "Month by month": saved = baseline − spent (cutting back); income = what linked income
+// brought; carried_in = what came from (+) or went to (−) other goals in the queue
+const newMonthRow = (month, partial) => ({ month, baseline: 0, spent: 0, saved: 0, income: 0, carried_in: 0, partial });
 
 // One goal as the page needs it (cents)
 function describeGoal(goal, goalState, today) {
@@ -175,10 +207,12 @@ function describeGoal(goal, goalState, today) {
   // At the pace so far, when would it be full? Only once there are enough days to say something.
   let monthlyPace = null, monthsToGo = null;
   if ((status === "saving" || status === "paying_back") && goalState.daysCounted >= DAYS_BEFORE_THE_PACE_MEANS_SOMETHING) {
-    monthlyPace = Math.round((goalState.saved / goalState.daysCounted) * AVERAGE_DAYS_IN_MONTH);
+    monthlyPace = Math.round((goalState.savedByCuttingBack / goalState.daysCounted) * AVERAGE_DAYS_IN_MONTH);
     if (monthlyPace > 0) monthsToGo = (goal.target - goalState.saved) / monthlyPace;
   }
 
+  const incomeTotal = goalState.incomes.reduce((sum, income) => sum + income.amount, 0);
+  const shareOfPurchase = (amount) => Math.max(0, Math.min(1, amount / goal.purchase_amount));
   return {
     id: goal.id,
     name: goal.name,
@@ -189,6 +223,8 @@ function describeGoal(goal, goalState, today) {
     status,
     saved: goalState.saved,
     share: goalState.saved / goal.target,
+    income_total: incomeTotal,     // what the linked income brought (some of it may have been passed on to the next goal)
+    incomes: goalState.incomes.map(({ goal_id, ...income }) => income), // oldest first
     monthly_pace: monthlyPace,     // cents a month at the pace so far (null: too early to tell, or not saving)
     months_to_go: monthsToGo,      // null when there's no positive pace
     categories: goal.categories.map((category) => ({
@@ -198,7 +234,8 @@ function describeGoal(goal, goalState, today) {
     months: goalState.months.slice().reverse(), // newest first
     purchase: isBought ? {
       transaction_id: goal.purchase_transaction_id, date: goal.purchase_date, amount: goal.purchase_amount, description: goal.purchase_description,
-      share_paid_by_saving: Math.max(0, Math.min(1, goalState.saved / goal.purchase_amount)),
+      share_paid_by_income: shareOfPurchase(incomeTotal),
+      share_paid_by_saving: Math.min(shareOfPurchase(goalState.saved - incomeTotal), 1 - shareOfPurchase(incomeTotal)), // the cutting back
     } : null,
   };
 }

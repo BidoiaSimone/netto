@@ -1,6 +1,6 @@
 // ---- Goals page: things you'd buy anyway, paid for by cutting back (GET /savings-goals) ----
 // One card per goal, in queue order (the first is filled first): the bar, what each category gave, the pace,
-// the month-by-month detail, and the purchase once it's made. The maths is all on the server
+// the month-by-month detail, the income linked to it (selling the old one), and the purchase once it's made. The maths is all on the server
 // (backend/server/services/savingsGoals.js); this file only draws it and sends the buttons' changes.
 
 import { elementById, createElement } from "../core/domHelpers.js";
@@ -100,7 +100,8 @@ function createOutlook(goal) {
   if (goal.status === "bought") {
     const { purchase } = goal;
     outlook.append(`Bought on ${formatShortDate(purchase.date, true)} for ${euroFormatter.format(purchase.amount)}${purchase.description ? ` (${purchase.description})` : ""}: `,
-      createElement("strong", "pos", `cutting back paid ${percentFormatter.format(purchase.share_paid_by_saving)} of it`), ".");
+      createElement("strong", "pos", `cutting back paid ${percentFormatter.format(purchase.share_paid_by_saving)} of it`),
+      purchase.share_paid_by_income > 0 ? `, income ${percentFormatter.format(purchase.share_paid_by_income)}` : "", ".");
   } else if (goal.status === "paying_back") {
     const { purchase } = goal;
     outlook.append(`Bought on ${formatShortDate(purchase.date, true)} for ${euroFormatter.format(purchase.amount)}: `,
@@ -135,6 +136,22 @@ function describePace(goal, done) {
   return `About ${euroFormatter.format(goal.monthly_pace)} a month so far: at this pace it's ${done === "yours" ? `yours in about ${when}` : `paid back in about ${when}`}.`;
 }
 
+// "Best case: spending nothing in these categories (150 € a month), it's yours in 3 months (January 2027)."
+// Every category at 0, so the whole baseline is saved each month: the fastest it could possibly go.
+function createBestCase(goal) {
+  const line = createElement("p", "goal-best-case hint");
+  const monthlyMaximum = goal.categories.reduce((sum, category) => sum + category.monthly_baseline, 0);
+  const left = goal.target - goal.saved;
+  if (monthlyMaximum <= 0 || left <= 0) return null;
+  const months = Math.max(1, Math.ceil(left / monthlyMaximum));
+  const reachedOn = new Date();
+  reachedOn.setMonth(reachedOn.getMonth() + months);
+  const done = goal.status === "paying_back" ? "paid back" : "yours";
+  line.append(createElement("strong", "", "Best case: "),
+    `spending nothing in these categories (${euroFormatter.format(monthlyMaximum)} a month), it's ${done} in ${months} month${months === 1 ? "" : "s"} (${monthFormatter.format(reachedOn)}).`);
+  return line;
+}
+
 // The month-by-month table, folded away
 function createMonthDetails(goal) {
   const details = createElement("details", "goal-months");
@@ -142,7 +159,8 @@ function createMonthDetails(goal) {
   const table = createElement("table");
   const head = createElement("thead");
   const anythingPassedOn = goal.months.some((row) => row.carried_in); // no column (or note) when it would be empty
-  head.innerHTML = `<tr><th>Month</th><th>Baseline</th><th>Spent</th><th>Saved</th>${anythingPassedOn ? "<th>Passed on</th>" : ""}</tr>`;
+  const anyIncome = goal.months.some((row) => row.income);
+  head.innerHTML = `<tr><th>Month</th><th>Baseline</th><th>Spent</th><th>Saved</th>${anyIncome ? "<th>Income</th>" : ""}${anythingPassedOn ? "<th>Passed on</th>" : ""}</tr>`;
   const body = createElement("tbody");
   for (const row of goal.months) {
     const tableRow = createElement("tr");
@@ -154,6 +172,7 @@ function createMonthDetails(goal) {
       createElement("td", "", euroFormatter.format(row.spent)),
       createElement("td", row.saved < 0 ? "neg" : "pos", formatSignedEuros(row.saved)),
     );
+    if (anyIncome) tableRow.append(createElement("td", row.income ? "pos" : "", row.income ? formatSignedEuros(row.income) : ""));
     if (anythingPassedOn) tableRow.append(createElement("td", "hint", row.carried_in ? formatSignedEuros(row.carried_in) : ""));
     body.append(tableRow);
   }
@@ -197,9 +216,58 @@ function createPurchaseRow(goal) {
   return row;
 }
 
+// ---------- income that pays into it (selling the old MacBook) ----------
+
+// "Income: Old MacBook 15 Oct +400 € ×" (× unlinks it) and "[Add income… ▾] [Link]"
+function createIncomeRow(goal) {
+  const row = createElement("div", "goal-incomes");
+  if (goal.incomes.length) {
+    const list = createElement("p", "goal-income-list");
+    list.append(createElement("span", "hint", "Income: "));
+    goal.incomes.forEach((income, index) => {
+      if (index) list.append(" · ");
+      const unlinkButton = createElement("button", "goal-income-unlink", "×");
+      unlinkButton.type = "button";
+      unlinkButton.title = "Unlink: it stops counting toward this goal (the income stays)";
+      unlinkButton.setAttribute("aria-label", `Unlink ${income.description || "this income"}`);
+      unlinkButton.addEventListener("click", () => unlinkIncome(goal, income.transaction_id));
+      list.append(`${income.description || income.category || "income"} ${formatShortDate(income.date)} `,
+        createElement("span", "pos", formatSignedEuros(income.amount)), unlinkButton);
+    });
+    row.append(list);
+  }
+
+  // the incomes in no goal yet, the biggest of the recent ones first (a sale, rarely a salary)
+  const linkedIds = new Set(goals.flatMap((other) => other.incomes.map((income) => income.transaction_id)));
+  const candidates = appState.transactions
+    .filter((transaction) => transaction.type === "income" && !linkedIds.has(transaction.id))
+    .slice(0, 200) // newest first already
+    .sort((first, second) => second.amount - first.amount)
+    .slice(0, 40);
+  if (!candidates.length) return row;
+  const linking = createElement("div", "goal-purchase");
+  const picker = createElement("select", "goal-purchase-picker");
+  picker.append(new Option("Sold something for it? Pick the income…", ""));
+  for (const transaction of candidates) {
+    const label = `${formatShortDate(transaction.date)} · ${euroFormatter.format(transaction.amount)} · ${transaction.description || transaction.category || "income"}`;
+    picker.append(new Option(label, transaction.id));
+  }
+  const linkButton = createElement("button", "ghost", "Link");
+  linkButton.type = "button";
+  linkButton.addEventListener("click", () => { if (picker.value) linkIncome(goal, Number(picker.value)); });
+  linking.append(picker, linkButton);
+  row.append(linking);
+  return row;
+}
+
 function createGoalCard(goal, index) {
   const card = createElement("article", `goal-card ${goal.status}`);
-  card.append(createCardHead(goal, index), createProgress(goal), createCategoryLine(goal, index), createOutlook(goal), createPurchaseRow(goal));
+  card.append(createCardHead(goal, index), createProgress(goal), createCategoryLine(goal, index), createOutlook(goal));
+  if (["saving", "paying_back", "waiting", "not_started"].includes(goal.status)) {
+    const bestCase = createBestCase(goal);
+    if (bestCase) card.append(bestCase);
+  }
+  card.append(createIncomeRow(goal), createPurchaseRow(goal));
   if (goal.months.length) card.append(createMonthDetails(goal));
   return card;
 }
@@ -210,6 +278,14 @@ function moveGoal(index, offset) {
   const order = goals.map((goal) => goal.id);
   [order[index], order[index + offset]] = [order[index + offset], order[index]];
   runThenReloadAllData(() => callApi("/savings-goals/order", { method: "PUT", body: { goal_ids: order } }));
+}
+
+function linkIncome(goal, transactionId) {
+  runThenReloadAllData(() => callApi(`/savings-goals/${goal.id}/incomes`, { method: "POST", body: { transaction_id: transactionId } }));
+}
+
+function unlinkIncome(goal, transactionId) {
+  runThenReloadAllData(() => callApi(`/savings-goals/${goal.id}/incomes/${transactionId}`, { method: "DELETE" }));
 }
 
 function linkPurchase(goal, transactionId) {

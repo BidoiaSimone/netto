@@ -25,6 +25,7 @@ const allMigrationsInOrder = [
   require("./019-old-tracker-account-is-cash.js"),
   require("./020-last-known-prices.js"),
   require("./021-category-icons-and-colors.js"),
+  require("./022-income-linked-to-goals.js"),
 ];
 
 const LATEST_DATABASE_VERSION = allMigrationsInOrder.length;

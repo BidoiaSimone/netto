@@ -14,6 +14,7 @@ db.pragma("foreign_keys = OFF");
 db.exec(`
   DROP VIEW IF EXISTS account_balances;
   DROP TABLE IF EXISTS offline_submissions;
+  DROP TABLE IF EXISTS savings_goal_incomes;
   DROP TABLE IF EXISTS savings_goal_categories;
   DROP TABLE IF EXISTS savings_goals;
   DROP TABLE IF EXISTS investment_targets;
