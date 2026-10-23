@@ -6,15 +6,19 @@
 const fs = require("fs");
 const path = require("path");
 const os = require("os");
-const { IS_LIGHT_EDITION } = require("./edition.js");
+const { NETTO_EDITION } = require("./edition.js");
 
 const PROJECT_ROOT_DIRECTORY = path.join(__dirname, "../..");
 
-// netto light (config/edition.js) keeps its data apart: light.db, light-backups/, "netto light backups".
+// netto light and netto expenses (config/edition.js) keep their data apart: light.db, light-backups/,
+// "netto light backups"; expenses.db, expenses-backups/, "netto expenses backups".
 // The environment variables below still win over these, as for the full app.
-const DEFAULT_DATABASE_NAME = IS_LIGHT_EDITION ? "light.db" : "money.db";
-const DEFAULT_BACKUPS_FOLDER = IS_LIGHT_EDITION ? "light-backups" : "backups";
-const DEFAULT_OFFSITE_FOLDER = IS_LIGHT_EDITION ? "netto light backups" : "netto backups";
+const DATA_PLACES_OF_EACH_EDITION = {
+  full: { database: "money.db", backups: "backups", offsite: "netto backups" },
+  light: { database: "light.db", backups: "light-backups", offsite: "netto light backups" },
+  expenses: { database: "expenses.db", backups: "expenses-backups", offsite: "netto expenses backups" },
+};
+const { database: DEFAULT_DATABASE_NAME, backups: DEFAULT_BACKUPS_FOLDER, offsite: DEFAULT_OFFSITE_FOLDER } = DATA_PLACES_OF_EACH_EDITION[NETTO_EDITION];
 
 // The pages, styles, scripts and images served to the browser
 const FRONTEND_DIRECTORY = path.join(PROJECT_ROOT_DIRECTORY, "frontend");
@@ -22,7 +26,7 @@ const FRONTEND_DIRECTORY = path.join(PROJECT_ROOT_DIRECTORY, "frontend");
 // The SQLite database file (SQLite adds money.db-wal and money.db-shm next to it while it's open).
 // NETTO_DATABASE_FILE points it somewhere else: the tests set it to ":memory:" (a database that lives
 // only in RAM and vanishes when the process ends), so they can never read or change your real money.db.
-// Without it, as in `npm start`, it is money.db as always (light.db for `npm run light`).
+// Without it, as in `npm start`, it is money.db as always (light.db for `npm run light`, expenses.db for `npm run expenses`).
 const DATABASE_FILE = process.env.NETTO_DATABASE_FILE || path.join(PROJECT_ROOT_DIRECTORY, "backend/db", DEFAULT_DATABASE_NAME);
 
 // Every kind of backup: automatic daily copies, copies made before a migration or an import,

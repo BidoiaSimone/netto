@@ -6,7 +6,10 @@
 // hidden, parts marked class="light-only" are shown. This file is for the few things the JS has to decide:
 // which pages exist, which data to load, which columns to draw.
 
-export const isLightEdition = document.documentElement.dataset.edition === "light";
+// netto expenses (`npm run expenses`) opens on its own page, Expenses.html; when Home.html is opened there to correct
+// an entry, it's drawn like netto light
+export const isExpensesEdition = document.documentElement.dataset.edition === "expenses";
+export const isLightEdition = document.documentElement.dataset.edition === "light" || isExpensesEdition;
 
 // A part of the page that the light edition leaves out (class="full-only", on it or on a parent)
 export const isLeftOutOfThisEdition = (element) => isLightEdition && Boolean(element.closest(".full-only"));

@@ -31,11 +31,11 @@ backend/
 │   ├── accountKinds.js              account kinds and their liquidity class (cash, restricted, personal-use)
 │   ├── appSettings.js               the settings stored with your data (app_settings): defaults and allowed ranges
 │   ├── currencies.js                the foreign currencies a transaction can be paid in, with their decimals (minor units)
-│   ├── edition.js                   full netto or netto light (NETTO_EDITION=light): see "Two editions" below
+│   ├── edition.js                   full netto, netto light (NETTO_EDITION=light) or netto expenses (=expenses): see "Editions" below
 │   ├── italianTaxRates.js           Italian tax rates for the Statements estimates, each with its source and date
 │   ├── projectPaths.js              every folder / file the backend uses (frontend, money.db, backups);
 │   │                                NETTO_DATABASE_FILE / NETTO_BACKUPS_DIRECTORY move them (the tests do);
-│   │                                netto light defaults to light.db and light-backups/
+│   │                                netto light defaults to light.db and light-backups/, netto expenses to expenses.db and expenses-backups/
 │   └── serverSettings.js            port, host, AUTO_EXIT, request size
 ├── db/
 │   ├── databaseConnection.js        opens money.db (everyone requires this), runs migrations, checks balances
@@ -126,6 +126,7 @@ backend/
     │   ├── sankeyFlows.js           the Statements' money flows (Sankey): sources and uses that add up to the income statement
     │   ├── yearInReview.js          the Year in review page, built from the statements, tags and targets
     │   ├── appSettings.js           reads and saves the settings of config/appSettings.js
+    │   ├── expensesEditionSetup.js  netto expenses: its one cash account and its expense categories, made at startup when missing
     │   ├── yahooFinanceMarketData.js prices and history from Yahoo, converted to EUR
     │   ├── livePrices.js            today's price of a holding: asked once a minute at most, else the last one kept
     │   ├── automaticDailyBackups.js one copy of money.db per day, last 14 kept
@@ -203,7 +204,7 @@ The tests live in `tests/` (see **Tests** below).
 
 `frontend/serviceWorker.js` keeps copies of the pages and data so netto opens without the server (network first).
 
-`frontend/HTML/Home.html` is the only page. Each sidebar entry is a `<section data-page="…">` in it.
+`frontend/HTML/Home.html` is the only page (netto expenses adds two of its own, see "Editions" below). Each sidebar entry is a `<section data-page="…">` in it.
 It loads `JS/themeBeforeFirstPaint.js` (a normal script, so the theme, colour and layout are set before anything is drawn)
 and `JS/main.js` as an **ES module**: every other JS file is reached through `import` statements, so
 each file says at the top exactly what it uses and where it comes from.
@@ -320,9 +321,9 @@ else is marked `class="desktop-only"` in Home.html and stays on the computer: th
 Settings > On this phone > Everything turns it off on that phone (`<html data-phone-features="all">`).
 - **Adding a page or a part:** it shows on the phone too, unless you mark it `desktop-only`.
 
-## Two editions: netto and netto light
+## Editions: netto, netto light and netto expenses
 
-One codebase, two ways to run it. `npm start` / `npm run dev` is the full netto, as always.
+One codebase, three ways to run it. `npm start` / `npm run dev` is the full netto, as always.
 `npm run light` (port 3002) is **netto light**, a simpler version for someone who doesn't track every cent:
 
 | netto light keeps | it leaves out |
@@ -341,6 +342,19 @@ One codebase, two ways to run it. `npm start` / `npm run dev` is the full netto,
   (app/pageNavigation.js), which data loads (core/dataRefresh.js), the Categories columns, Insights > This month.
 - **Adding a feature:** it's in both editions unless you mark it `full-only`.
 - **A demo:** `npm run light:demo` fills an empty light.db with a few made-up months (start over: delete light.db).
+
+`npm run expenses` (port 3003) is **netto expenses**, the smallest one: for someone who only writes down what they
+spend, so someone else can look at it (Dad's spending, Oct 2026). No accounts, no net worth.
+
+- **`/` opens `HTML/Expenses.html`**, in Italian: "Quanto hai speso?", a big button per category, Salva. The expense
+  is dated today and taken from the edition's one cash account; "Annulla, ho sbagliato" deletes it for 30 seconds.
+  Its files: `JS/expenses/expensesPage.js`, `CSS/expenses-edition.css` (neither loads anything of Home.html's but the
+  category icons and the euro format).
+- **`HTML/ExpensesReport.html`** (not linked from Expenses.html): each category's spending month by month, the totals, the
+  monthly averages, and "Download CSV" (every expense, `;` and decimal comma for Excel in Italian). `JS/expenses/expensesReport.js`.
+- **Home.html** still opens by its address, drawn like netto light, to correct or delete an entry, or change the categories.
+- **Its own data:** expenses.db, expenses-backups/, "netto expenses backups" in iCloud. At every start
+  `services/expensesEditionSetup.js` makes the "Portafoglio" account and the default categories, only when there are none.
 
 ## Tests
 

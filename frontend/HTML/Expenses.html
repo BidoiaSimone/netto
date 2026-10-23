@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <!-- netto expenses (npm run expenses, backend/config/edition.js): the page that opens, and the only one its user sees.
+       An amount, a category, Save. In Italian, large, nothing else on it. -->
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Spese</title>
+  <link rel="icon" href="../Images/logo/netto-app-icon.svg">
+  <link rel="apple-touch-icon" href="/Images/icons/apple-touch-icon.png">
+  <meta name="apple-mobile-web-app-title" content="Spese">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <link rel="stylesheet" href="../CSS/expenses-edition.css">
+  <script type="module" src="../JS/expenses/expensesPage.js"></script>
+</head>
+<body class="expenses-page">
+<main>
+  <!-- after Save, at the top where it's seen (the page scrolls back up): what was saved, and a way to take it back -->
+  <div id="expense-saved" class="saved-message" role="status" hidden>
+    <p><span class="tick" aria-hidden="true">✓</span> Salvato: <strong id="expense-saved-text"></strong></p>
+    <button id="expense-undo" type="button" class="undo-button">Annulla, ho sbagliato</button>
+  </div>
+
+  <form id="expense-form" novalidate>
+    <label class="question" for="expense-amount">Quanto hai speso?</label>
+    <div class="amount-field">
+      <input id="expense-amount" type="text" inputmode="decimal" autocomplete="off" placeholder="0,00" aria-describedby="expense-date">
+      <span class="euro-sign" aria-hidden="true">€</span>
+    </div>
+    <p id="expense-date" class="date-line"></p>
+
+    <p class="question" id="category-question">Per cosa?</p>
+    <div id="expense-categories" class="category-buttons" role="radiogroup" aria-labelledby="category-question">
+      <p class="loading">Un attimo…</p>
+    </div>
+
+    <p id="expense-problem" class="problem" role="alert" hidden></p>
+    <button id="expense-save" type="submit" class="save-button">Salva</button>
+  </form>
+
+</main>
+</body>
+</html>

@@ -4,9 +4,10 @@
 import { elementById } from "../core/domHelpers.js";
 import { getTodayAsLocalDate } from "../core/formatting.js";
 import { callApi } from "../core/apiClient.js";
-import { isLightEdition } from "../core/edition.js";
+import { isLightEdition, isExpensesEdition } from "../core/edition.js";
 
-const BACKUPS_FOLDER = isLightEdition ? "backend/db/light-backups" : "backend/db/backups"; // netto light keeps its own (config/projectPaths.js)
+// netto light and netto expenses keep their own (config/projectPaths.js)
+const BACKUPS_FOLDER = isExpensesEdition ? "backend/db/expenses-backups" : isLightEdition ? "backend/db/light-backups" : "backend/db/backups";
 import { showErrorMessage } from "../core/errorBanner.js";
 import { runThenReloadAllData } from "../core/dataRefresh.js";
 import { saveAppSetting } from "../core/appSettings.js";

@@ -12,6 +12,7 @@
     "dev": "nodemon",
     "light": "NETTO_EDITION=light PORT=3002 node backend/server/app.js",
     "light:demo": "node backend/db/tools/fillLightDemo.js",
+    "expenses": "NETTO_EDITION=expenses PORT=3003 node backend/server/app.js",
     "db:print": "node backend/db/tools/printDatabaseTables.js",
     "db:clear": "node backend/db/tools/clearDatabase.js"
   },

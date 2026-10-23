@@ -6,14 +6,18 @@ const path = require("path");
 const express = require("express");
 const { SERVER_PORT, SERVER_HOST, MAXIMUM_REQUEST_BODY_SIZE } = require("../config/serverSettings.js");
 const { FRONTEND_DIRECTORY, DATABASE_FILE } = require("../config/projectPaths.js");
-const { IS_LIGHT_EDITION } = require("../config/edition.js");
+const { NETTO_EDITION, EDITION_NAMES, IS_EXPENSES_EDITION } = require("../config/edition.js");
 const { createRejectRequestsFromOtherHosts } = require("./middleware/rejectRequestsFromOtherHosts.js");
 const { handleWindowSessionConnection, startExitTimerForWhenNoWindowOpens } = require("./appWindow/openWindowSessions.js");
 const { startFrontendLiveReload } = require("./appWindow/frontendLiveReload.js");
 const { startAutomaticDailyBackups } = require("./services/automaticDailyBackups.js");
 const { startRecurringTransactionPoster } = require("./services/recurringTransactionPoster.js");
 const { keepMacAwakeWhileRunning } = require("./appWindow/keepMacAwake.js");
+const { prepareExpensesEdition } = require("./services/expensesEditionSetup.js");
+const db = require("../db/databaseConnection.js");
 const apiRouter = require("./routes/apiRouter.js");
+
+if (IS_EXPENSES_EDITION) prepareExpensesEdition(db); // its one account and its categories (config/edition.js)
 
 const app = express();
 app.use(express.json({ limit: MAXIMUM_REQUEST_BODY_SIZE }));
@@ -36,14 +40,15 @@ app.use(apiRouter);                                  // the API
 app.use(express.static(FRONTEND_DIRECTORY, {
   setHeaders: (response) => response.setHeader("Cache-Control", "no-cache"),
 }));
-app.get("/", (request, response) => response.redirect("/HTML/Home.html"));
+// netto expenses opens straight on its one page: amount, category, Save (Home.html stays reachable by its address)
+app.get("/", (request, response) => response.redirect(IS_EXPENSES_EDITION ? "/HTML/Expenses.html" : "/HTML/Home.html"));
 
 app.listen(SERVER_PORT, SERVER_HOST, function onServerStarted(error) {
   if (error) {
     console.error(error);
     process.exit(1);
   }
-  console.log(`${IS_LIGHT_EDITION ? "netto light" : "netto"} listening on http://localhost:${SERVER_PORT} (data: ${path.basename(DATABASE_FILE)})`);
+  console.log(`${EDITION_NAMES[NETTO_EDITION]} listening on http://localhost:${SERVER_PORT} (data: ${path.basename(DATABASE_FILE)})`);
   startAutomaticDailyBackups();      // one copy of the database per day
   startRecurringTransactionPoster(); // adds the recurring transactions that are due, now and every new day
   keepMacAwakeWhileRunning();        // so the phone can reach it: appWindow/keepMacAwake.js

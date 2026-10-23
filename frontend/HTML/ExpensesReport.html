@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <!-- netto expenses (npm run expenses, backend/config/edition.js): what was spent each month, by category.
+       For whoever reads the data; Expenses.html, the page that writes it, doesn't link here. -->
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Expenses by month</title>
+  <link rel="icon" href="../Images/logo/netto-app-icon.svg">
+  <link rel="stylesheet" href="../CSS/expenses-edition.css">
+  <script type="module" src="../JS/expenses/expensesReport.js"></script>
+</head>
+<body class="expenses-report">
+<main>
+  <header class="report-header">
+    <h1>Expenses by month</h1>
+    <div class="report-actions">
+      <button id="report-download" type="button">Download CSV</button>
+      <a href="/HTML/Home.html#transactions">Correct or delete an entry</a>
+    </div>
+  </header>
+  <p id="report-summary" class="report-summary"></p>
+  <div class="report-table-box">
+    <table id="report-table">
+      <thead></thead>
+      <tbody></tbody>
+      <tfoot></tfoot>
+    </table>
+  </div>
+  <p id="report-problem" class="problem" role="alert" hidden></p>
+</main>
+</body>
+</html>
