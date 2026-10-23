@@ -13,13 +13,26 @@
 #   bash scripts/service.sh status     is it running?
 #   bash scripts/service.sh log        last lines of the server log
 #   bash scripts/service.sh uninstall  remove it completely
+#
+# Add "expenses" after any of these for netto expenses (backend/config/edition.js), a second server of its own on
+# port 3003 with its own data (expenses.db), next to the full one:  bash scripts/service.sh install expenses
+# For the phone, give it its own Tailscale address once:  tailscale serve --bg --https=8443 3003
 
-LABEL="com.netto.server"
 PROJECT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
-PLIST="$HOME/Library/LaunchAgents/$LABEL.plist"
-LOG="$HOME/Library/Logs/netto.log"
 DOMAIN="gui/$(id -u)"
-PORT=3000
+case "${2:-full}" in
+  full)     LABEL="com.netto.server";   PORT=3000; LOG="$HOME/Library/Logs/netto.log";          EDITION="" ;;
+  expenses) LABEL="com.netto.expenses"; PORT=3003; LOG="$HOME/Library/Logs/netto-expenses.log"; EDITION="expenses" ;;
+  *)        echo "Unknown edition \"$2\": leave it out for the full netto, or write expenses"; exit 1 ;;
+esac
+PLIST="$HOME/Library/LaunchAgents/$LABEL.plist"
+# The full netto runs as always (port 3000 is the server's default); another edition is told which one it is and its port
+ENVIRONMENT_VARIABLES=""
+[ -n "$EDITION" ] && ENVIRONMENT_VARIABLES="<key>EnvironmentVariables</key>
+  <dict>
+    <key>NETTO_EDITION</key> <string>$EDITION</string>
+    <key>PORT</key>          <string>$PORT</string>
+  </dict>"
 
 case "$1" in
   install)
@@ -61,6 +74,7 @@ case "$1" in
     <string>$PROJECT_DIR/backend/server/app.js</string>
   </array>
   <key>WorkingDirectory</key>  <string>$PROJECT_DIR</string>
+  $ENVIRONMENT_VARIABLES
   <key>RunAtLoad</key>         <true/>
   <key>KeepAlive</key>         <true/>
   <key>ThrottleInterval</key>  <integer>10</integer>
@@ -74,7 +88,7 @@ PLIST
     launchctl bootstrap "$DOMAIN" "$PLIST" || exit 1
     for i in {1..20}; do curl -s -o /dev/null "http://localhost:$PORT" && break; sleep 0.5; done
     if curl -s -o /dev/null "http://localhost:$PORT"; then
-      echo "netto is running at http://localhost:$PORT and will start by itself at every login."
+      echo "netto${EDITION:+ $EDITION} is running at http://localhost:$PORT and will start by itself at every login."
     elif grep -q "Operation not permitted" "$LOG"; then
       echo
       echo "macOS is blocking the server from reading your Documents folder."
@@ -83,7 +97,7 @@ PLIST
       echo "    $NODE"
       echo
       echo "(in the file picker press Cmd+Shift+G and paste that path). Then run:"
-      echo "    bash scripts/service.sh restart"
+      echo "    bash scripts/service.sh restart $EDITION"
       open "x-apple.systempreferences:com.apple.preference.security?Privacy_AllFiles" 2>/dev/null
     else
       echo "Installed, but the server isn't answering yet. Check: bash scripts/service.sh log"
