@@ -11,7 +11,7 @@
 .panel h3 { margin: 0 0 14px; }
 .chart-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin: 32px 0 10px; }
 .chart-head h3 { margin: 0; }
-.chart-head .chips button.active, .ticker-chips button.active, .theme-chips button.active, .option-chips button.active, .accent-chips button.active { color: var(--accent-2); border-color: var(--accent); background: rgba(var(--accent-rgb), 0.12); }
+.chart-head .chips button.active, .ticker-chips button.active, .theme-chips button.active, .option-chips button.active, .accent-chips button.active, .app-icon-chips button.active { color: var(--accent-2); border-color: var(--accent); background: rgba(var(--accent-rgb), 0.12); }
 .ticker-chips { margin-bottom: 12px; }
 .chart-sub { margin: 0 0 8px; color: var(--muted); }
 .chart-sub strong { color: var(--text); font-size: 22px; margin-right: 10px; }

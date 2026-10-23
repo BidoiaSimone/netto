@@ -4,6 +4,8 @@
 // in Settings, see settings/themeAndAccentColor.js.
 // Layout: "classic" (default, the sidebar) or "pocket": <html data-ui>, Pocket styled by 37-ui-pocket.css. Kept per device, like the theme: the Mac and the phone can each have their own.
 // Phone features: "core" (default) or "all": <html data-phone-features>, see core/phoneFeatures.js.
+// App icon: "auto" (default, the icon of the accent colour) or one colour: the tab icon and the icon Safari's
+// "Add to Home Screen" takes (the Home Screen keeps the icon it was added with, see settings/themeAndAccentColor.js).
 (function applySavedThemeAccentColorAndLayout() {
   var theme = "dark";
   try { theme = localStorage.getItem("theme") || "dark"; } catch (error) {}
@@ -23,4 +25,10 @@
   var phoneFeatures = "core";
   try { phoneFeatures = localStorage.getItem("phoneFeatures") === "all" ? "all" : "core"; } catch (error) {}
   document.documentElement.dataset.phoneFeatures = phoneFeatures;
+
+  var appIcon = "auto";
+  try { appIcon = localStorage.getItem("appIcon") || "auto"; } catch (error) {}
+  if (["green", "blue", "violet", "orange", "pink"].indexOf(appIcon) === -1) appIcon = accentColor;
+  document.querySelector('link[rel="icon"]').href = "/Images/icons/app-icon-" + appIcon + ".svg";
+  document.querySelector('link[rel="apple-touch-icon"]').href = "/Images/icons/apple-touch-icon-" + appIcon + ".png";
 })();

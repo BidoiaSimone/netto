@@ -286,7 +286,9 @@ frontend/JS/
 │   ├── sparkline.js                 the tiny 12-month lines of the category trends
 │   └── svgHelpers.js
 └── settings/                        Settings page and the preferences it controls
-    ├── themeAndAccentColor.js       Settings > Theme, Color, Layout and On this phone
+    ├── themeAndAccentColor.js       Settings > Theme, Color, App icon, Layout and On this phone
+    │                                (App icon: Images/icons/app-icon-<colour>.svg + apple-touch-icon-<colour>.png;
+    │                                iOS keeps the icon netto was added with, so a new one needs removing and re-adding it)
     ├── privacyMode.js
     ├── autoRefresh.js
     ├── backupSettings.js

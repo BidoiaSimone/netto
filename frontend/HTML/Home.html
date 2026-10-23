@@ -6,6 +6,7 @@
        env(safe-area-inset-*), which only gives real values with this -->
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>netto</title>
+  <!-- both icons follow Settings > App icon (JS/themeBeforeFirstPaint.js) -->
   <link rel="icon" href="../Images/logo/netto-app-icon.svg">
   <!-- standalone app (Safari "Add to Dock"): name, Dock icon and window color -->
   <link rel="manifest" href="/Images/icons/site.webmanifest">
@@ -758,6 +759,19 @@
         <button type="button" class="ghost" data-value="pink"><i class="swatch" style="background:#ec4899"></i>Pink</button>
       </span>
     </p>
+    <p class="setting-row">
+      <span>App icon</span>
+      <span id="app-icon-chips" class="chips app-icon-chips">
+        <button type="button" class="ghost" data-value="auto" title="The icon of the colour picked above">Same as Color</button>
+        <button type="button" class="ghost" data-value="green" title="Green" aria-label="Green"><img src="/Images/icons/app-icon-green.svg" alt=""></button>
+        <button type="button" class="ghost" data-value="blue" title="Blue" aria-label="Blue"><img src="/Images/icons/app-icon-blue.svg" alt=""></button>
+        <button type="button" class="ghost" data-value="violet" title="Violet" aria-label="Violet"><img src="/Images/icons/app-icon-violet.svg" alt=""></button>
+        <button type="button" class="ghost" data-value="orange" title="Orange" aria-label="Orange"><img src="/Images/icons/app-icon-orange.svg" alt=""></button>
+        <button type="button" class="ghost" data-value="pink" title="Pink" aria-label="Pink"><img src="/Images/icons/app-icon-pink.svg" alt=""></button>
+      </span>
+    </p>
+    <p class="hint small app-icon-hint">The Home Screen keeps the icon netto was added with. To change it: open netto in Safari,
+      pick the icon here, remove netto from the Home Screen, then Share &gt; Add to Home Screen again.</p>
     <p class="setting-row">
       <span>Layout</span>
       <span id="layout-chips" class="chips option-chips layout-chips">
