@@ -64,19 +64,21 @@ function isServerAnswering() {
 }
 
 async function answerFromNetworkOrSavedCopy(request) {
-  const cache = await caches.open(CACHE_NAME);
+  const cache = await caches.open(CACHE_NAME).catch(() => null); // storage unavailable: no saved copies, the network still works
   if (Date.now() >= serverUnreachableUntil) {
     const networkAnswer = fetch(request).catch(() => null); // null: the network failed outright
     const serverGone = isServerAnswering().then((isThere) => (isThere ? never : UNREACHABLE)); // there: wait for the answer
     let response = await Promise.race([networkAnswer, serverGone]);
     if (response === UNREACHABLE) response = null;
     if (response) {
-      if (response.ok && !response.redirected) await saveCopy(cache, request, response.clone());
+      // A failed save must never break the page: Safari's Dock web apps can refuse to write to their storage
+      // ("Failed writing data to the file system"), and then the page would not load at all
+      if (cache && response.ok && !response.redirected) await saveCopy(cache, request, response.clone()).catch(() => {});
       return response;
     }
     serverUnreachableUntil = Date.now() + STRAIGHT_TO_SAVED_COPY_MILLISECONDS;
   }
-  const savedCopy = await cache.match(request, { ignoreSearch: false });
+  const savedCopy = cache && await cache.match(request, { ignoreSearch: false }).catch(() => null);
   if (savedCopy) return savedCopy;
   const isApiCall = !request.url.includes("/HTML/") && !/\.(css|js|png|svg|ico|woff2|webmanifest|jpg)$/.test(new URL(request.url).pathname);
   return isApiCall
