@@ -8,6 +8,7 @@ const { SERVER_PORT, SERVER_HOST, MAXIMUM_REQUEST_BODY_SIZE } = require("../conf
 const { FRONTEND_DIRECTORY, DATABASE_FILE } = require("../config/projectPaths.js");
 const { IS_LIGHT_EDITION } = require("../config/edition.js");
 const { createRejectRequestsFromOtherHosts } = require("./middleware/rejectRequestsFromOtherHosts.js");
+const { answerErrorsWithoutLoggingData } = require("./middleware/answerErrorsWithoutLoggingData.js");
 const { handleWindowSessionConnection, startExitTimerForWhenNoWindowOpens } = require("./appWindow/openWindowSessions.js");
 const { startFrontendLiveReload } = require("./appWindow/frontendLiveReload.js");
 const { startAutomaticDailyBackups } = require("./services/automaticDailyBackups.js");
@@ -37,6 +38,7 @@ app.use(express.static(FRONTEND_DIRECTORY, {
   setHeaders: (response) => response.setHeader("Cache-Control", "no-cache"),
 }));
 app.get("/", (request, response) => response.redirect("/HTML/Home.html"));
+app.use(answerErrorsWithoutLoggingData);              // last: errors are answered without copying the request into the log
 
 app.listen(SERVER_PORT, SERVER_HOST, function onServerStarted(error) {
   if (error) {
