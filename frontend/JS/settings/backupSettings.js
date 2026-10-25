@@ -17,15 +17,13 @@ const BACKUPS_FOLDER = isLightEdition ? "backend/db/light-backups" : "backend/db
 import { showErrorMessage } from "../core/errorBanner.js";
 import { runThenReloadAllData } from "../core/dataRefresh.js";
 import { saveAppSetting } from "../core/appSettings.js";
+import { readStored, writeStored } from "../core/deviceStorage.js";
 
 const MILLISECONDS_PER_DAY = 864e5;
 const BACKUP_REMINDER_DAYS = 7;
 const LAST_SAVED_KEY = "backupSavedAt";        // localStorage: when "Save backup…" last saved one (the PWA)
 const REMINDER_SNOOZED_KEY = "backupReminderSnoozedOn"; // localStorage: the day "Later" was pressed
 let reminderShownThisVisit = false;
-
-const readLocal = (key) => { try { return localStorage.getItem(key); } catch { return null; } };
-const writeLocal = (key, value) => { try { localStorage.setItem(key, value); } catch {} };
 
 // "today", "yesterday" or the date, Italian style
 function describeBackupDay(savedAt) {
@@ -131,7 +129,7 @@ async function handOverBackupFile(file) {
 
 function noteBackupSaved(wasSaved) {
   if (!wasSaved) return;
-  writeLocal(LAST_SAVED_KEY, new Date().toISOString());
+  writeStored(LAST_SAVED_KEY, new Date().toISOString());
   renderBackupStatusOfThisDevice();
 }
 
@@ -145,7 +143,7 @@ async function saveBackupFromThisDevice() {
 
 // Settings: when the last one was saved; and, past BACKUP_REMINDER_DAYS, the reminder (once a visit, not after "Later" today)
 async function renderBackupStatusOfThisDevice() {
-  const savedAt = readLocal(LAST_SAVED_KEY);
+  const savedAt = readStored(LAST_SAVED_KEY);
   const statusLine = elementById("backup-device-status");
   const isOverdue = !savedAt || daysSince(savedAt) >= BACKUP_REMINDER_DAYS;
   statusLine.classList.toggle("neg", isOverdue);
@@ -153,13 +151,13 @@ async function renderBackupStatusOfThisDevice() {
     ? `Last backup saved ${describeBackupDay(new Date(savedAt))}${daysSince(savedAt) > 1 ? ` (${daysSince(savedAt)} days ago)` : ""}.`
     : "No backup saved from this device yet.";
 
-  if (!isOverdue || reminderShownThisVisit || readLocal(REMINDER_SNOOZED_KEY) === getTodayAsLocalDate()) return;
+  if (!isOverdue || reminderShownThisVisit || readStored(REMINDER_SNOOZED_KEY) === getTodayAsLocalDate()) return;
   const accounts = await callApi("/accounts").catch(() => []);
   if (!accounts.length) return; // nothing to lose yet
   reminderShownThisVisit = true;
   showToast(savedAt ? `No backup for ${daysSince(savedAt)} days` : "Your data is only on this device", [
     { label: "Save backup", onClick: saveBackupFromThisDevice },
-    { label: "Later", onClick: () => writeLocal(REMINDER_SNOOZED_KEY, getTodayAsLocalDate()) },
+    { label: "Later", onClick: () => writeStored(REMINDER_SNOOZED_KEY, getTodayAsLocalDate()) },
   ], 20000);
 }
 

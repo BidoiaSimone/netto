@@ -15,8 +15,9 @@
 import { elementById, highlightSelectedChip } from "../core/domHelpers.js";
 import { setAmountsHidden, HIDDEN_AMOUNT } from "../core/formatting.js";
 import { loadAllData } from "../core/dataRefresh.js";
+import { readStored, writeStored } from "../core/deviceStorage.js";
 
-let privacyOnLoadSetting = localStorage.getItem("privacyOnLoad") || "always";
+let privacyOnLoadSetting = readStored("privacyOnLoad") || "always";
 
 const AUTO_HIDE_STORAGE_KEY = "privacyAutoHideMinutes";
 const DEFAULT_AUTO_HIDE_MINUTES = 10;
@@ -97,7 +98,7 @@ export function initializePrivacyMode() {
     const chip = event.target.closest("button[data-value]");
     if (!chip) return;
     privacyOnLoadSetting = chip.dataset.value;
-    localStorage.setItem("privacyOnLoad", privacyOnLoadSetting);
+    writeStored("privacyOnLoad", privacyOnLoadSetting);
     highlightSelectedChip(elementById("privacy-chips"), privacyOnLoadSetting);
   });
   highlightSelectedChip(elementById("privacy-chips"), privacyOnLoadSetting);

@@ -45,6 +45,10 @@ td button { background: transparent; border-color: rgba(var(--neg-rgb), 0.5); co
 td button:hover { background: rgba(var(--neg-rgb), 0.12); box-shadow: none; }
 
 #error { color: var(--neg); min-height: 1.2em; }
+#storage-warning { color: var(--warn); margin: 0 0 12px; line-height: 1.45; }
+/* Home.html's message when the script couldn't start: alone on the page, readable without any other style */
+.start-failed { max-width: 560px; margin: 15vh auto; padding: 0 24px; line-height: 1.5; }
+.start-failed .hint { word-break: break-word; }
 
 /* phones: the sidebar, the page and the tables are rearranged in 31-phone.css */
 

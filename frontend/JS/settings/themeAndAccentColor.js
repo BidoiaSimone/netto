@@ -5,10 +5,11 @@
 
 import { elementById, highlightSelectedChip } from "../core/domHelpers.js";
 import { setPhoneFeatures } from "../core/phoneFeatures.js";
+import { readStored, writeStored } from "../core/deviceStorage.js";
 
 const systemPrefersLightTheme = matchMedia("(prefers-color-scheme: light)");
-let themeSetting = localStorage.getItem("theme") || "dark";
-let accentColorSetting = localStorage.getItem("accent") || "green";
+let themeSetting = readStored("theme") || "dark";
+let accentColorSetting = readStored("accent") || "green";
 const LAYOUTS = ["classic", "pocket"]; // Pocket: 37-ui-pocket.css (classic is the base)
 let layoutSetting = document.documentElement.dataset.ui; // already checked by themeBeforeFirstPaint.js
 
@@ -43,7 +44,7 @@ export function initializeThemeAndAccentColor() {
     const chip = event.target.closest("button[data-value]");
     if (!chip) return;
     themeSetting = chip.dataset.value;
-    localStorage.setItem("theme", themeSetting);
+    writeStored("theme", themeSetting);
     applyTheme();
   });
   systemPrefersLightTheme.addEventListener("change", () => { if (themeSetting === "system") applyTheme(); }); // macOS switched
@@ -52,7 +53,7 @@ export function initializeThemeAndAccentColor() {
     const chip = event.target.closest("button[data-value]");
     if (!chip) return;
     accentColorSetting = chip.dataset.value;
-    localStorage.setItem("accent", accentColorSetting);
+    writeStored("accent", accentColorSetting);
     applyAccentColor();
   });
 
@@ -60,7 +61,7 @@ export function initializeThemeAndAccentColor() {
     const chip = event.target.closest("button[data-value]");
     if (!chip || !LAYOUTS.includes(chip.dataset.value)) return;
     layoutSetting = chip.dataset.value;
-    localStorage.setItem("ui", layoutSetting);
+    writeStored("ui", layoutSetting);
     applyLayout();
     window.dispatchEvent(new Event("resize")); // charts sized to their box draw again at the new size
   });

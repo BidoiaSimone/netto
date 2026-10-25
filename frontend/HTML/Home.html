@@ -106,6 +106,8 @@
 
 <main>
   <p id="error" role="alert"></p>
+  <!-- the PWA, when this browser won't keep its database (JS/core/localApi.js) -->
+  <p id="storage-warning" role="alert" hidden></p>
   <!-- filled by JS/app/offlineStatus.js -->
   <div id="offline-bar" class="offline-bar" role="status" hidden></div>
 
@@ -1111,6 +1113,22 @@
 </dialog>
 
 <!-- the page's code: main.js imports everything else (JS/core, JS/pages, JS/dialogs, ...) -->
+<!-- If netto's script stops before it has started (JS/main.js sets window.nettoStarted at its end), the page would show
+     every section at once with buttons that do nothing: say so instead, with what went wrong and which browser it was -->
+<script>
+  window.addEventListener("error", function (event) { window.nettoStartError = window.nettoStartError || event.message; });
+  window.addEventListener("load", function () {
+    setTimeout(function () {
+      if (window.nettoStarted) return;
+      var message = document.createElement("div");
+      message.className = "start-failed";
+      message.innerHTML = "<h2>netto couldn't start</h2><p>Try closing it and opening it again. If this keeps happening, "
+        + "send a screenshot of this screen to whoever shared netto with you.</p><p class='hint small'></p>";
+      message.lastChild.textContent = (window.nettoStartError || "The page's script didn't run.") + " · " + navigator.userAgent;
+      document.body.replaceChildren(message);
+    }, 3000);
+  });
+</script>
 <script type="module" src="../JS/main.js"></script>
 </body>
 </html>

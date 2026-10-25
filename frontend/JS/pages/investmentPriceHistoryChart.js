@@ -6,12 +6,13 @@ import { callApi } from "../core/apiClient.js";
 import { appState } from "../core/appState.js";
 import { drawLineChart } from "../charts/lineChart.js";
 import { drawHorizontalBarChart } from "../charts/horizontalBarChart.js";
+import { readStored, writeStored } from "../core/deviceStorage.js";
 
 const RANGE_LABELS = { "1m": "1 month", "6m": "6 months", "1y": "1 year", "5y": "5 years" };
 const REDRAW_DELAY_AFTER_RESIZE_MILLISECONDS = 150;
 
-let selectedRange = localStorage.getItem("invRange") || "1y";
-let selectedTicker = localStorage.getItem("invTicker"); // which fund the line chart shows
+let selectedRange = readStored("invRange") || "1y";
+let selectedTicker = readStored("invTicker"); // which fund the line chart shows
 let priceHistory = null;        // the last answer of GET /investments/history
 let priceHistoryRequestKey = null; // what that answer was for: range + holdings
 
@@ -47,7 +48,7 @@ function renderTickerChips(fundsWithHistory) {
     chip.type = "button";
     chip.onclick = () => {
       selectedTicker = fund.ticker;
-      localStorage.setItem("invTicker", selectedTicker);
+      writeStored("invTicker", selectedTicker);
       renderPriceHistory();
     };
     return chip;
@@ -86,7 +87,7 @@ function renderPriceHistory() {
 export function initializePriceHistoryChart() {
   document.querySelectorAll("[data-inv-range]").forEach((chip) => chip.addEventListener("click", () => {
     selectedRange = chip.dataset.invRange;
-    localStorage.setItem("invRange", selectedRange);
+    writeStored("invRange", selectedRange);
     loadPriceHistoryIfChanged(appState.holdings);
   }));
 

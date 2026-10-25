@@ -8,6 +8,7 @@ import { appState } from "../core/appState.js";
 import { loadAllData } from "../core/dataRefresh.js";
 import { addClosedAccountOptionIfMissing } from "../core/accountPickers.js";
 import { openDialog } from "../app/dialogWindows.js";
+import { readStored, writeStored } from "../core/deviceStorage.js";
 
 let tradeBeingEdited = null; // null for a new trade
 let tradesWaitingToBeRecorded = []; // Investments > Target allocation > "Record these trades": the ones after this one
@@ -39,7 +40,7 @@ export function openTradeDialog(trade = {}, { isEditing = false } = {}) {
 function selectTradeAccount(trade, isEditing) {
   const accountPicker = elementById("trade-account");
   if (isEditing) addClosedAccountOptionIfMissing(accountPicker, trade.account_id);
-  const wantedAccountId = isEditing ? String(trade.account_id ?? "") : (localStorage.getItem("tradeAccount") ?? "");
+  const wantedAccountId = isEditing ? String(trade.account_id ?? "") : (readStored("tradeAccount") ?? "");
   accountPicker.value = wantedAccountId;
   if (accountPicker.value !== wantedAccountId) accountPicker.value = "";
 }
@@ -95,7 +96,7 @@ async function saveTrade(event) {
     elementById("trade-error").textContent = error.message; // the dialog stays open to fix it
     return;
   }
-  if (!tradeBeingEdited) localStorage.setItem("tradeAccount", pickedAccountId ?? "");
+  if (!tradeBeingEdited) writeStored("tradeAccount", pickedAccountId ?? "");
   const [nextTrade, ...tradesAfterTheNext] = tradesWaitingToBeRecorded;
   elementById("trade-dialog").close(); // closing clears the sequence (see initializeTradeDialog): it's put back below
   loadAllData();

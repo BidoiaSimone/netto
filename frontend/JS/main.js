@@ -94,6 +94,7 @@ initializePhoneMenu(); // after showPageFromUrl: the bar takes the page's name f
 loadCurrencies().catch((error) => showErrorMessage(error.message)); // the list never changes: once is enough
 askServiceWorkerToRetry(); // a (re)load always really tries the Mac, even right after it failed
 loadAllData();
+window.nettoStarted = true; // the page's fallback message (end of Home.html) stays away
 
 // The service worker keeps copies of the pages and data, so netto still opens (and new transactions can be added)
 // when the server can't be reached: see serviceWorker.js. Browsers only allow it on https:// (the phone, through

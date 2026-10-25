@@ -14,13 +14,21 @@ function startApiWorker() {
     if (id === undefined) {
       // the first message: is the database kept on this device, or only in memory until the page closes?
       if (ready === false) console.error("netto's backend didn't start:", error);
-      if (storage) window.dispatchEvent(new CustomEvent("netto:storage", { detail: { storage } }));
+      if (storage === "memory") warnThatNothingIsKept();
       return;
     }
     waitingRequests.get(id)?.(event.data);
     waitingRequests.delete(id);
   });
 }
+
+// The browser refused netto a place for its database (site storage blocked, a private tab): it works, but in memory
+const warnThatNothingIsKept = () => {
+  const warning = document.getElementById("storage-warning");
+  warning.textContent = "This browser isn't letting netto keep its data: anything you add is lost when netto closes. "
+    + "On an iPhone: Settings → Apps → Safari → turn off Block All Cookies, then open netto again (not in a Private tab).";
+  warning.hidden = false;
+};
 
 // { method, path, body } -> { status, headers, body }, like an HTTP answer
 export function callLocalApi(method, path, body) {

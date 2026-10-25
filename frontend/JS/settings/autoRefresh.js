@@ -5,6 +5,7 @@
 import { elementById } from "../core/domHelpers.js";
 import { loadAllData } from "../core/dataRefresh.js";
 import { askServiceWorkerToRetry } from "../core/connectionState.js";
+import { readStored, writeStored } from "../core/deviceStorage.js";
 
 const AUTO_REFRESH_INTERVAL_MILLISECONDS = 10000;
 const REFRESH_WHEN_BACK_AFTER_MILLISECONDS = 60000;
@@ -16,7 +17,7 @@ function setAutoRefresh(isOn) {
   clearInterval(autoRefreshTimer);
   autoRefreshTimer = isOn ? setInterval(loadAllData, AUTO_REFRESH_INTERVAL_MILLISECONDS) : null;
   elementById("refreshToggle").textContent = `Auto Refresh: ${isOn ? "ON" : "OFF"}`;
-  localStorage.setItem("autoRefresh", isOn ? "on" : "off");
+  writeStored("autoRefresh", isOn ? "on" : "off");
 }
 
 function refreshWhenBackAfterAWhile() {
@@ -35,5 +36,5 @@ export function initializeAutoRefreshButton() {
 
 // The setting chosen last time
 export function restoreSavedAutoRefresh() {
-  setAutoRefresh(localStorage.getItem("autoRefresh") === "on");
+  setAutoRefresh(readStored("autoRefresh") === "on");
 }

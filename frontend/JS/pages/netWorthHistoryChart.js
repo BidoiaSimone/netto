@@ -5,10 +5,11 @@ import { elementById, createElement, highlightSelectedChip } from "../core/domHe
 import { euroFormatter, formatSignedEuros, formatSignedPercent, formatShortDate } from "../core/formatting.js";
 import { callApi } from "../core/apiClient.js";
 import { drawStackedAreaChart } from "../charts/stackedAreaChart.js";
+import { readStored, writeStored } from "../core/deviceStorage.js";
 
 const REDRAW_DELAY_AFTER_RESIZE_MILLISECONDS = 150;
 
-let selectedRange = localStorage.getItem("netWorthRange") || "1y";
+let selectedRange = readStored("netWorthRange") || "1y";
 let netWorthHistory = null; // the last answer of GET /net-worth/history
 
 export async function loadNetWorthHistory() {
@@ -57,7 +58,7 @@ export function initializeNetWorthHistoryChart() {
     const chip = event.target.closest("button[data-value]");
     if (!chip) return;
     selectedRange = chip.dataset.value;
-    localStorage.setItem("netWorthRange", selectedRange);
+    writeStored("netWorthRange", selectedRange);
     elementById("nw-chart").replaceChildren(createElement("p", "chart-empty", "Loading…"));
     loadNetWorthHistory().catch((error) => {
       elementById("nw-chart").replaceChildren(createElement("p", "chart-empty", "Net worth history unavailable: " + error.message));
