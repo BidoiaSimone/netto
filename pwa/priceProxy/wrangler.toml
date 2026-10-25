@@ -1,0 +1,8 @@
+# netto's price proxy on Cloudflare Workers (free plan: 100k requests a day). Deploy: npm run pwa:proxy:deploy
+name = "netto-prices"
+main = "worker.js"
+compatibility_date = "2026-10-01"
+
+[vars]
+# The sites allowed to use it, comma-separated: GitHub Pages and the local preview (npm run pwa:preview)
+ALLOWED_ORIGINS = "https://bidoiasimone.github.io,http://localhost:4173"

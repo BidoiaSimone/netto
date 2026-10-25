@@ -13,7 +13,10 @@
     "light": "NETTO_EDITION=light PORT=3002 node backend/server/app.js",
     "light:demo": "node backend/db/tools/fillLightDemo.js",
     "db:print": "node backend/db/tools/printDatabaseTables.js",
-    "db:clear": "node backend/db/tools/clearDatabase.js"
+    "db:clear": "node backend/db/tools/clearDatabase.js",
+    "pwa:build": "node pwa/build.mjs",
+    "pwa:preview": "node pwa/build.mjs && npx --yes http-server@14.1.1 dist/pwa -p 4173 -c-1",
+    "pwa:proxy:deploy": "npx --yes wrangler@4.42.0 deploy --config pwa/priceProxy/wrangler.toml"
   },
   "dependencies": {
     "better-sqlite3": "^12.6.2",
@@ -22,6 +25,8 @@
     "yahoo-finance2": "^3.13.2"
   },
   "devDependencies": {
+    "@sqlite.org/sqlite-wasm": "^3.50.4-build1",
+    "esbuild": "^0.25.10",
     "nodemon": "^3.1.14"
   }
 }

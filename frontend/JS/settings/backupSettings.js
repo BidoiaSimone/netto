@@ -1,10 +1,12 @@
 // ---- Settings > backups: automatic backup status, open the folder, restore a JSON backup ----
-// (The "Download backup (JSON)" button is a plain link to /export in Home.html.)
+// (The "Download backup (JSON)" button is a plain link to /export in Home.html; the PWA, with no server to link to,
+// makes the file here instead: downloadBackupMadeInThisBrowser.)
 
 import { elementById } from "../core/domHelpers.js";
 import { getTodayAsLocalDate } from "../core/formatting.js";
 import { callApi } from "../core/apiClient.js";
 import { isLightEdition } from "../core/edition.js";
+import { callLocalApi } from "../core/localApi.js";
 
 const BACKUPS_FOLDER = isLightEdition ? "backend/db/light-backups" : "backend/db/backups"; // netto light keeps its own (config/projectPaths.js)
 import { showErrorMessage } from "../core/errorBanner.js";
@@ -73,7 +75,22 @@ async function restoreBackupFromFile(file) {
   });
 }
 
+// The PWA: the same JSON /export answers, saved as a file by the browser
+async function downloadBackupMadeInThisBrowser(event) {
+  event.preventDefault();
+  const answer = await callLocalApi("GET", "/export");
+  if (answer.status >= 400) return showErrorMessage((answer.body && answer.body.error) || "Could not make the backup");
+  const fileName = /filename="([^"]+)"/.exec(answer.headers["content-disposition"] || "")?.[1] || "netto-backup.json";
+  const link = Object.assign(document.createElement("a"), {
+    href: URL.createObjectURL(new Blob([JSON.stringify(answer.body, null, 2)], { type: "application/json" })),
+    download: fileName,
+  });
+  link.click();
+  setTimeout(() => URL.revokeObjectURL(link.href), 0);
+}
+
 export function initializeBackupSettings() {
+  document.querySelector("[data-export-in-browser]")?.addEventListener("click", downloadBackupMadeInThisBrowser);
   elementById("backup-offsite-toggle").addEventListener("change", async (event) => {
     try {
       await saveAppSetting("backup_copy_offsite", event.target.checked ? 1 : 0);

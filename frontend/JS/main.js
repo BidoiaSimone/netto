@@ -50,6 +50,7 @@ import { showErrorMessage } from "./core/errorBanner.js";
 import { askServiceWorkerToRetry } from "./core/connectionState.js";
 import { initializeDecimalInputs } from "./core/decimalInputs.js";
 import { initializePhoneTables } from "./app/phoneTables.js";
+import { runsWithoutServer } from "./core/edition.js";
 
 // ---- connect buttons, forms and shortcuts ----
 initializeDecimalInputs(); // first: phones get decimal fields that take "12,50"
@@ -86,7 +87,7 @@ initializeAutoRefreshButton();
 initializeThemeAndAccentColor();
 initializeBackupSettings();
 initializeOldTrackerImport();
-connectToServerSession();
+if (!runsWithoutServer) connectToServerSession(); // the PWA has no server to tell (core/localApi.js)
 
 // ---- first display ----
 setPrivacyMode(shouldStartInPrivacyMode(), { redrawPages: false }); // hidden at launch; see Settings > Hide amounts for reloads
@@ -101,7 +102,8 @@ loadAllData();
 
 // The service worker keeps copies of the pages and data, so netto still opens (and new transactions can be added)
 // when the server can't be reached: see serviceWorker.js. Browsers only allow it on https:// (the phone, through
-// Tailscale) and on localhost.
+// Tailscale) and on localhost. The PWA has its own, next to its pages (pwa/serviceWorker.js): hence the relative path,
+// which is /serviceWorker.js on the server and /netto/serviceWorker.js on GitHub Pages.
 if ("serviceWorker" in navigator && window.isSecureContext) {
-  navigator.serviceWorker.register("/serviceWorker.js").catch((error) => console.warn("Service worker not registered:", error));
+  navigator.serviceWorker.register(new URL("../serviceWorker.js", location.href)).catch((error) => console.warn("Service worker not registered:", error));
 }

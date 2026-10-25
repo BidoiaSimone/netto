@@ -10,3 +10,7 @@ export const isLightEdition = document.documentElement.dataset.edition === "ligh
 
 // A part of the page that the light edition leaves out (class="full-only", on it or on a parent)
 export const isLeftOutOfThisEdition = (element) => isLightEdition && Boolean(element.closest(".full-only"));
+
+// The PWA (pwa/build.mjs): no server, the backend runs in this browser (core/localApi.js). Its edition.js also sets
+// <html data-runtime="browser">.
+export const runsWithoutServer = document.documentElement.dataset.runtime === "browser";

@@ -342,6 +342,13 @@ One codebase, two ways to run it. `npm start` / `npm run dev` is the full netto,
 - **Adding a feature:** it's in both editions unless you mark it `full-only`.
 - **A demo:** `npm run light:demo` fills an empty light.db with a few made-up months (start over: delete light.db).
 
+## The PWA (pwa/)
+
+The same frontend and backend, with no server: `npm run pwa:build` bundles `backend/` into a Web Worker that runs
+on SQLite WASM (data in the browser's OPFS), and the page talks to it with messages instead of HTTP
+(`frontend/JS/core/localApi.js`, chosen when `<html data-runtime="browser">`). Prices come through a Cloudflare
+Worker (`pwa/priceProxy/`). GitHub Pages serves `dist/pwa` (`.github/workflows/deploy-pwa.yml`). See `pwa/README.md`.
+
 ## Tests
 
 ```

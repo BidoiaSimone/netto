@@ -2,6 +2,8 @@
 
 import { noteAnswerFromServer, isServerReachable } from "./connectionState.js";
 import { keepChangeForLater } from "./pendingChanges.js";
+import { runsWithoutServer } from "./edition.js";
+import { callLocalApi } from "./localApi.js";
 
 const API_BASE_URL = ""; // same server that serves the page
 
@@ -18,6 +20,7 @@ const KEEPABLE_METHODS = ["PUT", "DELETE"];
 const CHANGE_TIMEOUT_MILLISECONDS = 8000; // a sleeping Mac doesn't refuse, it just never answers
 
 export async function callApi(path, { method = "GET", body, timeoutMilliseconds, keepIfUnreachable = true } = {}) {
+  if (runsWithoutServer) return callApiOnThisDevice(path, method, body);
   const canKeep = keepIfUnreachable && KEEPABLE_METHODS.includes(method);
   if (canKeep && !isServerReachable()) return { kept: true, change_id: keepChangeForLater(method, path, body) };
   if (canKeep && !timeoutMilliseconds) timeoutMilliseconds = CHANGE_TIMEOUT_MILLISECONDS;
@@ -49,4 +52,16 @@ export async function callApi(path, { method = "GET", body, timeoutMilliseconds,
     throw error;
   }
   return data;
+}
+
+// The PWA: the backend is on this device (core/localApi.js), so it's always reachable and nothing is kept for later
+async function callApiOnThisDevice(path, method, body) {
+  const answer = await callLocalApi(method, path, body);
+  if (answer.status >= 400) {
+    const error = new Error((answer.body && answer.body.error) || `Error ${answer.status}`);
+    error.status = answer.status;
+    error.data = answer.body;
+    throw error;
+  }
+  return answer.body;
 }
