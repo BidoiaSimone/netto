@@ -7,15 +7,16 @@
 
 function findAccountsWithWrongBalance(db) {
   const accountsWithWrongBalance = db.prepare(`
-    SELECT name, balance, expected FROM (
-      SELECT a.name, a.balance, a.opening_balance
+    SELECT id, name, balance, expected FROM (
+      SELECT a.id, a.name, a.balance, a.opening_balance
         + COALESCE((SELECT SUM(amount) FROM transactions WHERE to_account_id = a.id), 0)
         - COALESCE((SELECT SUM(amount) FROM transactions WHERE from_account_id = a.id), 0) AS expected
       FROM accounts a
     ) WHERE balance <> expected
   `).all();
   for (const account of accountsWithWrongBalance) {
-    console.warn(`WARNING: ${account.name} has a stored balance of ${account.balance / 100} but its transactions add up to ${account.expected / 100}`);
+    // only the id: names and amounts would stay in the server log. The returned rows still carry everything
+    console.warn(`WARNING: account #${account.id} has a stored balance that differs from what its transactions add up to`);
   }
   return accountsWithWrongBalance;
 }
