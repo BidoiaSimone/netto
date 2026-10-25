@@ -22,7 +22,6 @@
   <link rel="stylesheet" href="../CSS/03-tables-and-forms.css">
   <link rel="stylesheet" href="../CSS/04-privacy-mode.css">
   <link rel="stylesheet" href="../CSS/05-transaction-filters.css">
-  <link rel="stylesheet" href="../CSS/06-next-up-list.css">
   <link rel="stylesheet" href="../CSS/07-investment-charts.css">
   <link rel="stylesheet" href="../CSS/08-assets-page.css">
   <link rel="stylesheet" href="../CSS/09-categories-page.css">
@@ -100,7 +99,6 @@
   <a href="#forecast" class="full-only desktop-only">Forecast</a>
   <a href="#year" class="full-only desktop-only">Year in review</a>
   <a href="#settings">Settings</a>
-  <a href="#nextUp" class="full-only desktop-only">Next up</a>
   <div id="side-networth">Net worth<strong id="net-worth-value">…</strong>
     <label class="switch" title="Hide amounts (P)"><input type="checkbox" id="privacy-toggle"><i></i>Hide amounts <kbd>P</kbd></label>
   </div>
@@ -836,25 +834,6 @@
       <input type="file" id="importFile" class="visually-hidden-file" accept=".json,application/json">
     </p>
     </div>
-  </section>
-
-  <section data-page="nextUp" class="full-only desktop-only">
-    <div class="page-head"><h2>Next up</h2></div>
-
-    <!-- accounts due to be reconciled: JS/pages/reconciliationReminders.js -->
-    <h3 id="nextup-reminders-title" hidden>Accounts to reconcile</h3>
-    <ul id="nextup-reminders" class="todo-list reminder-list"></ul>
-
-    <div class="todo-add">
-      <input type="text" id="todoInput" placeholder="New task...">
-      <button id="todoAddBtn">+</button>
-    </div>
-
-    <ul id="todoList" class="todo-list">
-    </ul>
-
-    <h3>Done</h3>
-    <ul id="doneList" class="todo-list done"></ul>
   </section>
 </main>
 

@@ -1,4 +1,4 @@
-/* Insights > Category trends (table and sparklines), the reconciliation reminders (Home, Next up, the quick
+/* Insights > Category trends (table and sparklines), the reconciliation reminders (Home, the quick
    reconcile dialog) and the number settings of the Settings page.
    One of the numbered files in this folder: Home.html loads them in number order, and later files
    win over earlier ones when two rules are equally specific, so keep that order when adding files. */
@@ -34,17 +34,6 @@
 button.reminder-chip { display: inline-flex; align-items: baseline; gap: 6px; padding: 6px 12px; font-size: 13px; }
 button.reminder-chip strong { color: var(--text); font-weight: 600; }
 .reminder-when { color: var(--muted); font-size: 12px; }
-
-/* ---- reminders: Next up ---- */
-.reminder-list { margin-bottom: 22px; }
-/* name and "16 days overdue" on the left, one above the other; the button on the right */
-.reminder-list .reminder-item {
-    display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 2px 12px; padding: 8px 10px 8px 14px;
-    border-color: rgba(var(--warn-rgb), 0.45);
-}
-.reminder-item .reminder-text { font-weight: 600; }
-.reminder-item .reminder-when { grid-row: 2; }
-.reminder-item button.reminder-open { grid-column: 2; grid-row: 1 / span 2; padding: 6px 12px; font-size: 13px; }
 
 /* ---- quick reconcile dialog ---- */
 .quick-reconcile-recorded { width: 100%; margin: 0 0 4px; }

@@ -161,7 +161,7 @@
 }
 
 /* ---- boxes: drawn with light, corners cut ---- */
-[data-ui^="grid"] :is(.card, .panel, table, .wrap-up, .goal-card, .yr-card, .todo-list li, dialog) {
+[data-ui^="grid"] :is(.card, .panel, table, .wrap-up, .goal-card, .yr-card, dialog) {
     border-radius: 0; clip-path: var(--grid-shape);
 }
 [data-ui^="grid"] :is(.card, .panel, .wrap-up, .goal-card, .yr-card) {

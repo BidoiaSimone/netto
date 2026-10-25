@@ -23,7 +23,6 @@ apiRouter.use(require("./netWorthRoutes.js"));
 apiRouter.use(require("./statementRoutes.js"));
 apiRouter.use(require("./yearInReviewRoutes.js"));
 apiRouter.use(require("./monthWrapUpRoutes.js"));
-apiRouter.use(require("./todoRoutes.js"));
 apiRouter.use(require("./settingRoutes.js"));
 apiRouter.use(require("./insightRoutes.js"));
 apiRouter.use(require("./backupRoutes.js"));

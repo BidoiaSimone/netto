@@ -1,7 +1,7 @@
 /* WHICH NETTO THIS SERVER IS: the full app, or netto light
  * Same code, same database schema, two ways of showing it. NETTO_EDITION=light (npm run light) gives:
  *   - the light pages only: Home, Assets, Transactions, Recurring, Categories, Investments, Insights, Settings.
- *     No Goals, Statements, Forecast, Year in review, Next up; no budgets, projections, trends, target allocation,
+ *     No Goals, Statements, Forecast, Year in review; no budgets, projections, trends, target allocation,
  *     reconciliation reminders or month wrap-up on Home (the wrap-ups stay in Settings).
  *   - its own data: light.db, light-backups/ and "netto light backups" in iCloud (config/projectPaths.js),
  *     so it never reads or writes money.db.

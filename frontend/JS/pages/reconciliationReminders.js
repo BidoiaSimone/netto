@@ -1,5 +1,5 @@
 // ---- reconciliation reminders: accounts due to be counted again (GET /reconciliation-reminders) ----
-// Shown as a short line of buttons on Home and as a list on Next up. Each button opens the quick reconcile
+// Shown as a short line of buttons on Home. Each button opens the quick reconcile
 // dialog for that account (dialogs/quickReconcileDialog.js). How often each kind of account is due is a setting
 // (Settings > Reminders); the rule itself is in backend/server/services/reconciliationReminders.js.
 
@@ -36,19 +36,4 @@ function renderReconciliationReminders() {
     createElement("span", "reminder-badge", `${reminders.length} to reconcile`),
     ...reminders.map((reminder) => createReminderButton(reminder, "ghost reminder-chip")),
   );
-
-  // Next up: the same accounts as a list, with how overdue each one is
-  const nextUpList = elementById("nextup-reminders");
-  elementById("nextup-reminders-title").hidden = reminders.length === 0;
-  nextUpList.replaceChildren(...reminders.map((reminder) => {
-    const listItem = createElement("li", "reminder-item");
-    const overdueText = reminder.overdue_days === null ? "never counted" : reminder.overdue_days === 0 ? "due today" : `${formatCount(reminder.overdue_days, "day")} overdue`;
-    listItem.append(
-      createElement("span", "reminder-text", `Reconcile ${reminder.name}`),
-      createElement("span", "reminder-when", `${overdueText} · every ${reminder.every_days} days`),
-      createReminderButton(reminder, "ghost reminder-open"),
-    );
-    listItem.lastChild.replaceChildren("Count now");
-    return listItem;
-  }));
 }

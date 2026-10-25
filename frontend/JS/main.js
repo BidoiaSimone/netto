@@ -20,7 +20,6 @@ import { initializeCategoriesPage } from "./pages/categoriesPage.js";
 import { initializeTagManagement } from "./pages/tagManagement.js";
 import { initializePriceHistoryChart } from "./pages/investmentPriceHistoryChart.js";
 import { initializeNetWorthHistoryChart } from "./pages/netWorthHistoryChart.js";
-import { initializeNextUpPage, loadTodos } from "./pages/nextUpPage.js";
 import { initializeStatementsPage } from "./pages/statementsPage.js";
 import { initializeMoneyFlows } from "./pages/moneyFlows.js";
 import { initializeYearInReviewPage } from "./pages/yearInReviewPage.js";
@@ -74,7 +73,6 @@ initializeDialogWindows();
 initializeSheetPosition();
 initializeKeyboardShortcuts();
 initializeTransactionsPage();
-initializeNextUpPage();
 initializeStatementsPage();
 initializeMoneyFlows();
 initializeYearInReviewPage();
@@ -93,7 +91,6 @@ updateTransactionFieldsForType();
 restoreSavedAutoRefresh();
 showPageFromUrl();
 initializePhoneMenu(); // after showPageFromUrl: the bar takes the page's name from the active link
-loadTodos().catch((error) => showErrorMessage(error.message));
 loadCurrencies().catch((error) => showErrorMessage(error.message)); // the list never changes: once is enough
 askServiceWorkerToRetry(); // a (re)load always really tries the Mac, even right after it failed
 loadAllData();

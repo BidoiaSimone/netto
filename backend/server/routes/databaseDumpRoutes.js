@@ -16,7 +16,6 @@ router.get("/database", function dumpWholeDatabase(request, response) {
     transactions: db.prepare(`SELECT * FROM transactions`).all(),
     recurring_transactions: db.prepare(`SELECT * FROM recurring_transactions`).all(),
     investment_trades: db.prepare(`SELECT * FROM investment_trades`).all(),
-    todos: db.prepare(`SELECT * FROM todos`).all(),
     tags: db.prepare(`SELECT * FROM tags`).all(),
     transaction_tags: db.prepare(`SELECT * FROM transaction_tags`).all(),
     category_budgets: db.prepare(`SELECT * FROM category_budgets`).all(),

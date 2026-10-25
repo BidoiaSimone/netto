@@ -1,4 +1,4 @@
-/* RECONCILIATION REMINDERS: which accounts haven't been counted for too long (Next up, Home)
+/* RECONCILIATION REMINDERS: which accounts haven't been counted for too long (Home)
  *
  * netto's balances are only as right as the last time you checked them against reality. Each account is due again
  * a number of days after its last reconciliation (accounts.last_reconciled, set by Assets > Reconcile and when an

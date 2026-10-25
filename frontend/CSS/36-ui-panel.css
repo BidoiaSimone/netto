@@ -122,7 +122,7 @@
 [data-ui="panel"] #error:empty { margin: 0; min-height: 0; }   /* no empty line above the title until there's an error */
 
 /* other boxes: the wrap-up, goals, reminders, quick add, the to-do list: the same hard-edged plate */
-[data-ui="panel"] :is(.wrap-up, .goal-card, .todo-list li, .quick-add > *) { border-radius: 2px; }
+[data-ui="panel"] :is(.wrap-up, .goal-card, .quick-add > *) { border-radius: 2px; }
 [data-ui="panel"] .wrap-up {
     background: var(--surface); border: 1px solid var(--panel-edge); border-left: 4px solid var(--accent);
 }

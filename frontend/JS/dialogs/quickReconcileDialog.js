@@ -1,4 +1,4 @@
-// ---- quick reconcile: count ONE account, from a reminder (Home, Next up) ----
+// ---- quick reconcile: count ONE account, from a reminder on Home ----
 // The Assets page reconciles several accounts at once; this dialog does the same for a single one, which is what a
 // reminder needs (and what's handy on a phone). Same request as Assets > Reconcile: POST /accounts/:id/reconcile.
 // "It's right" saves the recorded amount as counted: nothing changes but the date it was last checked.

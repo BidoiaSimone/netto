@@ -19,7 +19,6 @@ function buildFullJsonBackup() {
     recurring_transactions: db.prepare(`SELECT * FROM recurring_transactions ORDER BY id`).all(),
     transactions: db.prepare(`SELECT * FROM transactions`).all(),
     investment_trades: db.prepare(`SELECT * FROM investment_trades`).all(),
-    todos: db.prepare(`SELECT * FROM todos ORDER BY id`).all(),
     tags: db.prepare(`SELECT * FROM tags ORDER BY id`).all(),                 // from version 10
     transaction_tags: db.prepare(`SELECT * FROM transaction_tags`).all(),     // which transaction has which tag, by id
     category_budgets: db.prepare(`SELECT * FROM category_budgets ORDER BY category_id, from_month`).all(), // from version 11

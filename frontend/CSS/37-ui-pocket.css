@@ -53,6 +53,17 @@
     background: var(--bg);
     -webkit-font-smoothing: antialiased;
 }
+/* the page's background takes a faint wash of the colour picked in Settings (--accent-rgb, 01-theme-colors.css):
+   strongest at the top, gone by the middle. A layer fixed behind everything rather than the body's own background,
+   which iOS would scroll away (it ignores background-attachment: fixed). */
+:root[data-ui="pocket"] { --pocket-wash: 0.16; }
+:root[data-ui="pocket"][data-theme="light"] { --pocket-wash: 0.12; }
+[data-ui="pocket"] body::before {
+    content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none;
+    background:
+        radial-gradient(120% 60% at 15% 0%, rgba(var(--accent-rgb), var(--pocket-wash)), transparent 70%),
+        linear-gradient(180deg, rgba(var(--accent-rgb), calc(var(--pocket-wash) * 0.5)), transparent 55%);
+}
 
 /* ---- the column ---- */
 [data-ui="pocket"] #error:empty { margin: 0; min-height: 0; }
@@ -198,7 +209,6 @@
 [data-ui="pocket"] #sidebar a[href="#categories"] { order: 12; }
 [data-ui="pocket"] #sidebar a[href="#goals"] { order: 13; }
 [data-ui="pocket"] #sidebar a[href="#forecast"] { order: 14; }
-[data-ui="pocket"] #sidebar a[href="#nextUp"] { order: 15; }
 [data-ui="pocket"] .nav-group-review { order: 20; }
 [data-ui="pocket"] #sidebar a[href="#investments"] { order: 21; }
 [data-ui="pocket"] #sidebar a[href="#statements"] { order: 22; }
@@ -423,7 +433,6 @@
 [data-ui="pocket"] #sidebar a[href="#forecast"] { --tab-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 20h18M4 16l5-5 4 3 7-8M16 6h4v4'/%3E%3C/svg%3E"); }
 [data-ui="pocket"] #sidebar a[href="#year"] { --tab-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 6h16v14H4zM4 10h16M8 3v5M16 3v5'/%3E%3C/svg%3E"); }
 [data-ui="pocket"] #sidebar a[href="#settings"] { --tab-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 7h9M17 7h3M4 17h3M11 17h9M15 5v4M9 15v4'/%3E%3C/svg%3E"); }
-[data-ui="pocket"] #sidebar a[href="#nextUp"] { --tab-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M10 6h10M10 12h10M10 18h10M4 6l1.2 1.2L7.5 5M4 12l1.2 1.2L7.5 11M4 18l1.2 1.2L7.5 17'/%3E%3C/svg%3E"); }
 
 /* the same icons filled (or drawn heavier where a filled one wouldn't read), for the phone's tab bar: the system's
    tab bars use filled symbols */
@@ -438,7 +447,6 @@
 [data-ui="pocket"] #sidebar a[href="#statements"] { --tab-icon-filled: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' stroke='black' stroke-width='1.6' stroke-linejoin='round' fill-rule='evenodd' d='M6 3h9l4 4v14H6zM9 11.2h7v1.6H9zM9 15.2h7v1.6H9z'/%3E%3C/svg%3E"); }
 [data-ui="pocket"] #sidebar a[href="#forecast"] { --tab-icon-filled: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round' d='M3 20h18M4 16l5-5 4 3 7-8M16 6h4v4'/%3E%3C/svg%3E"); }
 [data-ui="pocket"] #sidebar a[href="#year"] { --tab-icon-filled: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' stroke='black' stroke-width='1.6' stroke-linejoin='round' fill-rule='evenodd' d='M4 6h16v14H4zM5.5 11h13v7.5h-13z'/%3E%3Cpath fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round' d='M8 3v4M16 3v4'/%3E%3C/svg%3E"); }
-[data-ui="pocket"] #sidebar a[href="#nextUp"] { --tab-icon-filled: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round' d='M10 6h10M10 12h10M10 18h10M4 6l1.2 1.2L7.5 5M4 12l1.2 1.2L7.5 11M4 18l1.2 1.2L7.5 17'/%3E%3C/svg%3E"); }
 
 /* ---- Transactions: a list grouped by day, like a banking app ----
        Yesterday                                   −27,90 €

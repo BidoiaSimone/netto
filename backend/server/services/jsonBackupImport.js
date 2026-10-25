@@ -64,7 +64,6 @@ const insertSavingsGoalCategory = db.prepare(`INSERT INTO savings_goal_categorie
 const insertSavingsGoalIncome = db.prepare(`INSERT INTO savings_goal_incomes (transaction_id, goal_id) VALUES (@transaction_id, @goal_id)`);
 const insertInvestmentTarget = db.prepare(`INSERT INTO investment_targets (ticker, target_basis_points) VALUES (@ticker, @target_basis_points)`);
 const insertAppSetting = db.prepare(`INSERT INTO app_settings (key, value) VALUES (@key, @value)`);
-const insertTodo = db.prepare(`INSERT INTO todos (id, text, done, created_at, done_at) VALUES (@id, @text, @done, @created_at, @done_at)`);
 const selectCategoryIdByName = db.prepare(`SELECT id FROM categories WHERE name = ?`);
 const insertCategoryByName = db.prepare(`INSERT INTO categories (name) VALUES (?)`);
 
@@ -216,18 +215,6 @@ function importSavingsGoals(backupData) {
   for (const row of backupData.savings_goal_incomes ?? []) insertSavingsGoalIncome.run(pickColumns(row, ["transaction_id", "goal_id"])); // from version 22
 }
 
-// ---------- the Next up list ----------
-
-// In backups from version 5. An older backup has no list: the current one is kept.
-function importTodos(backupData) {
-  if (!Array.isArray(backupData.todos)) return;
-  db.exec(`DELETE FROM todos`);
-  const today = getTodayAsLocalDate();
-  for (const todo of backupData.todos) {
-    insertTodo.run({ ...pickColumns(todo, ["id", "text", "created_at", "done_at"], { created_at: today }), done: todo.done ? 1 : 0 });
-  }
-}
-
 // ---------- everything together ----------
 
 // All or nothing: throws (and changes nothing) on any bad row
@@ -248,7 +235,6 @@ const replaceAllDataWithBackup = db.transaction((backupData) => {
   importForecastPlan(backupData);
   importTargetsAndSettings(backupData);
   importSavingsGoals(backupData);     // after the transactions and categories it points at
-  importTodos(backupData);
   if ((backupData.format_version ?? 0) < 8) assignCategoryKindsFromUsage(db);
 });
 
@@ -261,7 +247,6 @@ function countImportedRows() {
     categories: countRows("categories"),
     transactions: countRows("transactions"),
     recurring_transactions: countRows("recurring_transactions"),
-    todos: countRows("todos"),
     tags: countRows("tags"),
     category_budgets: countRows("category_budgets"),
     investment_targets: countRows("investment_targets"),

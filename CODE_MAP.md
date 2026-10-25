@@ -83,7 +83,6 @@ backend/
     │   ├── yearInReviewRoutes.js    /year-in-review?year=
     │   ├── insightRoutes.js         /insights/category-trends, /reconciliation-reminders
     │   ├── settingRoutes.js         /settings (the ones stored with your data)
-    │   ├── todoRoutes.js            /todos (Next up page)
     │   ├── backupRoutes.js          /backups, /backups/open, /export, /import
     │   ├── databaseDumpRoutes.js    /database (debug)
     │   └── editionRoutes.js         /edition.js: the tiny script that tells the page full or light
@@ -245,7 +244,7 @@ frontend/JS/
 │   ├── monthWrapUp.js               Home: the month's wrap-up card and its "Got it"
 │   ├── quickAdd.js                  Home: one-tap buttons for your most frequent transactions, Undo / Change
 │   ├── homePage.js                  net worth + liquid / investments / immobilized cards and bar, latest transactions
-│   ├── reconciliationReminders.js   accounts due to be reconciled: a line on Home, a list on Next up
+│   ├── reconciliationReminders.js   accounts due to be reconciled: a line on Home
 │   ├── assetsPage.js  + assetsPieChart.js
 │   ├── transactionsPage.js          list + filters (+ the day rows and round icons Pocket shows)
 │   ├── recurringPage.js             recurring transactions and what they add up to per month
@@ -260,8 +259,7 @@ frontend/JS/
 │   │                                + fireNumber.js (the FIRE panel and its line on the chart)
 │   ├── statementsPage.js            bridge, investment returns, income statement + estimated taxes, budget vs actual, balance sheet (+ after tax)
 │   │                                + moneyFlows.js (the Sankey diagram)
-│   ├── yearInReviewPage.js          Year in review: a column of cards for one year
-│   └── nextUpPage.js
+│   └── yearInReviewPage.js          Year in review: a column of cards for one year
 ├── dialogs/                         add / edit windows
 │   ├── transactionDialog.js  + transactionTagPicker.js (the Tags field: chips, Enter to add, date suggestions)
 │   │                         + foreignCurrencyFields.js ("Paid in JPY": the euros prefilled at the market rate, the exchange cost)
@@ -323,7 +321,7 @@ One codebase, two ways to run it. `npm start` / `npm run dev` is the full netto,
 
 | netto light keeps | it leaves out |
 | --- | --- |
-| Home, Assets, Transactions, Recurring, Categories, Investments, Insights, Settings | Goals, Statements, Forecast, Year in review, Next up |
+| Home, Assets, Transactions, Recurring, Categories, Investments, Insights, Settings | Goals, Statements, Forecast, Year in review |
 | tags, quick add, foreign currency, hide amounts, backups | budgets, habitual / one-off, month projection, liquidity, category trends |
 | Insights > This month: income, spent, saved so far | target allocation, reconciliation reminders, the month wrap-up on Home (it stays in Settings) |
 
@@ -451,7 +449,6 @@ failure there happens again on the next run and can be investigated.
 | `routes/categories.js` | `routes/categoryRoutes.js` |
 | `routes/investments.js` | `routes/investmentTradeRoutes.js`, `routes/investmentHoldingRoutes.js`, `validation/tradeValidation.js`, `services/tradeCashTransactions.js`, `services/holdingValuation.js`, `services/investmentPriceHistory.js` |
 | `routes/analytics.js` | `routes/netWorthRoutes.js` + `services/netWorthCalculator.js` |
-| `routes/todos.js` | `routes/todoRoutes.js` |
 | `routes/databaseQueries.js` | `routes/backupRoutes.js`, `routes/databaseDumpRoutes.js`, `services/jsonBackupExport.js`, `services/jsonBackupImport.js` |
 | `services/market.js` | `services/yahooFinanceMarketData.js` |
 | `holdings.js` | `services/holdingsCalculator.js` |
