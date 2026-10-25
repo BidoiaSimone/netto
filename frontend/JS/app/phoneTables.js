@@ -7,7 +7,7 @@
 // left as they are.
 
 const PHONE_WIDTH = "(max-width: 800px)";
-const ALREADY_SCROLLING = ".table-scroll, .goal-months-scroll, .ot-scroll";
+const ALREADY_SCROLLING = ".table-scroll, .goal-months-scroll";
 
 function wrapTable(table) {
   if (table.classList.contains("transactions-table") || table.parentElement?.closest(ALREADY_SCROLLING) || !table.closest("main, dialog")) return;

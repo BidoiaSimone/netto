@@ -49,7 +49,6 @@
   <link rel="stylesheet" href="../CSS/31-phone.css">
   <link rel="stylesheet" href="../CSS/32-quick-add.css">
   <link rel="stylesheet" href="../CSS/33-month-wrap-up.css">
-  <link rel="stylesheet" href="../CSS/34-old-tracker-import.css">
   <link rel="stylesheet" href="../CSS/35-light-edition.css">
   <link rel="stylesheet" href="../CSS/37-ui-pocket.css">
 </head>
@@ -836,15 +835,6 @@
       <label class="file-button" for="importFile">Restore backup (JSON)…</label>
       <input type="file" id="importFile" class="visually-hidden-file" accept=".json,application/json">
     </p>
-    <!-- JS/settings/oldTrackerImport.js -->
-    <div class="full-only">
-    <h3>History from the old tracker</h3>
-    <!-- a label, not a button that clicks a hidden input: Safari can ignore a script's click on a hidden file input -->
-    <p>
-      <label class="file-button" for="old-tracker-file">Import from the old tracker (CSV)…</label>
-      <input type="file" id="old-tracker-file" class="visually-hidden-file" accept=".csv,text/csv,text/plain">
-    </p>
-    </div>
     </div>
   </section>
 
@@ -1044,17 +1034,6 @@
       <button id="look-save">Done</button>
     </div>
   </form>
-</dialog>
-
-<dialog id="old-tracker-dialog" class="old-tracker-dialog">
-  <!-- the preview of the import from the old tracker: JS/settings/oldTrackerImport.js -->
-  <h3>Import from the old tracker</h3>
-  <div id="old-tracker-preview"></div>
-  <p id="old-tracker-error" class="dialog-error" role="alert"></p>
-  <div class="actions">
-    <button type="button" class="ghost" data-close>Cancel</button>
-    <button type="button" id="old-tracker-import">Import</button>
-  </div>
 </dialog>
 
 <dialog id="account-dialog">

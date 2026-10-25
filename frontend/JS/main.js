@@ -43,7 +43,6 @@ import { initializePrivacyMode, setPrivacyMode, shouldStartInPrivacyMode } from 
 import { initializeThemeAndAccentColor } from "./settings/themeAndAccentColor.js";
 import { initializeAutoRefreshButton, restoreSavedAutoRefresh } from "./settings/autoRefresh.js";
 import { initializeBackupSettings } from "./settings/backupSettings.js";
-import { initializeOldTrackerImport } from "./settings/oldTrackerImport.js";
 import { loadAllData } from "./core/dataRefresh.js";
 import { loadCurrencies } from "./core/currencies.js";
 import { showErrorMessage } from "./core/errorBanner.js";
@@ -86,7 +85,6 @@ initializeQuickReconcileDialog();
 initializeAutoRefreshButton();
 initializeThemeAndAccentColor();
 initializeBackupSettings();
-initializeOldTrackerImport();
 if (!runsWithoutServer) connectToServerSession(); // the PWA has no server to tell (core/localApi.js)
 
 // ---- first display ----

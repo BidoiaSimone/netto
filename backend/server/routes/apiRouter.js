@@ -27,7 +27,6 @@ apiRouter.use(require("./todoRoutes.js"));
 apiRouter.use(require("./settingRoutes.js"));
 apiRouter.use(require("./insightRoutes.js"));
 apiRouter.use(require("./backupRoutes.js"));
-apiRouter.use(require("./oldTrackerImportRoutes.js"));
 apiRouter.use(require("./databaseDumpRoutes.js"));
 apiRouter.use(require("./editionRoutes.js"));            // /edition.js: full netto or netto light
 

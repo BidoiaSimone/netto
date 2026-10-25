@@ -5,6 +5,14 @@
 /* ---- settings ---- */
 /* The Mac's backup controls or the PWA's (<html data-runtime="browser">, core/edition.js): each shows only its own */
 html[data-runtime="browser"] .server-only, html:not([data-runtime="browser"]) .browser-only { display: none; }
+/* Restore backup: the label that opens the file picker looks like the other ghost buttons; the input itself is
+   invisible but still there (not display: none, which some browsers won't open a picker for) */
+.file-button {
+    display: inline-flex; align-items: center; cursor: pointer; padding: 10px 14px; border-radius: 10px; font-size: 14px;
+    border: 1px solid var(--border); background: transparent; color: var(--muted); font-weight: 500; transition: background 0.2s, color 0.2s;
+}
+.file-button:hover { background: var(--surface-2); color: var(--text); }
+.visually-hidden-file { position: absolute; width: 1px; height: 1px; opacity: 0; overflow: hidden; pointer-events: none; }
 .backup-buttons { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
 .accent-chips button { display: inline-flex; align-items: center; gap: 7px; }
 .accent-chips .swatch { width: 11px; height: 11px; border-radius: 50%; flex: none; }

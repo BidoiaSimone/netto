@@ -85,7 +85,6 @@ backend/
     │   ├── settingRoutes.js         /settings (the ones stored with your data)
     │   ├── todoRoutes.js            /todos (Next up page)
     │   ├── backupRoutes.js          /backups, /backups/open, /export, /import
-    │   ├── oldTrackerImportRoutes.js /import/old-tracker/preview, /import/old-tracker (the old spreadsheet's history)
     │   ├── databaseDumpRoutes.js    /database (debug)
     │   └── editionRoutes.js         /edition.js: the tiny script that tells the page full or light
     ├── validation/
@@ -120,8 +119,6 @@ backend/
     │   ├── categoryTrends.js        each expense category this month vs its usual average (trips left out), 12-month sparkline
     │   ├── monthWrapUp.js           last month in a few lines for Home, shown from the 1st until closed
     │   ├── savingsGoals.js          goals paid for by cutting back: baseline − spent per month, the queue, the purchase; suggested baselines
-    │   ├── oldTrackerCsv.js         reads the old spreadsheet's CSV export (month sheets, INV, ASSETS CHANGE, the summary)
-    │   ├── oldTrackerImport.js      what each old line becomes (with the corrections), the preview, and the import that keeps today's balances
     │   ├── reconciliationReminders.js which accounts are due to be counted again
     │   ├── sankeyFlows.js           the Statements' money flows (Sankey): sources and uses that add up to the income statement
     │   ├── yearInReview.js          the Year in review page, built from the statements, tags and targets
@@ -290,7 +287,6 @@ frontend/JS/
     ├── privacyMode.js
     ├── autoRefresh.js
     ├── backupSettings.js
-    ├── oldTrackerImport.js          Settings > Import from the old tracker: the preview dialog, then the import
     └── reminderSettings.js          Settings > Reminders and highlights (stored with the data, not the browser)
 ```
 
@@ -329,7 +325,7 @@ One codebase, two ways to run it. `npm start` / `npm run dev` is the full netto,
 | --- | --- |
 | Home, Assets, Transactions, Recurring, Categories, Investments, Insights, Settings | Goals, Statements, Forecast, Year in review, Next up |
 | tags, quick add, foreign currency, hide amounts, backups | budgets, habitual / one-off, month projection, liquidity, category trends |
-| Insights > This month: income, spent, saved so far | target allocation, reconciliation reminders, the month wrap-up on Home (it stays in Settings), old tracker import |
+| Insights > This month: income, spent, saved so far | target allocation, reconciliation reminders, the month wrap-up on Home (it stays in Settings) |
 
 - **Its own data.** NETTO_EDITION=light makes `config/projectPaths.js` default to `backend/db/light.db`,
   `backend/db/light-backups/` and "netto light backups" in iCloud, so it never opens money.db. Same schema and
