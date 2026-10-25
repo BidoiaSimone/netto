@@ -814,6 +814,8 @@
     </p>
     <div id="wrap-up-again"></div>
     <p><button id="refreshToggle">Auto Refresh: OFF</button></p>
+    <!-- backups: the Mac's (server-only) or the PWA's (browser-only), JS/settings/backupSettings.js -->
+    <div class="server-only">
     <p class="backup-buttons">
       <a class="button" href="/export" download>Download backup (JSON)</a>
       <button type="button" id="open-backups" class="ghost">Open backups folder</button>
@@ -822,9 +824,17 @@
     <label class="check-field backup-offsite"><input type="checkbox" id="backup-offsite-toggle">
       <span>Also keep a copy of each daily backup in iCloud Drive (folder "<span class="full-only">netto backups</span><span class="light-only">netto light backups</span>"), so losing this Mac doesn't lose the data</span></label>
     <p id="backup-offsite-status" class="hint small"></p>
+    </div>
+    <div class="browser-only">
+    <p class="hint small">Your data is kept only on this device. Save a backup now and then: on an iPhone choose
+      <b>Save to Files → iCloud Drive</b> (it remembers the folder next time).</p>
+    <p class="backup-buttons"><button type="button" id="save-backup">Save backup…</button></p>
+    <p id="backup-device-status" class="hint small"></p>
+    </div>
+    <!-- a label, not a button that clicks a hidden input: Safari can ignore a script's click on a hidden file input -->
     <p>
-      <button id="importBtn">Restore backup (JSON)…</button>
-      <input type="file" id="importFile" accept=".json,application/json" hidden>
+      <label class="file-button" for="importFile">Restore backup (JSON)…</label>
+      <input type="file" id="importFile" class="visually-hidden-file" accept=".json,application/json">
     </p>
     <!-- JS/settings/oldTrackerImport.js -->
     <div class="full-only">

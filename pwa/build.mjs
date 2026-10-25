@@ -34,8 +34,7 @@ cpSync(FRONTEND, OUTPUT, {
 const homePage = join(OUTPUT, "HTML/Home.html");
 writeFileSync(homePage, readFileSync(homePage, "utf8")
   .replaceAll('href="/Images/', 'href="../Images/')
-  .replaceAll('src="/edition.js"', 'src="../edition.js"')
-  .replaceAll('href="/export" download', 'href="#" data-export-in-browser'));
+  .replaceAll('src="/edition.js"', 'src="../edition.js"'));
 writeFileSync(join(OUTPUT, "index.html"), '<!DOCTYPE html><meta charset="utf-8"><meta http-equiv="refresh" content="0; url=HTML/Home.html"><title>netto</title>\n');
 
 // 2. the backend, as a module worker
@@ -62,9 +61,9 @@ await build({
     child_process: join(STAND_INS, "fileSystem.js"),
   },
   plugins: [{
-    name: "browser-project-paths",
+    name: "browser-stand-ins", // backend files that only make sense on the Mac: where its folders are, its backups folder
     setup(builder) {
-      builder.onResolve({ filter: /projectPaths\.js$/ }, () => ({ path: join(STAND_INS, "projectPaths.js") }));
+      builder.onResolve({ filter: /\/(projectPaths|backupsFolder)\.js$/ }, (args) => ({ path: join(STAND_INS, args.path.split("/").pop()) }));
     },
   }],
 });

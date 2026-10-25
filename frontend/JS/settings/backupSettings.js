@@ -1,12 +1,17 @@
 // ---- Settings > backups: automatic backup status, open the folder, restore a JSON backup ----
-// (The "Download backup (JSON)" button is a plain link to /export in Home.html; the PWA, with no server to link to,
-// makes the file here instead: downloadBackupMadeInThisBrowser.)
+// (The "Download backup (JSON)" button is a plain link to /export in Home.html.)
+//
+// The PWA (runsWithoutServer) has no Mac and no backups folder: the data is only on this device. "Save backup…"
+// makes the same JSON and hands it to the share sheet, where the iPhone offers Save to Files → iCloud Drive (a web
+// page can't choose a folder itself); without a share sheet it's a normal download. When it was last saved is kept
+// on this device, and after BACKUP_REMINDER_DAYS without one a reminder offers to save it in one tap.
 
 import { elementById } from "../core/domHelpers.js";
 import { getTodayAsLocalDate } from "../core/formatting.js";
 import { callApi } from "../core/apiClient.js";
-import { isLightEdition } from "../core/edition.js";
+import { isLightEdition, runsWithoutServer } from "../core/edition.js";
 import { callLocalApi } from "../core/localApi.js";
+import { showToast } from "../core/toast.js";
 
 const BACKUPS_FOLDER = isLightEdition ? "backend/db/light-backups" : "backend/db/backups"; // netto light keeps its own (config/projectPaths.js)
 import { showErrorMessage } from "../core/errorBanner.js";
@@ -14,6 +19,13 @@ import { runThenReloadAllData } from "../core/dataRefresh.js";
 import { saveAppSetting } from "../core/appSettings.js";
 
 const MILLISECONDS_PER_DAY = 864e5;
+const BACKUP_REMINDER_DAYS = 7;
+const LAST_SAVED_KEY = "backupSavedAt";        // localStorage: when "Save backup…" last saved one (the PWA)
+const REMINDER_SNOOZED_KEY = "backupReminderSnoozedOn"; // localStorage: the day "Later" was pressed
+let reminderShownThisVisit = false;
+
+const readLocal = (key) => { try { return localStorage.getItem(key); } catch { return null; } };
+const writeLocal = (key, value) => { try { localStorage.setItem(key, value); } catch {} };
 
 // "today", "yesterday" or the date, Italian style
 function describeBackupDay(savedAt) {
@@ -26,6 +38,7 @@ function describeBackupDay(savedAt) {
 
 // When the last automatic daily backup was made (services/automaticDailyBackups.js on the server)
 export async function loadBackupStatus() {
+  if (runsWithoutServer) return renderBackupStatusOfThisDevice();
   const backupStatus = await callApi("/backups");
   renderOffsiteStatus(backupStatus.offsite);
   const statusLine = elementById("backup-status");
@@ -67,7 +80,10 @@ async function restoreBackupFromFile(file) {
     return showErrorMessage("That file is not valid JSON.");
   }
   const countRows = (listName) => (Array.isArray(backupData[listName]) ? backupData[listName].length : 0);
-  const confirmation = `Replace ALL current data with this backup?\n\n${countRows("accounts")} accounts, ${countRows("investments")} investments, ${countRows("transactions")} transactions.\n\nA copy of the current data is saved first in ${BACKUPS_FOLDER}.`;
+  const safetyCopy = runsWithoutServer
+    ? "The data on this device is replaced and not kept: if you might want it back, cancel and Save backup first."
+    : `A copy of the current data is saved first in ${BACKUPS_FOLDER}.`;
+  const confirmation = `Replace ALL current data with this backup?\n\n${countRows("accounts")} accounts, ${countRows("investments")} investments, ${countRows("transactions")} transactions.\n\n${safetyCopy}`;
   if (!confirm(confirmation)) return;
   runThenReloadAllData(async () => {
     const importedCounts = await callApi("/import", { method: "POST", body: backupData });
@@ -75,22 +91,80 @@ async function restoreBackupFromFile(file) {
   });
 }
 
-// The PWA: the same JSON /export answers, saved as a file by the browser
-async function downloadBackupMadeInThisBrowser(event) {
-  event.preventDefault();
+// ---- the PWA's backups ----
+
+const daysSince = (isoDate) => Math.floor((Date.now() - new Date(isoDate).getTime()) / MILLISECONDS_PER_DAY);
+
+// The same JSON /export answers, as a file named like the Mac's downloads
+async function makeBackupFile() {
   const answer = await callLocalApi("GET", "/export");
-  if (answer.status >= 400) return showErrorMessage((answer.body && answer.body.error) || "Could not make the backup");
+  if (answer.status >= 400) throw new Error((answer.body && answer.body.error) || "Could not make the backup");
   const fileName = /filename="([^"]+)"/.exec(answer.headers["content-disposition"] || "")?.[1] || "netto-backup.json";
-  const link = Object.assign(document.createElement("a"), {
-    href: URL.createObjectURL(new Blob([JSON.stringify(answer.body, null, 2)], { type: "application/json" })),
-    download: fileName,
-  });
+  return new File([JSON.stringify(answer.body, null, 2)], fileName, { type: "application/json" });
+}
+
+function downloadFile(file) {
+  const link = Object.assign(document.createElement("a"), { href: URL.createObjectURL(file), download: file.name });
   link.click();
   setTimeout(() => URL.revokeObjectURL(link.href), 0);
 }
 
+// The share sheet when there is one (iPhone: Save to Files), a download otherwise. True when it was saved.
+async function handOverBackupFile(file) {
+  if (!navigator.canShare?.({ files: [file] })) {
+    downloadFile(file);
+    return true;
+  }
+  try {
+    await navigator.share({ files: [file] });
+    return true;
+  } catch (error) {
+    if (error.name === "AbortError") return false; // closed the share sheet
+    if (error.name === "NotAllowedError") {
+      // Safari wants the share sheet opened right after a tap, and making the file took too long: one more tap
+      showToast("Your backup is ready", [{ label: "Save", onClick: () => handOverBackupFile(file).then(noteBackupSaved) }], 15000);
+      return false;
+    }
+    throw error;
+  }
+}
+
+function noteBackupSaved(wasSaved) {
+  if (!wasSaved) return;
+  writeLocal(LAST_SAVED_KEY, new Date().toISOString());
+  renderBackupStatusOfThisDevice();
+}
+
+async function saveBackupFromThisDevice() {
+  try {
+    noteBackupSaved(await handOverBackupFile(await makeBackupFile()));
+  } catch (error) {
+    showErrorMessage(`Backup not saved: ${error.message}`);
+  }
+}
+
+// Settings: when the last one was saved; and, past BACKUP_REMINDER_DAYS, the reminder (once a visit, not after "Later" today)
+async function renderBackupStatusOfThisDevice() {
+  const savedAt = readLocal(LAST_SAVED_KEY);
+  const statusLine = elementById("backup-device-status");
+  const isOverdue = !savedAt || daysSince(savedAt) >= BACKUP_REMINDER_DAYS;
+  statusLine.classList.toggle("neg", isOverdue);
+  statusLine.textContent = savedAt
+    ? `Last backup saved ${describeBackupDay(new Date(savedAt))}${daysSince(savedAt) > 1 ? ` (${daysSince(savedAt)} days ago)` : ""}.`
+    : "No backup saved from this device yet.";
+
+  if (!isOverdue || reminderShownThisVisit || readLocal(REMINDER_SNOOZED_KEY) === getTodayAsLocalDate()) return;
+  const accounts = await callApi("/accounts").catch(() => []);
+  if (!accounts.length) return; // nothing to lose yet
+  reminderShownThisVisit = true;
+  showToast(savedAt ? `No backup for ${daysSince(savedAt)} days` : "Your data is only on this device", [
+    { label: "Save backup", onClick: saveBackupFromThisDevice },
+    { label: "Later", onClick: () => writeLocal(REMINDER_SNOOZED_KEY, getTodayAsLocalDate()) },
+  ], 20000);
+}
+
 export function initializeBackupSettings() {
-  document.querySelector("[data-export-in-browser]")?.addEventListener("click", downloadBackupMadeInThisBrowser);
+  elementById("save-backup").addEventListener("click", saveBackupFromThisDevice);
   elementById("backup-offsite-toggle").addEventListener("change", async (event) => {
     try {
       await saveAppSetting("backup_copy_offsite", event.target.checked ? 1 : 0);
@@ -109,7 +183,6 @@ export function initializeBackupSettings() {
     }
   });
 
-  elementById("importBtn").addEventListener("click", () => elementById("importFile").click());
   elementById("importFile").addEventListener("change", async (event) => {
     const file = event.target.files[0];
     event.target.value = ""; // lets you pick the same file again later

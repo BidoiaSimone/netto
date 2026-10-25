@@ -3,6 +3,8 @@
    win over earlier ones when two rules are equally specific, so keep that order when adding files. */
 
 /* ---- settings ---- */
+/* The Mac's backup controls or the PWA's (<html data-runtime="browser">, core/edition.js): each shows only its own */
+html[data-runtime="browser"] .server-only, html:not([data-runtime="browser"]) .browser-only { display: none; }
 .backup-buttons { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
 .accent-chips button { display: inline-flex; align-items: center; gap: 7px; }
 .accent-chips .swatch { width: 11px; height: 11px; border-radius: 50%; flex: none; }
