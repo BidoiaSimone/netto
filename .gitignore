@@ -83,9 +83,8 @@ backend/db/light-backups/
 # Downloaded "Download backup (JSON)" files: they hold ALL your financial data
 money-tracker-*.json
 netto-*.json
-# Stray SQLite test databases created without the .db extension
-foobar
-foobar-*
+# Stray SQLite test databases (foobar, foobar.db, foobar-wal, ...)
+foobar*
 # The brand kit is already unpacked in frontend/netto-brand-kit
 netto-brand-kit.zip
 # Copies of the files the refactor overwrote (delete the folder once you're happy with the new code)

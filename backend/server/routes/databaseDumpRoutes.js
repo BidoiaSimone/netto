@@ -1,9 +1,9 @@
-/* DEBUG: every table as stored (money in cents). Open http://localhost:3000/database in the browser;
- * the main tables are also printed in the server log. Not used by the app's pages.
+/* DEBUG: every table as stored (money in cents). Open http://localhost:3000/database in the browser.
+ * Nothing is printed in the server log: the log file would otherwise keep a copy of your financial data.
+ * Not used by the app's pages.
  */
 
 const express = require("express");
-const chalk = require("chalk");
 const db = require("../../db/databaseConnection.js");
 
 const router = express.Router();
@@ -28,10 +28,6 @@ router.get("/database", function dumpWholeDatabase(request, response) {
     savings_goal_incomes: db.prepare(`SELECT * FROM savings_goal_incomes`).all(),
   };
 
-  for (const [title, tableName] of [["Accounts", "accounts"], ["Categories", "categories"], ["Transactions", "transactions"], ["Investments", "investments"]]) {
-    console.log(chalk.blue(`\n${title}:`));
-    console.log(JSON.stringify(allTables[tableName], null, 2));
-  }
   response.json(allTables);
 });
 
