@@ -6,7 +6,6 @@
 // Tapping the page's name reloads the app: the newest version of netto and fresh data, like ⌘R on the Mac. So does
 // pulling the page down from its top and letting go (pull to refresh, like iOS apps), which also works when Pocket
 // keeps the name hidden under the large title.
-// No zooming, like an app: Safari on the iPhone ignores the viewport's user-scalable=no, so the pinch is stopped here.
 
 import { elementById } from "../core/domHelpers.js";
 import { setPrivacyMode, isPrivacyModeOn } from "../settings/privacyMode.js";
@@ -101,15 +100,7 @@ function initializePullToReload() {
   window.addEventListener("touchcancel", reset);
 }
 
-// Safari's pinch, two ways, since neither stops it on every iOS version: cancel Apple's own "gesturestart" and
-// "gesturechange" events, and cancel any move made with two fingers (passive: false, or Safari ignores the cancel)
-function preventPinchZoom() {
-  for (const type of ["gesturestart", "gesturechange"]) document.addEventListener(type, (event) => event.preventDefault());
-  document.addEventListener("touchmove", (event) => { if (event.touches.length > 1) event.preventDefault(); }, { passive: false });
-}
-
 export function initializePhoneMenu() {
-  preventPinchZoom();
   initializePullToReload();
   elementById("phone-menu-button").addEventListener("click", () => setMenuOpen(!isMenuOpen()));
   elementById("phone-menu-backdrop").addEventListener("click", () => setMenuOpen(false));
