@@ -301,18 +301,23 @@ Settings > Layout picks how the pages are arranged and drawn, per device (localS
 | layout | file | on a computer | on a phone |
 | --- | --- | --- | --- |
 | Classic | (the base files 01–35) | the sidebar on the left, dark green with glows | the sidebar slides in from ☰ |
-| Pocket | `37-ui-pocket.css` | a sidebar like a Mac app's: the pages grouped (Every day, Planning, Looking back) with icons, net worth at the bottom | drawn like an iOS app (Apple's guidelines, iOS 26 Liquid Glass): a large title that moves into the top bar on scroll, Settings and the eye as glass buttons, a floating glass tab bar (Transactions, Assets, Home, Insights, Investments), a round + to add, dialogs as sheets with a grabber; the transaction window as an iOS form (segmented type, big amount, grouped rows, ✕ / ✓ in the corners) |
+| Pocket | `37-ui-pocket.css` | a sidebar like a Mac app's: the pages grouped (Every day, Planning, Looking back) with icons, net worth at the bottom | drawn like an iOS app (Apple's guidelines, iOS 26 Liquid Glass): a large title that moves into the top bar on scroll, Settings and the eye as glass buttons, a floating glass tab bar (Transactions, Assets, Home, Insights, Investments: five at most), a segmented switch under the title for the pages without a tab (Transactions \| Recurring, Insights \| Categories), a round + to add, dialogs as sheets with a grabber; the transaction window as an iOS form (segmented type, big amount, grouped rows, ✕ / ✓ in the corners) |
 
 - The sidebar's links stay in Classic's order in Home.html; Pocket reorders them with flex `order`, and shows the
   `.nav-group` names, which are hidden everywhere else.
 - Panel, Grid, Grid red and Pocket dashboard were tried in Oct 2026 and removed; a device that had one picked opens in Pocket.
 
-**The phone shows the essentials.** On a screen 800px wide or less, whatever the layout, netto keeps to Home,
-Transactions, Insights (this month, budgets, spending by category, tags), Assets, Investments and part of Settings. Everything
+**The phone shows the essentials.** On a screen 800px wide or less, whatever the layout, netto keeps to Home (with
+the reconciliation reminders), Transactions, Recurring, Insights (this month, budgets, spending by category, tags),
+Categories (with budgets and tags), Assets, Investments and part of Settings. Everything
 else is marked `class="desktop-only"` in Home.html and stays on the computer: the hiding is CSS (`31-phone.css`), and
 `core/phoneFeatures.js` stops the left-out pages from opening (they open Home, like netto light's).
 Settings > On this phone > Everything turns it off on that phone (`<html data-phone-features="all">`).
 - **Adding a page or a part:** it shows on the phone too, unless you mark it `desktop-only`.
+- **Pocket's tab bar has five tabs.** A page that doesn't get one sits under one that does: `<section data-under="…">`
+  keeps that tab lit (`app/pageNavigation.js`), a `.page-switch` at the top of both pages moves between them, and
+  the page's link is hidden in the tab bar (`37-ui-pocket.css`). The round + adds a transaction, or does what the
+  page's add button marked `data-pocket-add` does (Recurring: `app/phoneMenu.js`).
 
 ## Two editions: netto and netto light
 

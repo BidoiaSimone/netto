@@ -14,7 +14,14 @@ export function showPageFromUrl() {
   const availableSections = pageSections.filter((section) => !isLeftOutOnThisScreen(section));
   const pageToShow = availableSections.some((section) => section.dataset.page === requestedPage) ? requestedPage : DEFAULT_PAGE;
   pageSections.forEach((section) => { section.hidden = section.dataset.page !== pageToShow; });
-  document.querySelectorAll("#sidebar a").forEach((link) => link.classList.toggle("active", link.hash === "#" + pageToShow));
+  // a page that sits under another one (<section data-under="...">: Recurring under Transactions, Categories under
+  // Insights) keeps that page's tab lit in Pocket's tab bar on the phone, where it has no tab of its own
+  const parentPage = pageSections.find((section) => section.dataset.page === pageToShow)?.dataset.under;
+  document.querySelectorAll("#sidebar a").forEach((link) => {
+    link.classList.toggle("active", link.hash === "#" + pageToShow);
+    link.classList.toggle("holds-active", link.hash === "#" + parentPage);
+  });
+  document.querySelectorAll(".page-switch a").forEach((link) => link.classList.toggle("active", link.hash === "#" + pageToShow));
   scrollActiveLinkIntoView();
 }
 
@@ -22,7 +29,8 @@ export function showPageFromUrl() {
 // the current page's link into view. A column of links never needs it.
 function scrollActiveLinkIntoView() {
   const sidebar = document.getElementById("sidebar");
-  const activeLink = sidebar?.querySelector("a.active");
+  // the page's own link, or the one it sits under when its own is hidden (offsetWidth 0)
+  const activeLink = [...(sidebar?.querySelectorAll("a.active, a.holds-active") ?? [])].find((link) => link.offsetWidth > 0);
   if (!activeLink || sidebar.scrollWidth <= sidebar.clientWidth) return;
   // the sidebar is positioned (fixed or sticky), so offsetLeft is already measured from its left edge
   sidebar.scrollTo({ left: activeLink.offsetLeft - (sidebar.clientWidth - activeLink.offsetWidth) / 2 });

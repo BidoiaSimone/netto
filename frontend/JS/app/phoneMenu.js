@@ -10,6 +10,7 @@
 import { elementById } from "../core/domHelpers.js";
 import { setPrivacyMode, isPrivacyModeOn } from "../settings/privacyMode.js";
 import { isPhoneScreen } from "../core/phoneFeatures.js";
+import { openDialog } from "./dialogWindows.js";
 
 const SWIPE_TO_CLOSE_PIXELS = 60;
 const PULL_TO_RELOAD_PIXELS = 80;   // how far to pull down from the top of the page before letting go reloads
@@ -54,6 +55,21 @@ function toggleSettings(event) {
   event.preventDefault();
   if (cameToSettingsFromAnotherPage) history.back();
   else location.hash = "#home";
+}
+
+// Pocket's round +: a transaction, or on a page whose add button says so (data-pocket-add: + Add recurring) that
+// button's action, since Pocket hides the page's own add button on the phone
+const openPageAddButton = () => document.querySelector("section[data-page]:not([hidden]) > .page-head > .add-btn[data-pocket-add]");
+
+function addFromAnyPage() {
+  const pageAddButton = openPageAddButton();
+  if (pageAddButton) pageAddButton.click();
+  else openDialog("tx-dialog");
+}
+
+function labelAddButton() {
+  const label = openPageAddButton()?.firstChild?.textContent.replace("+", "").trim();
+  elementById("pocket-add").setAttribute("aria-label", label || "Add transaction");
 }
 
 function showPrivacyState() {
@@ -127,6 +143,9 @@ export function initializePhoneMenu() {
     location.reload();
   });
   showPageTitle();
+  elementById("pocket-add").addEventListener("click", addFromAnyPage);
+  window.addEventListener("hashchange", labelAddButton);
+  labelAddButton();
 
   elementById("phone-privacy-button").addEventListener("click", async () => {
     const promise = setPrivacyMode(!isPrivacyModeOn());

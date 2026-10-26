@@ -7,13 +7,14 @@
        section titles in plain sentence case. The system font (SF Pro on Apple devices), like their own apps.
      - Home opens on net worth, big: the one loud thing.
      - made for each screen rather than stretched between them:
-         phone   a tab bar at the bottom where the thumb is, a round + to add from any page, dialogs as sheets,
+         phone   a tab bar at the bottom where the thumb is (five tabs: Recurring and Categories open from a switch
+                 at the top of Transactions and Insights), a round + to add from any page, dialogs as sheets,
                  and only the essentials (core/phoneFeatures.js: the rest is marked desktop-only)
          computer  a sidebar like a Mac app's, the pages grouped by what you do with them
      - dialogs come up from the bottom on the phone, like a sheet. */
 
-/* the round + is part of this layout only */
-.pocket-add { display: none; }
+/* the round + and the switch between a page and the one under it are part of this layout, on the phone, only */
+.pocket-add, .page-switch { display: none; }
 
 /* ---- colours: only the neutrals change; the accent, green, red and amber come from 01-theme-colors.css ---- */
 :root[data-ui="pocket"]:not([data-theme="light"]) {
@@ -313,6 +314,19 @@
     [data-ui="pocket"] .page-head h2 { display: block; margin: 0 0 0 4px; font-size: 34px; font-weight: 700; letter-spacing: 0.01em; line-height: 1.15; }
     [data-ui="pocket"] .add-btn { display: none; }              /* the round + does it */
 
+    /* -- Transactions | Recurring, Insights | Categories: a segmented control under the large title, like the
+       transaction window's Expense | Income | Movement -- */
+    [data-ui="pocket"] .page-switch {
+        display: grid; grid-template-columns: 1fr 1fr; gap: 2px; margin: 0 0 16px; padding: 3px; border-radius: 999px;
+        background: color-mix(in srgb, var(--text) 8%, transparent);
+    }
+    [data-ui="pocket"] .page-switch a {
+        display: grid; place-items: center; min-height: 34px; padding: 6px 8px; border-radius: 999px;
+        color: var(--text); font-size: 14px; font-weight: 600; text-decoration: none;
+    }
+    [data-ui="pocket"] .page-switch a.active { background: var(--surface); box-shadow: 0 1px 4px rgba(0, 0, 0, 0.14); }
+    [data-ui="pocket"][data-theme="dark"] .page-switch a.active { background: color-mix(in srgb, var(--text) 24%, var(--surface)); }
+
     /* -- the tab bar: a glass capsule floating above the content, clear of the home bar --
        --tab-bar-gap is the space under it: the iPhone's home bar (swipe up = close the app, sideways = switch apps)
        catches touches near the bottom edge. Bigger in the home-screen app, where the page reaches the very bottom
@@ -345,7 +359,10 @@
     }
     [data-ui="pocket"] #sidebar a:hover { background: none; }
     /* the open tab: tinted with the accent, on a lighter pill */
-    [data-ui="pocket"] #sidebar a.active { background: color-mix(in srgb, var(--text) 9%, transparent); color: var(--accent-2); }
+    [data-ui="pocket"] #sidebar a:is(.active, .holds-active) { background: color-mix(in srgb, var(--text) 9%, transparent); color: var(--accent-2); }
+    /* five tabs at most, like the system's: Recurring and Categories have none, they open from the switch at the top
+       of Transactions and Insights, and keep that tab lit (.holds-active, app/pageNavigation.js) */
+    [data-ui="pocket"] #sidebar a:is([href="#recurring"], [href="#categories"]) { display: none; }
     /* Home in the middle of the tab bar, where the thumb rests: Transactions, Assets, Home, Insights, Investments */
     [data-ui="pocket"] #sidebar a[href="#transactions"] { order: 1; }
     [data-ui="pocket"] #sidebar a[href="#assets"] { order: 2; }
