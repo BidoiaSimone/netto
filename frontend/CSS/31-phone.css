@@ -4,6 +4,10 @@
    One of the numbered files in this folder: Home.html loads them in number order, and later files
    win over earlier ones when two rules are equally specific, so keep that order when adding files. */
 
+/* no zooming, like an app (Home.html's viewport): a double tap doesn't zoom in, and taps don't wait to see if
+   a second one follows. Scrolling and pinching are still the browser's: the pinch is stopped in JS/app/phoneMenu.js */
+html { touch-action: manipulation; }
+
 #phone-bar, #phone-menu-backdrop, .phone-only, #phone-pending-badge, #phone-settings-button { display: none; }
 .phone-only-setting { display: none; }       /* Settings > On this phone: only on a phone */
 
