@@ -316,8 +316,8 @@ Settings > On this phone > Everything turns it off on that phone (`<html data-ph
 - **Adding a page or a part:** it shows on the phone too, unless you mark it `desktop-only`.
 - **Pocket's tab bar has five tabs.** A page that doesn't get one sits under one that does: `<section data-under="…">`
   keeps that tab lit (`app/pageNavigation.js`), a `.page-switch` at the top of both pages moves between them, and
-  the page's link is hidden in the tab bar (`37-ui-pocket.css`). The round + adds a transaction, or does what the
-  page's add button marked `data-pocket-add` does (Recurring: `app/phoneMenu.js`).
+  the page's link is hidden in the tab bar (`37-ui-pocket.css`). The round + always adds a transaction; Recurring
+  keeps its own "+ Add recurring" button at the top.
 
 ## Two editions: netto and netto light
 

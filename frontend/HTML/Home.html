@@ -72,9 +72,8 @@
   </button>
 </header>
 <div id="phone-menu-backdrop" hidden></div>
-<!-- Pocket layout only (37-ui-pocket.css): the round + that adds a transaction, always in reach of the thumb
-     (on Recurring it adds a recurring one: data-pocket-add, JS/app/phoneMenu.js) -->
-<button type="button" id="pocket-add" class="pocket-add" aria-label="Add transaction">
+<!-- Pocket layout only (37-ui-pocket.css): the round + that adds a transaction, always in reach of the thumb -->
+<button type="button" id="pocket-add" class="pocket-add" data-open="tx-dialog" aria-label="Add transaction">
   <svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>
 </button>
 
@@ -209,7 +208,7 @@
   <section data-page="recurring" data-under="transactions">
     <div class="page-head">
       <h2>Recurring</h2>
-      <button type="button" class="add-btn" data-open="recurring-dialog" data-pocket-add>+ Add recurring</button>
+      <button type="button" class="add-btn recurring-add" data-open="recurring-dialog">+ Add recurring</button>
     </div>
     <nav class="page-switch" aria-label="Transactions or recurring"><a href="#transactions">Transactions</a><a href="#recurring">Recurring</a></nav>
     <p id="recurring-summary" class="recurring-summary"></p>

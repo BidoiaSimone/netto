@@ -313,6 +313,8 @@
     [data-ui="pocket"] .page-head { display: flex; justify-content: flex-start; margin: 0 0 14px; }
     [data-ui="pocket"] .page-head h2 { display: block; margin: 0 0 0 4px; font-size: 34px; font-weight: 700; letter-spacing: 0.01em; line-height: 1.15; }
     [data-ui="pocket"] .add-btn { display: none; }              /* the round + does it */
+    /* except on Recurring: the + always adds a transaction, so a recurring one is added from the page itself */
+    [data-ui="pocket"] .page-head .add-btn.recurring-add { display: block; width: auto; margin-left: auto; align-self: center; padding: 8px 14px; font-size: 14px; }
 
     /* -- Transactions | Recurring, Insights | Categories: a segmented control under the large title, like the
        transaction window's Expense | Income | Movement -- */
