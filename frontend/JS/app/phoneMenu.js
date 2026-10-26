@@ -101,9 +101,11 @@ function initializePullToReload() {
   window.addEventListener("touchcancel", reset);
 }
 
-// Safari's pinch: "gesturestart" and "gesturechange" are Apple's own events, and cancelling them stops the zoom
+// Safari's pinch, two ways, since neither stops it on every iOS version: cancel Apple's own "gesturestart" and
+// "gesturechange" events, and cancel any move made with two fingers (passive: false, or Safari ignores the cancel)
 function preventPinchZoom() {
   for (const type of ["gesturestart", "gesturechange"]) document.addEventListener(type, (event) => event.preventDefault());
+  document.addEventListener("touchmove", (event) => { if (event.touches.length > 1) event.preventDefault(); }, { passive: false });
 }
 
 export function initializePhoneMenu() {
