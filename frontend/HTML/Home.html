@@ -793,7 +793,7 @@
         <button type="button" class="ghost" data-value="0">Never</button>
       </span>
     </p>
-    <!-- the rest of Settings stays on the computer (the phone shows only the core: see 31-phone.css) -->
+    <!-- the rest of Settings, but the backups, stays on the computer (the phone shows only the core: see 31-phone.css) -->
     <div class="desktop-only">
     <!-- stored with your data (and in the JSON backup): JS/settings/reminderSettings.js -->
     <div class="full-only">
@@ -819,7 +819,9 @@
     </p>
     <div id="wrap-up-again"></div>
     <p><button id="refreshToggle">Auto Refresh: OFF</button></p>
-    <!-- backups: the Mac's (server-only) or the PWA's (browser-only), JS/settings/backupSettings.js -->
+    </div>
+    <!-- backups: the Mac's (server-only) or the PWA's (browser-only), JS/settings/backupSettings.js.
+         Outside desktop-only: the phone keeps them even with only the essentials -->
     <div class="server-only">
     <p class="backup-buttons">
       <a class="button" href="/export" download>Download backup (JSON)</a>
@@ -841,7 +843,6 @@
       <label class="file-button" for="importFile">Restore backup (JSON)…</label>
       <input type="file" id="importFile" class="visually-hidden-file" accept=".json,application/json">
     </p>
-    </div>
   </section>
 </main>
 

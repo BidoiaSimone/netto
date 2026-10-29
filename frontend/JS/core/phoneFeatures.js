@@ -2,7 +2,7 @@
 // On a narrow screen (a phone, 800px or less: the same line as 31-phone.css) netto keeps to what's useful on the
 // go: Home, Transactions and Recurring, Insights (this month) and Categories, Assets, Investments and Settings.
 // Everything for sitting down and looking back (Goals, Statements, Forecast, Year in review, the charts and
-// trends of Insights, most of Settings) is marked class="desktop-only" in Home.html and stays on the computer.
+// trends of Insights, most of Settings, but not the backups) is marked class="desktop-only" in Home.html and stays on the computer.
 //
 // Like netto light (core/edition.js), the hiding is CSS (31-phone.css); this file is for what the JS decides:
 // which pages can be opened. Settings > "On this phone" > Everything turns it off on that phone

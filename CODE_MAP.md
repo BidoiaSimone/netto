@@ -309,7 +309,7 @@ Settings > Layout picks how the pages are arranged and drawn, per device (localS
 
 **The phone shows the essentials.** On a screen 800px wide or less, whatever the layout, netto keeps to Home (with
 the reconciliation reminders), Transactions, Recurring, Insights (this month, budgets, spending by category, tags),
-Categories (with budgets and tags), Assets, Investments and part of Settings. Everything
+Categories (with budgets and tags), Assets, Investments and part of Settings (always with the backups). Everything
 else is marked `class="desktop-only"` in Home.html and stays on the computer: the hiding is CSS (`31-phone.css`), and
 `core/phoneFeatures.js` stops the left-out pages from opening (they open Home, like netto light's).
 Settings > On this phone > Everything turns it off on that phone (`<html data-phone-features="all">`).
