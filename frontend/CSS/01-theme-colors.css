@@ -211,12 +211,53 @@
     --glow: 0 0 20px rgba(236, 72, 153, 0.22);
 }
 
+:root[data-accent="yellow"] {
+    --bg: #0f0d08;
+    --surface: #1b1810;
+    --surface-2: #242017;
+    --border: #332e21;
+    --text: #f3f0e8;
+    --muted: #999280;
+    --accent: #eab308;
+    --accent-rgb: 234, 179, 8;
+    --accent-2: #fde047;
+    --accent-hover: #fde047;
+    --grad-from: #eab308;
+    --grad-to: #fde047;
+    --on-accent: #1f1a02;
+    --warn: #fb923c;                    /* orange: the usual amber would look like the accent */
+    --warn-rgb: 251, 146, 60;
+    --info: #9db4ff;
+    --info-rgb: 157, 180, 255;
+    --sidebar-bg: rgba(27, 24, 16, 0.85);
+    --glow: 0 0 24px rgba(234, 179, 8, 0.25);
+}
+:root[data-accent="yellow"][data-theme="light"] {
+    --bg: #f8f7f4;
+    --surface: #ffffff;
+    --surface-2: #f6f4ef;
+    --border: #e4e0d7;
+    --text: #201c0e;
+    --muted: #6d675a;
+    --accent-2: #a16207;
+    --accent-hover: #facc15;
+    --grad-from: #ca8a04;
+    --grad-to: #854d0e;
+    --warn: #c2410c;
+    --warn-rgb: 234, 88, 12;
+    --info: #3b5bdb;
+    --info-rgb: 59, 91, 219;
+    --sidebar-bg: rgba(255, 255, 255, 0.85);
+    --glow: 0 0 20px rgba(234, 179, 8, 0.22);
+}
+
 
 /* the logo is drawn in green: turned to the chosen colour */
 :root[data-accent="blue"] .brand img { filter: hue-rotate(68deg); }
 :root[data-accent="violet"] .brand img { filter: hue-rotate(110deg); }
 :root[data-accent="orange"] .brand img { filter: hue-rotate(-118deg) saturate(1.3); }
 :root[data-accent="pink"] .brand img { filter: hue-rotate(178deg); }
+:root[data-accent="yellow"] .brand img { filter: hue-rotate(-85deg) saturate(1.3) brightness(1.1); }
 
 /* the sidebar has a logo for each background; only the one for the current theme shows */
 :root[data-theme="light"] .logo-dark, :root:not([data-theme="light"]) .logo-light { display: none; }
