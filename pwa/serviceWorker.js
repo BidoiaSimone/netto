@@ -10,8 +10,12 @@ const VERSION = "__NETTO_VERSION__";
 const APP_FILES = __NETTO_APP_FILES__; // paths relative to this file, e.g. "HTML/Home.html"
 const CACHE_NAME = `netto-pwa-${VERSION}`;
 
+// cache: "reload": straight from the site, never from the browser's own cache. GitHub Pages lets a browser reuse a file
+// for 10 minutes, and the names don't change between versions (JS/apiWorker.js), so without it a version installed
+// soon after the one before could be saved with the old version's files, and stay like that until the next one.
 self.addEventListener("install", (event) => {
-  event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(APP_FILES.map((file) => new URL(file, self.registration.scope)))));
+  event.waitUntil(caches.open(CACHE_NAME).then((cache) =>
+    cache.addAll(APP_FILES.map((file) => new Request(new URL(file, self.registration.scope), { cache: "reload" })))));
   self.skipWaiting(); // the next load uses the new version
 });
 

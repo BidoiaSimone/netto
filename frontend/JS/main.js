@@ -102,4 +102,26 @@ window.nettoStarted = true; // the page's fallback message (end of Home.html) st
 // which is /serviceWorker.js on the server and /netto/serviceWorker.js on GitHub Pages.
 if ("serviceWorker" in navigator && window.isSecureContext) {
   navigator.serviceWorker.register(new URL("../serviceWorker.js", location.href)).catch((error) => console.warn("Service worker not registered:", error));
+  if (document.documentElement.dataset.runtime === "browser") reloadWhenANewVersionTakesOver();
+}
+
+// The PWA (pwa/serviceWorker.js): a new version installs while this one is already open, from its old copies. Once it
+// takes over, the page reloads, so one launch is enough to be on it, instead of closing netto and opening it again.
+// Not in the middle of something: with a window open (a half-typed transaction) it waits until netto is in the
+// background. The first install (no service worker before) changes nothing on screen, so it doesn't reload.
+// Coming back to netto (the phone keeps it in memory for days) also asks for a new version.
+function reloadWhenANewVersionTakesOver() {
+  const hadAServiceWorker = Boolean(navigator.serviceWorker.controller);
+  let newVersionWaiting = false;
+  const reloadIfFree = () => {
+    if (newVersionWaiting && (document.hidden || !document.querySelector("dialog[open]"))) location.reload();
+  };
+  navigator.serviceWorker.addEventListener("controllerchange", () => {
+    newVersionWaiting = hadAServiceWorker;
+    reloadIfFree();
+  });
+  document.addEventListener("visibilitychange", () => {
+    reloadIfFree();
+    if (!document.hidden) navigator.serviceWorker.getRegistration().then((registration) => registration?.update()).catch(() => {});
+  });
 }
