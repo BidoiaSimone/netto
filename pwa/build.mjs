@@ -61,9 +61,9 @@ await build({
     child_process: join(STAND_INS, "fileSystem.js"),
   },
   plugins: [{
-    name: "browser-stand-ins", // backend files that only make sense on the Mac: where its folders are, its backups folder
+    name: "browser-stand-ins", // backend files that only make sense on the Mac: where its folders are, its backups folder, the copy before an upgrade
     setup(builder) {
-      builder.onResolve({ filter: /\/(projectPaths|backupsFolder)\.js$/ }, (args) => ({ path: join(STAND_INS, args.path.split("/").pop()) }));
+      builder.onResolve({ filter: /\/(projectPaths|backupsFolder|copyBeforeMigrating)\.js$/ }, (args) => ({ path: join(STAND_INS, args.path.split("/").pop()) }));
     },
   }],
 });

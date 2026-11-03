@@ -14,6 +14,7 @@
 
 import sqlite3InitModule from "@sqlite.org/sqlite-wasm";
 import { useSqliteWasm } from "./betterSqlite3OverWasm.js";
+import { useDatabasePool } from "./standIns/copyBeforeMigrating.js";
 
 const DATABASE_FILE = "/money.db";
 
@@ -22,6 +23,7 @@ async function openDatabaseStorage() {
   try {
     const pool = await sqlite3.installOpfsSAHPoolVfs({ name: "netto" });
     useSqliteWasm(sqlite3, (fileName) => new pool.OpfsSAHPoolDb(fileName));
+    useDatabasePool(pool); // the copy saved before a database upgrade goes into it too
     return "opfs";
   } catch (error) {
     console.warn("No persistent storage for the database, using memory:", error);

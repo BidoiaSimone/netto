@@ -13,11 +13,9 @@
  * Conversion to and from euros happens only at the API boundary (server/utils/moneyConversion.js).
  */
 
-const fs = require("fs");
-const path = require("path");
 const { allMigrationsInOrder, LATEST_DATABASE_VERSION } = require("./allMigrationsInOrder.js");
 const { BACKUPS_DIRECTORY } = require("../../config/projectPaths.js");
-const { getTimestampForFileName } = require("../../server/utils/localDates.js");
+const { saveCopyBeforeMigrating } = require("./copyBeforeMigrating.js"); // the PWA has its own (pwa/build.mjs)
 
 // Runs the migrations this database hasn't had yet. Before touching a database that already
 // has data, a copy is saved in backend/db/backups/ so an upgrade can always be undone by hand.
@@ -29,7 +27,7 @@ function runPendingMigrations(db, { backupDirectory = BACKUPS_DIRECTORY } = {}) 
   if (currentVersion === LATEST_DATABASE_VERSION) return;
 
   if (databaseHasTables(db) && db.name !== ":memory:") {
-    saveCopyBeforeMigrating(db, currentVersion, backupDirectory);
+    saveCopyBeforeMigrating(db, currentVersion, LATEST_DATABASE_VERSION, backupDirectory);
   }
 
   // Rebuilding tables means dropping tables that others reference, which the foreign key
@@ -58,13 +56,6 @@ function runPendingMigrations(db, { backupDirectory = BACKUPS_DIRECTORY } = {}) 
 // sqlite_* tables are SQLite's own bookkeeping, not data
 function databaseHasTables(db) {
   return db.prepare(`SELECT COUNT(*) AS n FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'`).get().n > 0;
-}
-
-function saveCopyBeforeMigrating(db, currentVersion, backupDirectory) {
-  fs.mkdirSync(backupDirectory, { recursive: true });
-  const backupFile = path.join(backupDirectory, `before-migration-v${currentVersion}-to-v${LATEST_DATABASE_VERSION}-${getTimestampForFileName()}.db`);
-  db.prepare(`VACUUM INTO ?`).run(backupFile); // a consistent copy of the whole database, in one statement
-  console.log(`Database backup saved to ${backupFile}`);
 }
 
 module.exports = { runPendingMigrations, LATEST_DATABASE_VERSION };
