@@ -6,6 +6,9 @@
  * the euro amount stays the real one in every balance and total.
  * An income can be linked to a goal (migration 22, on the Goals page: savingsGoalRoutes.js). Edited into an expense
  * or a movement, it's unlinked: only income goes to a goal.
+ * An income can be a refund (migration 23): refund_category_id is the expense category it pays back. Then every
+ * total counts it as less spending there, not as income (the view income_and_spending). A refund can't also go
+ * to a goal: it already helps the goal by lowering the spending of its category.
  */
 
 const express = require("express");
@@ -44,11 +47,12 @@ async function findMarketRateToStore(transaction, existingTransaction = null) {
 // original_market_rate, charged_rate and exchange_cost (services/foreignCurrencyAmounts.js); null for euros.
 router.get("/transactions", function listTransactions(request, response) {
   const transactionRows = db.prepare(`
-    SELECT t.*, fa.name AS from_account, ta.name AS to_account, c.name AS category
+    SELECT t.*, fa.name AS from_account, ta.name AS to_account, c.name AS category, rc.name AS refund_category
     FROM transactions t
     LEFT JOIN accounts fa ON fa.id = t.from_account_id
     LEFT JOIN accounts ta ON ta.id = t.to_account_id
     LEFT JOIN categories c ON c.id = t.category_id
+    LEFT JOIN categories rc ON rc.id = t.refund_category_id
     ORDER BY t.date DESC, t.id DESC
   `).all();
   const tagsByTransactionId = loadTagsOfEveryTransaction();
@@ -86,11 +90,11 @@ router.post("/transactions", async function addTransaction(request, response) {
     const newTransactionId = db.transaction(() => {
       const { lastInsertRowid } = db.prepare(`
         INSERT INTO transactions (from_account_id, to_account_id, type, amount, category_id, description, date,
-                                  original_currency, original_amount_minor, original_market_rate)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                                  original_currency, original_amount_minor, original_market_rate, refund_category_id)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `).run(transaction.fromAccountId, transaction.toAccountId, transaction.type, transaction.amount,
              transaction.categoryId, transaction.description, transaction.date,
-             transaction.originalCurrency, transaction.originalAmountMinor, marketRate);
+             transaction.originalCurrency, transaction.originalAmountMinor, marketRate, transaction.refundCategoryId);
       saveTagsOfTransaction(lastInsertRowid, tagSelection);
       if (offlineId) insertOfflineSubmission.run(offlineId, lastInsertRowid, new Date().toISOString());
       return lastInsertRowid;
@@ -154,13 +158,14 @@ async function editWholeTransaction(transactionId, existingTransaction, requestB
     db.prepare(`
       UPDATE transactions
       SET from_account_id = ?, to_account_id = ?, type = ?, amount = ?, category_id = ?, description = ?, date = ?,
-          original_currency = ?, original_amount_minor = ?, original_market_rate = ?
+          original_currency = ?, original_amount_minor = ?, original_market_rate = ?, refund_category_id = ?
       WHERE id = ?
     `).run(transaction.fromAccountId, transaction.toAccountId, transaction.type, transaction.amount,
            transaction.categoryId, transaction.description, transaction.date,
-           transaction.originalCurrency, transaction.originalAmountMinor, marketRate, transactionId);
+           transaction.originalCurrency, transaction.originalAmountMinor, marketRate, transaction.refundCategoryId, transactionId);
     saveTagsOfTransaction(transactionId, tagSelection);
-    if (transaction.type !== "income") deleteGoalLink.run(transactionId); // no longer an income: no longer in a goal
+    // no longer an ordinary income (now an expense, a movement or a refund): no longer in a goal
+    if (transaction.type !== "income" || transaction.refundCategoryId !== null) deleteGoalLink.run(transactionId);
   })();
   if (transaction.originalCurrency && marketRate === null) fillMissingMarketRatesInBackground();
   response.json({ message: "Transaction updated", id: transactionId });

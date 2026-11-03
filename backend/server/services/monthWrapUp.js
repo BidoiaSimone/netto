@@ -41,13 +41,14 @@ function findRecordedDaysOfMonth(yearMonth, firstRecordedDay) {
   return firstDay <= lastDay ? { from: firstDay, to: lastDay } : null;
 }
 
+// income_and_spending (migration 23): a refund is less spending in its category, not income
 const sumOfType = (type, from, to) =>
-  db.prepare(`SELECT COALESCE(SUM(amount), 0) AS total FROM transactions WHERE type = ? AND date BETWEEN ? AND ?`).get(type, from, to).total;
+  db.prepare(`SELECT COALESCE(SUM(amount), 0) AS total FROM income_and_spending WHERE type = ? AND date BETWEEN ? AND ?`).get(type, from, to).total;
 
 function sumExpensesByCategory(from, to) {
   return db.prepare(`
     SELECT t.category_id, COALESCE(c.name, 'Uncategorized') AS name, SUM(t.amount) AS total
-    FROM transactions t LEFT JOIN categories c ON c.id = t.category_id
+    FROM income_and_spending t LEFT JOIN categories c ON c.id = t.category_id
     WHERE t.type = 'expense' AND t.date BETWEEN ? AND ? GROUP BY t.category_id ORDER BY total DESC
   `).all(from, to);
 }

@@ -240,7 +240,7 @@ function createIncomeRow(goal) {
   // the incomes in no goal yet, the biggest of the recent ones first (a sale, rarely a salary)
   const linkedIds = new Set(goals.flatMap((other) => other.incomes.map((income) => income.transaction_id)));
   const candidates = appState.transactions
-    .filter((transaction) => transaction.type === "income" && !linkedIds.has(transaction.id))
+    .filter((transaction) => transaction.type === "income" && transaction.refund_category_id == null && !linkedIds.has(transaction.id)) // a refund already helps through its category
     .slice(0, 200) // newest first already
     .sort((first, second) => second.amount - first.amount)
     .slice(0, 40);

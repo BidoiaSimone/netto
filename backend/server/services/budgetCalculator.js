@@ -112,7 +112,7 @@ function buildMonthBudgetProgress(today) {
     SELECT category_id,
            SUM(CASE WHEN recurring_transaction_id IS NOT NULL THEN amount ELSE 0 END) AS recurring,
            SUM(CASE WHEN recurring_transaction_id IS NULL THEN amount ELSE 0 END) AS variable
-    FROM transactions WHERE type = 'expense' AND date BETWEEN ? AND ?
+    FROM income_and_spending WHERE type = 'expense' AND date BETWEEN ? AND ? -- refunds come off their category
     GROUP BY category_id
   `).all(`${month}-01`, today);
   const spendingByCategoryId = new Map(spendingRows.map((row) => [row.category_id, row]));
@@ -167,7 +167,7 @@ function buildBudgetVsActual(from, to) {
   let totalSpent = 0;
   const spendingRows = db.prepare(`
     SELECT category_id, substr(date, 1, 7) AS month, SUM(amount) AS total
-    FROM transactions WHERE type = 'expense' AND date BETWEEN ? AND ?
+    FROM income_and_spending WHERE type = 'expense' AND date BETWEEN ? AND ?
     GROUP BY category_id, month
   `).all(from, to);
   for (const row of spendingRows) {

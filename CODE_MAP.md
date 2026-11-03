@@ -44,13 +44,15 @@ backend/
 │   ├── migrations/
 │   │   ├── migrationRunner.js       runs the migrations the database hasn't had yet (PRAGMA user_version)
 │   │   ├── allMigrationsInOrder.js  the list; position = migration number
-│   │   └── 001-…js … 022-…js        one file per schema change, never edited once applied (010: tags, 011: budgets, 012: forecast,
+│   │   └── 001-…js … 023-…js        one file per schema change, never edited once applied (010: tags, 011: budgets, 012: forecast,
 │   │                                013: forecast events linked to investments, 014: foreign currency, 015: investment targets + settings,
 │   │                                016: spending pace of a category, daily / occasional, for the month projections,
 │   │                                017: goals paid for by cutting back, 018: ids of transactions sent later by the phone,
 │   │                                019: the imported "Old tracker" account is cash, not a bank account,
 │   │                                020: the last price of each investment, for when Yahoo doesn't answer,
-│   │                                021: each category's icon and colour, 022: income linked to a goal)
+│   │                                021: each category's icon and colour, 022: income linked to a goal,
+│   │                                023: a refund pays back an expense category; the view income_and_spending,
+│   │                                read by every total of income and spending, counts it as less spending there)
 │   ├── tools/
 │   │   ├── printDatabaseTables.js   npm run db:print
 │   │   ├── clearDatabase.js         npm run db:clear -- --yes   (deletes everything!)

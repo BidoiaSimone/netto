@@ -87,6 +87,7 @@ router.put("/categories/:id", function renameOrMergeCategory(request, response) 
     }
     db.transaction(() => {
       db.prepare(`UPDATE transactions SET category_id = ? WHERE category_id = ?`).run(categoryWithNewName.id, categoryId);
+      db.prepare(`UPDATE transactions SET refund_category_id = ? WHERE refund_category_id = ?`).run(categoryWithNewName.id, categoryId); // refunds of it
       db.prepare(`UPDATE recurring_transactions SET category_id = ? WHERE category_id = ?`).run(categoryWithNewName.id, categoryId);
       // goals funded by this category keep it under its new name (a goal that had both keeps the target's baseline)
       db.prepare(`INSERT OR IGNORE INTO savings_goal_categories (goal_id, category_id, monthly_baseline)
@@ -117,7 +118,8 @@ router.put("/categories/:id/kind", function moveCategoryToOtherKind(request, res
 
   const usesOfCurrentKind = db.prepare(`
     SELECT (SELECT COUNT(*) FROM transactions WHERE category_id = $id AND type = $kind)
-         + (SELECT COUNT(*) FROM recurring_transactions WHERE category_id = $id AND type = $kind) AS count
+         + (SELECT COUNT(*) FROM recurring_transactions WHERE category_id = $id AND type = $kind)
+         + (SELECT COUNT(*) FROM transactions WHERE refund_category_id = $id) AS count -- refunds pay back an expense category
   `).get({ id: categoryId, kind: category.kind }).count;
   if (usesOfCurrentKind) {
     return response.status(409).json({

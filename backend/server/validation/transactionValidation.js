@@ -53,7 +53,22 @@ function validateTransaction(requestBody, accountIdsAlreadyUsed = []) {
   if (details.error) return details;
   const foreign = validateForeignAmount(requestBody);
   if (foreign.error) return foreign;
-  return { transaction: { fromAccountId, toAccountId, type: requestBody.type, amount, ...details.details, ...foreign.foreignAmount } };
+  const refund = validateRefundCategory(requestBody);
+  if (refund.error) return refund;
+  return { transaction: { fromAccountId, toAccountId, type: requestBody.type, amount, ...details.details, ...foreign.foreignAmount, refundCategoryId: refund.refundCategoryId } };
+}
+
+// A refund (migration 23): an income may name the expense category it pays back, { refund_category_id: 4 }.
+// Empty = an ordinary income. Expenses and movements never have one: it's ignored for them.
+// Returns { error } or { refundCategoryId } (null when there's none).
+function validateRefundCategory(requestBody) {
+  if (requestBody.type !== "income") return { refundCategoryId: null };
+  const refundCategoryId = parseOptionalId(requestBody.refund_category_id);
+  if (refundCategoryId === null) return { refundCategoryId: null };
+  const category = db.prepare(`SELECT name, kind FROM categories WHERE id = ?`).get(refundCategoryId);
+  if (!category) return { error: "Unknown category for the refund: pick one from the list" };
+  if (category.kind !== "expense") return { error: `${category.name} is an income category: a refund pays back an expense category` };
+  return { refundCategoryId };
 }
 
 // What it cost in a foreign currency (migration 14), optional: { original_currency: "JPY", original_amount: 1200 }.

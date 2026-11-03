@@ -61,6 +61,7 @@ export function openTransactionEditor(transaction) {
   form.description.value = transaction.description ?? "";
   updateTransactionFieldsForType(); // fills the category list for this type: pick the category after it
   elementById("tx-category").value = transaction.category_id ?? "";
+  elementById("tx-refund-category").value = transaction.refund_category_id ?? "";
   showPickedCategoryChip();
   setPickedTags(transaction.tags);
   form.amount.focus();
@@ -78,6 +79,7 @@ export function updateTransactionFieldsForType() {
   const fromAccountPicker = elementById("tx-from"), toAccountPicker = elementById("tx-to");
   const type = elementById("tx-type").value;
   fillCategoryPicker(elementById("tx-category"), type); // income and expense each have their own categories
+  fillRefundCategoryPicker(type === "income");
   const isReconciliation = type === "adjustment"; // only when editing one: see PUT /transactions/:id
   const isInvestmentCash = type === "investment"; // the money side of a trade: read-only here, see the Investments page
 
@@ -101,6 +103,17 @@ export function updateTransactionFieldsForType() {
   refreshTagSuggestions();
   showTypeInSegments(type);
   renderTransactionCategoryChips(); // after the disabling above: an investment's category can't change
+}
+
+// An income can be a refund (migration 23): "Pays back" picks the expense category it comes off. Only incomes have it.
+function fillRefundCategoryPicker(isIncome) {
+  const picker = elementById("tx-refund-category");
+  const picked = picker.value;
+  picker.replaceChildren(new Option("— not a refund —", ""),
+    ...appState.categories.filter((category) => category.kind === "expense").map((category) => new Option(category.name, category.id)));
+  picker.value = isIncome ? picked : "";
+  if (picker.value !== picked && isIncome) picker.value = "";
+  elementById("tx-refund-row").hidden = !isIncome;
 }
 
 // ---------- Pocket's type switch: Expense | Income | Movement ----------
@@ -170,6 +183,7 @@ function readTransactionForm(form) {
     to_account_id: formValues.to_account_id ? Number(formValues.to_account_id) : null,
     date: formValues.date || null, // empty = the server uses today
     category_id: formValues.category_id ? Number(formValues.category_id) : null,
+    refund_category_id: formValues.type === "income" && formValues.refund_category_id ? Number(formValues.refund_category_id) : null,
     description: formValues.description || null,
   };
 }
@@ -211,6 +225,7 @@ const toNewTransaction = (transaction) => ({
   type: transaction.type, amount: transaction.amount, date: transaction.date,
   from_account_id: transaction.from_account_id, to_account_id: transaction.to_account_id,
   category_id: transaction.category_id, description: transaction.description,
+  refund_category_id: transaction.refund_category_id ?? null,
   tag_ids: (transaction.tags ?? []).map((tag) => tag.id),
   original_currency: transaction.original_currency ?? null,
   original_amount: transaction.original_currency ? transaction.original_amount : null,

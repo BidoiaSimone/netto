@@ -152,7 +152,8 @@ test("migration 21 gives the categories netto already had their icon and colour,
   // a database as it was at version 20: the latest one, without what 21 (and later) added
   runMigrationsQuietly(db);
   assert.equal(allMigrationsInOrder[20].name, "addCategoryIconsAndColors");
-  db.exec(`DROP TABLE savings_goal_incomes; ALTER TABLE categories DROP COLUMN icon; ALTER TABLE categories DROP COLUMN color;`); // and without 22
+  db.exec(`DROP VIEW income_and_spending; ALTER TABLE transactions DROP COLUMN refund_category_id;
+           DROP TABLE savings_goal_incomes; ALTER TABLE categories DROP COLUMN icon; ALTER TABLE categories DROP COLUMN color;`); // and without 22, 23
   db.pragma("user_version = 20");
   db.exec(`INSERT INTO categories (name, kind) VALUES ('grocery', 'expense'), ('Gift', 'expense'), ('Gifts received', 'income'),
                                                     ('Medicine', 'income'), ('Books', 'expense')`);

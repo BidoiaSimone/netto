@@ -9,6 +9,7 @@ import { appState } from "../core/appState.js";
 import { isLightEdition } from "../core/edition.js";
 import { renderMonthProjection } from "./monthProjection.js";
 import { createCategoryLabel } from "../core/categoryIcons.js";
+import { asIncomeOrSpending } from "../core/transactionDisplay.js";
 
 const NUMBER_OF_MONTHS_SHOWN = 6;
 const UNCATEGORIZED_KEY = "uncategorized";
@@ -17,7 +18,7 @@ const UNCATEGORIZED_KEY = "uncategorized";
 // The name comes with each transaction (the server joins it in).
 function sumThisMonthByCategory(transactionType, currentMonth) {
   const totalByCategoryId = new Map(); // id (or "uncategorized") -> { categoryId, name, total }
-  for (const transaction of appState.transactions) {
+  for (const transaction of appState.transactions.map(asIncomeOrSpending)) { // a refund: less spending in its category
     if (transaction.type !== transactionType || !transaction.date.startsWith(currentMonth)) continue;
     const key = transaction.category_id ?? UNCATEGORIZED_KEY;
     if (!totalByCategoryId.has(key)) totalByCategoryId.set(key, { categoryId: transaction.category_id, name: transaction.category ?? "Uncategorized", total: 0 });
@@ -28,7 +29,7 @@ function sumThisMonthByCategory(transactionType, currentMonth) {
 
 function sumByMonth() {
   const totalsByMonth = {}; // "2026-10" -> { income, expense }
-  for (const transaction of appState.transactions) {
+  for (const transaction of appState.transactions.map(asIncomeOrSpending)) {
     const monthTotals = (totalsByMonth[transaction.date.slice(0, 7)] ??= { income: 0, expense: 0 });
     if (transaction.type === "income") monthTotals.income += transaction.amount;
     if (transaction.type === "expense") monthTotals.expense += transaction.amount;

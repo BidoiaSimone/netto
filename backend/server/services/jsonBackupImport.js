@@ -45,9 +45,9 @@ const insertCategory = db.prepare(`INSERT INTO categories (id, name, kind, spend
 const insertAccount = db.prepare(`INSERT INTO accounts (id, name, kind, opening_balance, balance, open_date, last_reconciled, closed_at)
   VALUES (@id, @name, @kind, @opening_balance, @opening_balance, @open_date, @last_reconciled, @closed_at)`);
 const insertTransaction = db.prepare(`INSERT INTO transactions (id, from_account_id, to_account_id, type, amount, category_id, description, date, recurring_transaction_id,
-    original_currency, original_amount_minor, original_market_rate)
+    original_currency, original_amount_minor, original_market_rate, refund_category_id)
   VALUES (@id, @from_account_id, @to_account_id, @type, @amount, @category_id, @description, @date, @recurring_transaction_id,
-    @original_currency, @original_amount_minor, @original_market_rate)`);
+    @original_currency, @original_amount_minor, @original_market_rate, @refund_category_id)`);
 const insertRecurringTransaction = db.prepare(`INSERT INTO recurring_transactions (id, type, amount, from_account_id, to_account_id, category_id, description,
     repeat_unit, repeat_interval, start_date, end_date, posted_count, paused, created_at, original_currency, original_amount_minor)
   VALUES (@id, @type, @amount, @from_account_id, @to_account_id, @category_id, @description,
@@ -85,7 +85,8 @@ function importAccountsAndTransactions(backupData) {
   importRecurringTransactions(backupData);
   for (const transaction of backupData.transactions) {
     insertTransaction.run(pickColumns(transaction, ["id", "from_account_id", "to_account_id", "type", "amount", "category_id", "description", "date", "recurring_transaction_id",
-      "original_currency", "original_amount_minor", "original_market_rate"])); // the last three from version 14
+      "original_currency", "original_amount_minor", "original_market_rate", // these three from version 14
+      "refund_category_id"])); // from version 23
   }
 }
 
@@ -119,7 +120,7 @@ function importLegacyAccountsAndTransactions(backupData) {
     if (row.category_id === null) row.category_id = findOrCreateCategoryId(transaction.category);
     insertTransaction.run({
       ...row,
-      recurring_transaction_id: null,
+      recurring_transaction_id: null, refund_category_id: null,
       original_currency: null, original_amount_minor: null, original_market_rate: null,
       from_account_id: findAccountIdByName(transaction.from_account),
       to_account_id: findAccountIdByName(transaction.to_account),

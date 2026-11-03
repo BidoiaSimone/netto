@@ -110,9 +110,11 @@ router.post("/savings-goals/:id/incomes", function linkIncome(request, response)
   const goalId = Number(request.params.id);
   if (!selectGoal.get(goalId)) return response.status(404).json({ error: "Goal not found" });
   const transactionId = Number(request.body?.transaction_id);
-  const transaction = db.prepare(`SELECT id, type FROM transactions WHERE id = ?`).get(transactionId);
+  const transaction = db.prepare(`SELECT id, type, refund_category_id FROM transactions WHERE id = ?`).get(transactionId);
   if (!transaction) return response.status(404).json({ error: "Transaction not found" });
   if (transaction.type !== "income") return response.status(400).json({ error: "only an income can pay into a goal" });
+  // a refund already helps by lowering its category's spending: counting it again here would count it twice
+  if (transaction.refund_category_id !== null) return response.status(400).json({ error: "a refund can't pay into a goal: it already lowers the spending of the category it pays back" });
   db.prepare(`INSERT INTO savings_goal_incomes (transaction_id, goal_id) VALUES (?, ?)
               ON CONFLICT (transaction_id) DO UPDATE SET goal_id = excluded.goal_id`).run(transactionId, goalId);
   response.status(201).json({ id: goalId, transaction_id: transactionId });

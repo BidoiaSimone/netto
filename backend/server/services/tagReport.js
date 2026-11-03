@@ -26,12 +26,13 @@ const { calculateExchangeCostInCents } = require("./foreignCurrencyAmounts.js");
 const selectTotalsOfEveryTag = db.prepare(`
   SELECT tg.id, tg.name, tg.start_date, tg.end_date,
          COUNT(t.id) AS transaction_count,
-         COALESCE(SUM(CASE WHEN t.type = 'expense' THEN t.amount END), 0) AS spent,
-         COALESCE(SUM(CASE WHEN t.type = 'income' THEN t.amount END), 0) AS received,
+         COALESCE(SUM(s.amount) FILTER (WHERE s.type = 'expense'), 0) AS spent,   -- a refund (migration 23): less spent,
+         COALESCE(SUM(s.amount) FILTER (WHERE s.type = 'income'), 0) AS received, -- not received
          MIN(t.date) AS first_date, MAX(t.date) AS last_date
   FROM tags tg
   LEFT JOIN transaction_tags tt ON tt.tag_id = tg.id
   LEFT JOIN transactions t ON t.id = tt.transaction_id
+  LEFT JOIN income_and_spending s ON s.id = t.id
   GROUP BY tg.id
   ORDER BY COALESCE(tg.start_date, MIN(t.date)) DESC, tg.name COLLATE NOCASE
 `);
@@ -41,7 +42,7 @@ const selectTotalsByTagAndCategory = db.prepare(`
   SELECT tt.tag_id, t.type, t.category_id, COALESCE(c.name, 'Uncategorized') AS name,
          SUM(t.amount) AS total, COUNT(*) AS transaction_count
   FROM transaction_tags tt
-  JOIN transactions t ON t.id = tt.transaction_id
+  JOIN income_and_spending t ON t.id = tt.transaction_id
   LEFT JOIN categories c ON c.id = t.category_id
   WHERE t.type IN ('income', 'expense')
   GROUP BY tt.tag_id, t.type, t.category_id

@@ -13,6 +13,7 @@
 // renderMonthProjection(), and whichever finishes last draws the complete picture.
 
 import { elementById, createElement } from "../core/domHelpers.js";
+import { asIncomeOrSpending } from "../core/transactionDisplay.js";
 import { euroFormatter, getTodayAsLocalDate } from "../core/formatting.js";
 import { appState } from "../core/appState.js";
 import { getOccurrenceDate } from "../core/recurrenceDates.js";
@@ -62,7 +63,7 @@ function calculateMonthProjection() {
     .map((category) => category.id));
 
   let incomeSoFar = 0, recurringSpentSoFar = 0, oneOffSpentSoFar = 0, everydaySpentSoFar = 0;
-  for (const transaction of appState.transactions) {
+  for (const transaction of appState.transactions.map(asIncomeOrSpending)) { // a refund: less spending, not income
     if (!transaction.date.startsWith(currentMonth)) continue;
     if (transaction.type === "income") incomeSoFar += transaction.amount;
     if (transaction.type !== "expense") continue;

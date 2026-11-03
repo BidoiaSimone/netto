@@ -6,7 +6,7 @@ import { visibleEuroFormatter as euroFormatter, getTodayAsLocalDate, getLocalDat
 import { callApi } from "../core/apiClient.js";
 import { appState } from "../core/appState.js";
 import { applyPendingTransactionChanges } from "../core/pendingChanges.js";
-import { createSignedAmountCell, createDescriptionCell, createTransactionIcon, describeDay, describeMovementRoute } from "../core/transactionDisplay.js";
+import { createSignedAmountCell, createDescriptionCell, createTransactionIcon, describeDay, describeMovementRoute, asIncomeOrSpending } from "../core/transactionDisplay.js";
 import { renderLatestTransactions } from "./homePage.js";
 import { renderQuickAdd } from "./quickAdd.js";
 import { refreshDescriptionSuggestions } from "../dialogs/transactionDialog.js";
@@ -45,7 +45,8 @@ function matchesFilters(transaction, filters) {
   const matchesAccount = !filters.accountId
     || transaction.from_account_id === Number(filters.accountId) || transaction.to_account_id === Number(filters.accountId);
   const matchesCategory = !filters.categoryId
-    || (filters.categoryId === UNCATEGORIZED_FILTER_VALUE ? transaction.category_id == null : String(transaction.category_id) === filters.categoryId);
+    || (filters.categoryId === UNCATEGORIZED_FILTER_VALUE ? transaction.category_id == null
+      : String(transaction.category_id) === filters.categoryId || String(transaction.refund_category_id) === filters.categoryId); // Food shows its refunds too
   const matchesTag = !filters.tagId
     || (filters.tagId === UNTAGGED_FILTER_VALUE ? transaction.tags.length === 0 : transaction.tags.some((tag) => String(tag.id) === filters.tagId));
   const tagNames = transaction.tags.map((tag) => tag.name).join(" ");
@@ -73,7 +74,7 @@ export function renderTransactionsPage() {
   const visibleTransactions = isAnyFilterSet(filters) ? matchingTransactions : matchingTransactions.slice(0, UNFILTERED_LIMIT);
   fillTableBody("transactions-body", visibleTransactions, (transaction) => [
     transaction.date, createTypeBadge(transaction.type), transaction.from_account, transaction.to_account,
-    createSignedAmountCell(transaction), transaction.category, createDescriptionCell(transaction), createTagsCell(transaction),
+    createSignedAmountCell(transaction), describeCategory(transaction), createDescriptionCell(transaction), createTagsCell(transaction),
     createTransactionIcon(transaction), // last, so the phone's card layout (31-phone.css) keeps its cell numbers
   ]);
   makeRowsOpenTransactionEditor("transactions-body", visibleTransactions); // before the day rows go in: it pairs rows and transactions by position
@@ -81,13 +82,18 @@ export function renderTransactionsPage() {
   addDayRows(visibleTransactions);
 
   // the totals are of every matching transaction, also the ones beyond the first 50
-  const totalOfType = (type) => matchingTransactions.filter((transaction) => transaction.type === type).reduce((sum, transaction) => sum + transaction.amount, 0);
+  // a refund counts as less spending, not as income (like every other total)
+  const totalOfType = (type) => matchingTransactions.map(asIncomeOrSpending).filter((transaction) => transaction.type === type).reduce((sum, transaction) => sum + transaction.amount, 0);
   const countText = visibleTransactions.length < matchingTransactions.length
     ? `Latest ${visibleTransactions.length} of ${appState.transactions.length} transactions (filter to see older ones)`
     : `${matchingTransactions.length} of ${appState.transactions.length} transactions`;
   elementById("tx-summary").textContent =
     `${countText} · income ${euroFormatter.format(totalOfType("income"))} · expenses ${euroFormatter.format(totalOfType("expense"))}`;
 }
+
+// "Refunds · pays back Food" for a refund (migration 23), the category otherwise
+const describeCategory = (transaction) =>
+  transaction.refund_category ? `${transaction.category ?? "Refund"} · pays back ${transaction.refund_category}` : transaction.category;
 
 // ---------- Pocket's list: grouped by day, each row led by a round icon ----------
 // Classic doesn't show any of this (10-editable-rows-and-accounts.css hides the day rows and the icons).

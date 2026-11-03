@@ -51,14 +51,14 @@ function findPeriodOfYear(year, today) {
 
 const selectExpensesByCategory = db.prepare(`
   SELECT t.category_id, COALESCE(c.name, 'Uncategorized') AS name, SUM(t.amount) AS total
-  FROM transactions t LEFT JOIN categories c ON c.id = t.category_id
+  FROM income_and_spending t LEFT JOIN categories c ON c.id = t.category_id -- refunds come off their category
   WHERE t.type = 'expense' AND t.date BETWEEN ? AND ? GROUP BY t.category_id
 `);
 const selectMonthTotals = db.prepare(`
   SELECT substr(date, 1, 7) AS month,
          COALESCE(SUM(CASE WHEN type = 'income' THEN amount END), 0) AS income,
          COALESCE(SUM(CASE WHEN type = 'expense' THEN amount END), 0) AS expenses
-  FROM transactions WHERE date BETWEEN ? AND ? GROUP BY month ORDER BY month
+  FROM income_and_spending WHERE date BETWEEN ? AND ? GROUP BY month ORDER BY month
 `);
 const selectTradeTotals = db.prepare(`
   SELECT COALESCE(SUM(CASE WHEN side = 'buy' THEN amount END), 0) AS bought, COALESCE(SUM(CASE WHEN side = 'sell' THEN amount END), 0) AS sold,

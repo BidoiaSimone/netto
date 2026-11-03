@@ -60,11 +60,11 @@ function loadAssumptions() {
 // ---------- your real averages (the suggested first phase) ----------
 
 const sumOfType = (type, firstDay, lastDay) =>
-  db.prepare(`SELECT COALESCE(SUM(amount), 0) AS total FROM transactions WHERE type = ? AND date BETWEEN ? AND ?`).get(type, firstDay, lastDay).total;
+  db.prepare(`SELECT COALESCE(SUM(amount), 0) AS total FROM income_and_spending WHERE type = ? AND date BETWEEN ? AND ?`).get(type, firstDay, lastDay).total; // refunds: less spending
 
 // Expenses in categories without a budget this month (uncategorized included)
 function sumOfUnbudgetedExpenses(firstDay, lastDay, budgetedCategoryIds) {
-  const rows = db.prepare(`SELECT category_id, SUM(amount) AS total FROM transactions WHERE type = 'expense' AND date BETWEEN ? AND ? GROUP BY category_id`).all(firstDay, lastDay);
+  const rows = db.prepare(`SELECT category_id, SUM(amount) AS total FROM income_and_spending WHERE type = 'expense' AND date BETWEEN ? AND ? GROUP BY category_id`).all(firstDay, lastDay);
   return rows.filter((row) => !budgetedCategoryIds.has(row.category_id)).reduce((sum, row) => sum + row.total, 0);
 }
 
@@ -76,7 +76,7 @@ function sumOfUnbudgetedExpenses(firstDay, lastDay, budgetedCategoryIds) {
 function projectThisMonthExpenses({ firstDay, today, daysObserved, daysInMonth, leftOutCategoryIds }) {
   const rows = db.prepare(`
     SELECT t.category_id, t.recurring_transaction_id IS NOT NULL AS is_recurring, c.spending_pace, SUM(t.amount) AS total
-    FROM transactions t LEFT JOIN categories c ON c.id = t.category_id
+    FROM income_and_spending t LEFT JOIN categories c ON c.id = t.category_id
     WHERE t.type = 'expense' AND t.date BETWEEN ? AND ?
     GROUP BY t.category_id, is_recurring
   `).all(firstDay, today);

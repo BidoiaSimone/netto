@@ -893,6 +893,9 @@
       <!-- Pocket only: the most used categories as round icons, one tap to pick (JS/dialogs/transactionCategoryChips.js) -->
       <div class="category-chips" id="tx-category-chips" role="radiogroup" aria-label="Most used categories" hidden></div>
       <label class="form-row"><span class="form-label">Category</span><select name="category_id" id="tx-category"><option value="">— no category —</option></select></label>
+      <!-- incomes only: a refund names the expense category it pays back, and comes off that category's spending -->
+      <label class="form-row" id="tx-refund-row" hidden title="A refund (a friend paying back their share of a dinner) comes off what you spent in this category: in your goals, budgets and totals it's less spending, not income">
+        <span class="form-label">Pays back</span><select name="refund_category_id" id="tx-refund-category" aria-label="Pays back an expense category"></select></label>
       <label class="form-row"><input name="description" placeholder="Description" aria-label="Description" list="description-suggestions" autocomplete="off"></label>
     </div>
     <datalist id="description-suggestions"></datalist>

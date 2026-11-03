@@ -88,7 +88,7 @@ function buildBalanceSheet(accountRows, investmentRows) {
 
 const selectTotalsByCategory = db.prepare(`
   SELECT t.category_id, COALESCE(c.name, 'Uncategorized') AS name, SUM(t.amount) AS total
-  FROM transactions t LEFT JOIN categories c ON c.id = t.category_id
+  FROM income_and_spending t LEFT JOIN categories c ON c.id = t.category_id -- a refund: less spending, not income
   WHERE t.type = $type AND t.date BETWEEN $from AND $to
   GROUP BY t.category_id ORDER BY total DESC
 `);

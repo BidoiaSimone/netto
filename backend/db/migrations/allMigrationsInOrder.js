@@ -26,6 +26,7 @@ const allMigrationsInOrder = [
   require("./020-last-known-prices.js"),
   require("./021-category-icons-and-colors.js"),
   require("./022-income-linked-to-goals.js"),
+  require("./023-refunds-pay-back-a-category.js"),
 ];
 
 const LATEST_DATABASE_VERSION = allMigrationsInOrder.length;

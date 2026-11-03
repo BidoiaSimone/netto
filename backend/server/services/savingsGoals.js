@@ -88,9 +88,9 @@ function loadGoals() {
   return goals;
 }
 
-// Spending in one category between two days, leaving out every goal's purchase (cents)
+// Spending in one category between two days, less its refunds (migration 23), leaving out every goal's purchase (cents)
 const selectSpentInCategory = db.prepare(`
-  SELECT COALESCE(SUM(amount), 0) AS total FROM transactions
+  SELECT COALESCE(SUM(amount), 0) AS total FROM income_and_spending
   WHERE type = 'expense' AND category_id = ? AND date BETWEEN ? AND ?
     AND id NOT IN (SELECT purchase_transaction_id FROM savings_goals WHERE purchase_transaction_id IS NOT NULL)
 `);

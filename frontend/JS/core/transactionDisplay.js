@@ -8,6 +8,14 @@ import { createCategoryIcon, createTypeIcon, createUncategorizedIcon, findCatego
 
 const percentFormatter = new Intl.NumberFormat("it-IT", { style: "percent", minimumFractionDigits: 1, maximumFractionDigits: 1 });
 
+// A transaction as the totals count it (like the server's view income_and_spending, migration 23): a refund is not
+// income but less spending in the category it pays back, so it comes back as an expense with a negative amount.
+// Anything else comes back as it is.
+export function asIncomeOrSpending(transaction) {
+  if (transaction.type !== "income" || transaction.refund_category_id == null) return transaction;
+  return { ...transaction, type: "expense", amount: -transaction.amount, category_id: transaction.refund_category_id, category: transaction.refund_category };
+}
+
 // +1 money in, -1 money out, 0 a movement between your own accounts
 function getMoneyDirection(transaction) {
   if (transaction.type === "income") return 1;

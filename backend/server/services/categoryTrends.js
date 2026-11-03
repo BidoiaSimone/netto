@@ -56,7 +56,7 @@ const selectExpensesBetween = db.prepare(`
   SELECT t.category_id, c.name AS category_name, c.spending_pace, t.amount, t.date, t.recurring_transaction_id IS NOT NULL AS is_recurring,
          EXISTS (SELECT 1 FROM transaction_tags tt JOIN tags tg ON tg.id = tt.tag_id
                  WHERE tt.transaction_id = t.id AND (tg.start_date IS NOT NULL OR tg.end_date IS NOT NULL)) AS is_trip
-  FROM transactions t
+  FROM income_and_spending t -- refunds (negative) come off their category
   LEFT JOIN categories c ON c.id = t.category_id
   WHERE t.type = 'expense' AND t.date >= ? AND t.date <= ?
 `);
