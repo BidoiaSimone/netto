@@ -18,13 +18,44 @@ No accounts, no cloud service holding your numbers.
 Money is stored as integer cents, so totals never drift. netto speaks English and Italian: it follows the device's language,
 and Settings > Language changes it on each device.
 
+## Use it on your phone
+
+netto is published on GitHub Pages: **<https://bidoiasimone.github.io/netto/>**
+
+Nothing to install from a store and no account to make: the whole app, data included, runs inside your phone's browser.
+
+1. **Open the link** on the phone: Safari on an iPhone, Chrome on Android.
+2. **Add it to the Home Screen**, so it opens like an app, full screen and offline:
+   - iPhone: the Share button → **Add to Home Screen** → Add
+   - Android: the ⋮ menu → **Add to Home screen** (or **Install app**)
+3. **Open netto from its icon** from then on. On an iPhone the icon and Safari keep separate data, so using both
+   would give you two separate nettos.
+4. **Start:** Assets → **+ Add account or asset** (cash, a current account… with what each holds today), then the
+   round **+** adds income and expenses.
+
+Good to know:
+
+- **Your data stays on the phone.** No server and no cloud: nobody else can see it, and nothing moves it to another
+  device. That also means **back it up now and then**: Settings → **Save backup…** → on an iPhone, *Save to Files →
+  iCloud Drive*. netto reminds you when it's been a while. **Restore backup (JSON)…** brings a backup back (also one
+  made on the Mac).
+- **Don't use a private tab**, and on an iPhone keep *Block All Cookies* off (Settings → Apps → Safari): otherwise the
+  browser doesn't let netto keep anything, and it says so at the top of the page.
+- **Language:** netto opens in Italian on a phone set to Italian, in English otherwise. Settings → Language changes it.
+- **The phone shows the essentials** (Home, Transactions, Recurring, Insights, Categories, Assets, Investments,
+  Settings). Settings → On this phone → **Everything** shows every page, as on the Mac.
+- **Updates come by themselves:** every change to `main` is published, and the app switches to the new version the
+  next time it's opened.
+- **Investment prices** come from Yahoo Finance through a small price proxy; without a connection the app still works,
+  and shows the last prices it had.
+
 ## Ways to run it
 
 | | Where the app runs | Where the data lives |
 | --- | --- | --- |
 | **On a Mac** (`npm start`) | Express on `localhost:3000` | `backend/db/money.db` |
 | **netto light** (`npm run light`) | Express on `localhost:3002`, fewer pages | `backend/db/light.db` |
-| **PWA** (`npm run pwa:build`) | entirely in the browser, installable on a phone | the browser's private storage (OPFS) |
+| **PWA** ([on GitHub Pages](https://bidoiasimone.github.io/netto/), or `npm run pwa:build`) | entirely in the browser, installable on a phone | the browser's private storage (OPFS) |
 
 ### On a Mac
 
@@ -48,14 +79,15 @@ bash scripts/service.sh install
 
 ### As a PWA
 
-The same frontend and backend code, with no server: the backend is bundled into a Web Worker running SQLite
+Published at <https://bidoiasimone.github.io/netto/> by `.github/workflows/deploy-pwa.yml` on every push to `main`
+(see [Use it on your phone](#use-it-on-your-phone)). The same frontend and backend code, with no server: the backend is bundled into a Web Worker running SQLite
 compiled to WebAssembly, and investment prices come through a small Cloudflare Worker.
 
 ```bash
 npm run pwa:preview        # build and serve on http://localhost:4173/HTML/Home.html
 ```
 
-Publishing it on GitHub Pages and deploying the price proxy are described in [pwa/README.md](pwa/README.md).
+How it's built, published and how the price proxy is deployed: [pwa/README.md](pwa/README.md).
 
 ## Project layout
 
