@@ -17,6 +17,7 @@ import { showErrorMessage } from "../core/errorBanner.js";
 import { LIQUIDITY_CLASSES, getAccountKindLabel } from "../core/accountKinds.js";
 import { drawWaterfallChart } from "../charts/waterfallChart.js";
 import { renderMoneyFlows } from "./moneyFlows.js";
+import { t, nameOfCategory } from "../core/i18n.js";
 
 const SAVED_PERIOD_KEY = "statementsPeriod";
 const DEFAULT_PERIOD = "this-month";
@@ -24,8 +25,8 @@ const percentFormatter = new Intl.NumberFormat("it-IT", { style: "percent", maxi
 
 // Short names for the chart's bars (the table and tooltips use the full ones)
 const SHORT_BRIDGE_LABELS = {
-  income: "Income", expenses: "Expenses", investment_results: "Investments",
-  reconciliations: "Reconciled", starting_balances: "Added",
+  income: t("Income"), expenses: t("Expenses"), investment_results: t("Investments"),
+  reconciliations: t("Reconciled"), starting_balances: t("Added"),
 };
 
 let selectedPeriod = DEFAULT_PERIOD;
@@ -93,17 +94,17 @@ function renderPeriodPicker(statements) {
   elementById("st-from").value = statements.from;
   elementById("st-to").value = statements.to;
   elementById("st-period-summary").textContent =
-    `${formatShortDate(statements.from, true)} – ${formatShortDate(statements.to, true)} · opening values are from the end of ${formatShortDate(statements.opening_day, true)}`;
+    `${formatShortDate(statements.from, true)} – ${formatShortDate(statements.to, true)} · ${t("opening values are from the end of {date}", { date: formatShortDate(statements.opening_day, true) })}`;
 }
 
 function renderBridge(bridge, failedTickers) {
   const bars = [
-    { label: "Start", amount: bridge.opening, isTotal: true },
+    { label: t("Start"), amount: bridge.opening, isTotal: true },
     ...bridge.steps.filter((step) => step.amount !== 0 || step.key === "income" || step.key === "expenses")
-      .map((step) => ({ label: SHORT_BRIDGE_LABELS[step.key] ?? step.label, amount: step.amount })),
-    { label: "End", amount: bridge.closing, isTotal: true },
+      .map((step) => ({ label: SHORT_BRIDGE_LABELS[step.key] ?? t(step.label), amount: step.amount })),
+    { label: t("End"), amount: bridge.closing, isTotal: true },
   ];
-  drawWaterfallChart(elementById("st-bridge-chart"), bars, "How your net worth changed in the period");
+  drawWaterfallChart(elementById("st-bridge-chart"), bars, t("How your net worth changed in the period"));
 
   const change = bridge.closing - bridge.opening;
   elementById("st-bridge-summary").textContent =
@@ -111,17 +112,17 @@ function renderBridge(bridge, failedTickers) {
 
   fillTableBody("st-bridge-body", bridge.steps, (step) => {
     const amountCell = createElement("span", step.amount > 0 ? "pos" : step.amount < 0 ? "neg" : "", formatSignedEuros(step.amount));
-    return [step.label, amountCell];
+    return [t(step.label), amountCell];
   });
 
   const notes = [];
-  if (Math.abs(bridge.unexplained) >= 0.01) notes.push(`${formatSignedEuros(bridge.unexplained)} not explained by the steps above: this shouldn't happen, please report it.`);
-  if (failedTickers.length) notes.push(`No price history for ${failedTickers.join(", ")}: valued at cost, so its market result shows as 0.`);
+  if (Math.abs(bridge.unexplained) >= 0.01) notes.push(t("{amount} not explained by the steps above: this shouldn't happen, please report it.", { amount: formatSignedEuros(bridge.unexplained) }));
+  if (failedTickers.length) notes.push(t("No price history for {tickers}: valued at cost, so its market result shows as 0.", { tickers: failedTickers.join(", ") }));
   elementById("st-bridge-note").textContent = notes.join(" ");
 }
 
 function renderIncomeStatement(incomeStatement) {
-  const createRows = (rows, total) => (row) => [row.name, euroFormatter.format(row.total), percentFormatter.format(total ? row.total / total : 0)];
+  const createRows = (rows, total) => (row) => [nameOfCategory(row), euroFormatter.format(row.total), percentFormatter.format(total ? row.total / total : 0)];
   fillTableBody("st-income-body", incomeStatement.income, createRows(incomeStatement.income, incomeStatement.total_income));
   fillTableBody("st-expenses-body", incomeStatement.expenses, createRows(incomeStatement.expenses, incomeStatement.total_expenses));
   elementById("st-income-total").textContent = euroFormatter.format(incomeStatement.total_income);
@@ -139,7 +140,7 @@ function renderBudgetVsActual(budgetVsActual) {
   elementById("st-budget-table").hidden = !hasBudgets;
   elementById("st-budget-empty").hidden = hasBudgets;
   const createDifferenceCell = (difference) =>
-    createElement("span", difference < 0 ? "neg" : "", difference < 0 ? `${euroFormatter.format(-difference)} over` : `${euroFormatter.format(difference)} left`);
+    createElement("span", difference < 0 ? "neg" : "", difference < 0 ? t("{amount} over", { amount: euroFormatter.format(-difference) }) : t("{amount} left", { amount: euroFormatter.format(difference) }));
   const createUsedCell = (shareUsed) => {
     const usedCell = createElement("span", "st-budget-used");
     const track = createElement("span", "st-budget-track");
@@ -153,7 +154,7 @@ function renderBudgetVsActual(budgetVsActual) {
   fillTableBody("st-budget-body", budgetVsActual.rows, (row) => {
     const nameCell = createElement("span", "st-item", row.name);
     // a category budgeted for only part of the period says for how much of it
-    if (row.budgeted_months < budgetVsActual.months) nameCell.append(createElement("small", "hint", `budget for ${row.budgeted_months.toLocaleString("it-IT")} of ${budgetVsActual.months.toLocaleString("it-IT")} months`));
+    if (row.budgeted_months < budgetVsActual.months) nameCell.append(createElement("small", "hint", t("budget for {count} of {months} months", { count: row.budgeted_months.toLocaleString("it-IT"), months: budgetVsActual.months.toLocaleString("it-IT") })));
     return [nameCell, euroFormatter.format(row.budget), euroFormatter.format(row.actual), createDifferenceCell(row.difference), createUsedCell(row.share_used)];
   });
 
@@ -169,13 +170,13 @@ function renderBudgetVsActual(budgetVsActual) {
     }
     footer.append(tableRow);
   };
-  addFooterRow(["Total budgeted", euroFormatter.format(budgetVsActual.total_budget), euroFormatter.format(budgetVsActual.total_actual),
+  addFooterRow([t("Total budgeted"), euroFormatter.format(budgetVsActual.total_budget), euroFormatter.format(budgetVsActual.total_actual),
     createDifferenceCell(budgetVsActual.total_difference), createUsedCell(budgetVsActual.total_budget > 0 ? budgetVsActual.total_actual / budgetVsActual.total_budget : null)]);
-  addFooterRow(["Unbudgeted spending", "—", euroFormatter.format(budgetVsActual.unbudgeted_actual), "", ""], "st-budget-unbudgeted");
+  addFooterRow([t("Unbudgeted spending"), "—", euroFormatter.format(budgetVsActual.unbudgeted_actual), "", ""], "st-budget-unbudgeted");
 
   const monthsText = budgetVsActual.months.toLocaleString("it-IT");
   elementById("st-budget-note").textContent = hasBudgets
-    ? `Budget = each month's limit × the part of that month in the period (${monthsText} months here): 10 days of a 31-day month count 10/31 of its limit. Actual = expenses, recurring ones included, in the months a category had a budget; the rest is unbudgeted.`
+    ? t("Budget = each month's limit × the part of that month in the period ({months} months here): 10 days of a 31-day month count 10/31 of its limit. Actual = expenses, recurring ones included, in the months a category had a budget; the rest is unbudgeted.", { months: monthsText })
     : "";
 }
 
@@ -195,12 +196,12 @@ function renderBalanceSheet(balanceSheet, statements) {
     rows.push({ isClass: true, ...liquidityClass, name: LIQUIDITY_CLASSES.find((known) => known.key === liquidityClass.key)?.label ?? liquidityClass.key });
     rows.push(...liquidityClass.items.map((item) => ({ ...item, classKey: liquidityClass.key })));
   }
-  rows.push({ isTotal: true, name: "Net worth", opening: balanceSheet.opening, closing: balanceSheet.closing });
+  rows.push({ isTotal: true, name: t("Net worth"), opening: balanceSheet.opening, closing: balanceSheet.closing });
   // the tax estimates come after the real total, marked as estimates, so they can't be mistaken for part of it
   const afterTax = statements.tax_estimates.balance_sheet;
   const asDeduction = (tax) => (tax ? -tax : 0); // 0, not −0 (which would show as "−0,00 €")
-  rows.push({ isEstimate: true, name: "Deferred tax on unrealized gains", opening: asDeduction(afterTax.deferred_tax_opening), closing: asDeduction(afterTax.deferred_tax_closing) });
-  rows.push({ isEstimate: true, isTotal: true, name: "Net worth after tax", opening: afterTax.net_worth_after_tax_opening, closing: afterTax.net_worth_after_tax_closing });
+  rows.push({ isEstimate: true, name: t("Deferred tax on unrealized gains"), opening: asDeduction(afterTax.deferred_tax_opening), closing: asDeduction(afterTax.deferred_tax_closing) });
+  rows.push({ isEstimate: true, isTotal: true, name: t("Net worth after tax"), opening: afterTax.net_worth_after_tax_opening, closing: afterTax.net_worth_after_tax_closing });
 
   fillTableBody("st-balance-body", rows, (row) => {
     let nameCell;
@@ -209,12 +210,12 @@ function renderBalanceSheet(balanceSheet, statements) {
       nameCell.append(createElement("i", `swatch liq-${row.key}`), row.name);
     } else if (row.isEstimate) {
       nameCell = createElement(row.isTotal ? "strong" : "span", "", row.name);
-      nameCell.append(createElement("span", "estimate-badge", "estimate"));
+      nameCell.append(createElement("span", "estimate-badge", t("estimate")));
     } else if (row.isTotal) {
       nameCell = createElement("strong", "", row.name);
     } else {
       nameCell = createElement("span", "st-item", row.name);
-      nameCell.append(createElement("small", "hint", row.kind === "investment" ? "ETF / stock" : getAccountKindLabel(row.kind)));
+      nameCell.append(createElement("small", "hint", row.kind === "investment" ? t("ETF / stock") : getAccountKindLabel(row.kind)));
     }
     return [nameCell, euroFormatter.format(row.opening), euroFormatter.format(row.closing), createChangeCell(row.opening, row.closing)];
   });
@@ -225,10 +226,9 @@ function renderBalanceSheet(balanceSheet, statements) {
   });
 
   const taxedHoldings = afterTax.holdings.filter((holding) => holding.tax > 0).map((holding) => `${holding.ticker} ${euroFormatter.format(holding.tax)}`);
-  elementById("st-deferred-tax-note").textContent = `Deferred tax: what selling everything on the last day would cost, `
-    + `${percentFormatter.format(statements.tax_estimates.rates.capital_gains)} of each holding's gain over its average cost`
-    + `${taxedHoldings.length ? ` (${taxedHoldings.join(", ")})` : ""}. Gains on ETFs like EIMI, SWDA and VWCE are "redditi di capitale": `
-    + `each is taxed on its own, and a loss on one ETF can't reduce the tax on another (shown here, not offset).`;
+  elementById("st-deferred-tax-note").textContent = t("Deferred tax: what selling everything on the last day would cost, {rate} of each holding's gain over its average cost{holdings}. "
+    + "Gains on ETFs like EIMI, SWDA and VWCE are \"redditi di capitale\": each is taxed on its own, and a loss on one ETF can't reduce the tax on another (shown here, not offset).",
+  { rate: percentFormatter.format(statements.tax_estimates.rates.capital_gains), holdings: taxedHoldings.length ? ` (${taxedHoldings.join(", ")})` : "" });
 }
 
 // ---------- investment returns ----------
@@ -241,9 +241,9 @@ function describeReturn(returnOfPeriod, days) {
   if (!returnOfPeriod) return { main: "—", detail: "" };
   const periodText = formatSignedPercentage(returnOfPeriod.period);
   const annualText = returnOfPeriod.annual === null ? "—" : formatSignedPercentage(returnOfPeriod.annual);
-  if (days >= 365) return { main: `${annualText} a year`, detail: `${periodText} over the whole period` };
-  if (days < SHORTEST_PERIOD_WORTH_ANNUALIZING_IN_DAYS) return { main: periodText, detail: "too short to annualize" };
-  return { main: periodText, detail: `≈ ${annualText} a year` };
+  if (days >= 365) return { main: t("{share} a year", { share: annualText }), detail: t("{share} over the whole period", { share: periodText }) };
+  if (days < SHORTEST_PERIOD_WORTH_ANNUALIZING_IN_DAYS) return { main: periodText, detail: t("too short to annualize") };
+  return { main: periodText, detail: `≈ ${t("{share} a year", { share: annualText })}` };
 }
 const signedPercentFormatter = new Intl.NumberFormat("it-IT", { style: "percent", maximumFractionDigits: 2, signDisplay: "exceptZero" });
 const formatSignedPercentage = (fraction) => signedPercentFormatter.format(fraction);
@@ -264,14 +264,14 @@ function renderInvestmentReturns(investmentReturns, failedTickers) {
   const gainElement = elementById("st-return-gain");
   gainElement.textContent = formatSignedEuros(total.gain);
   gainElement.className = total.gain > 0 ? "pos" : total.gain < 0 ? "neg" : "";
-  elementById("st-return-gain-detail").textContent = `${euroFormatter.format(total.opening)} at the start, ${euroFormatter.format(total.bought)} bought, ${euroFormatter.format(total.sold)} sold, ${euroFormatter.format(total.closing)} at the end`;
+  elementById("st-return-gain-detail").textContent = t("{start} at the start, {bought} bought, {sold} sold, {end} at the end", { start: euroFormatter.format(total.opening), bought: euroFormatter.format(total.bought), sold: euroFormatter.format(total.sold), end: euroFormatter.format(total.closing) });
   for (const [elementId, returnOfPeriod] of [["st-return-mwr", total.money_weighted], ["st-return-twr", total.time_weighted]]) {
     const { main, detail } = describeReturn(returnOfPeriod, days);
     elementById(elementId).textContent = main;
     elementById(`${elementId}-detail`).textContent = detail;
   }
 
-  const rows = [...tickers, { ticker: "Total", isTotal: true, ...total }];
+  const rows = [...tickers, { ticker: t("Total"), isTotal: true, ...total }];
   fillTableBody("st-returns-body", rows, (row) => [
     row.isTotal ? createElement("strong", "", row.ticker) : row.ticker,
     euroFormatter.format(row.opening), euroFormatter.format(row.bought), euroFormatter.format(row.sold), euroFormatter.format(row.closing),
@@ -283,7 +283,7 @@ function renderInvestmentReturns(investmentReturns, failedTickers) {
 
   const valuedAtCost = tickers.filter((ticker) => ticker.valued_at_cost).map((ticker) => ticker.ticker);
   elementById("st-returns-note").textContent = valuedAtCost.length || failedTickers.length
-    ? `No price history for ${[...new Set([...valuedAtCost, ...failedTickers])].join(", ")}: valued at cost, so its return shows as about 0.`
+    ? t("No price history for {tickers}: valued at cost, so its return shows as about 0.", { tickers: [...new Set([...valuedAtCost, ...failedTickers])].join(", ") })
     : "";
 }
 
@@ -291,29 +291,29 @@ function renderInvestmentReturns(investmentReturns, failedTickers) {
 
 function renderTaxEstimates(taxEstimates) {
   const { period, rates, days } = taxEstimates;
-  const daysText = `${days}/365 of a year`;
+  const daysText = t("{days}/365 of a year", { days });
   const rows = [
-    { name: "Imposta di bollo, securities", basis: `${percentFormatter.format(rates.stamp_duty_on_securities_per_year)} a year × ${euroFormatter.format(period.securities_value_at_end)} at the end × ${daysText}`, amount: period.stamp_duty_on_securities },
+    { name: t("Imposta di bollo, securities"), basis: t("{rate} a year × {value} at the end × {days}", { rate: percentFormatter.format(rates.stamp_duty_on_securities_per_year), value: euroFormatter.format(period.securities_value_at_end), days: daysText }), amount: period.stamp_duty_on_securities },
     ...period.current_accounts.map((account) => ({
-      name: `Imposta di bollo, ${account.name}`,
+      name: t("Imposta di bollo, {name}", { name: account.name }),
       basis: account.stamp_duty > 0
-        ? `average balance ${euroFormatter.format(account.average_balance)} (over ${euroFormatter.format(rates.stamp_duty_threshold)}): ${euroFormatter.format(rates.stamp_duty_on_current_accounts_per_year)} a year × ${daysText}`
-        : `average balance ${euroFormatter.format(account.average_balance)}: not over ${euroFormatter.format(rates.stamp_duty_threshold)}, nothing due`,
+        ? t("average balance {balance} (over {threshold}): {amount} a year × {days}", { balance: euroFormatter.format(account.average_balance), threshold: euroFormatter.format(rates.stamp_duty_threshold), amount: euroFormatter.format(rates.stamp_duty_on_current_accounts_per_year), days: daysText })
+        : t("average balance {balance}: not over {threshold}, nothing due", { balance: euroFormatter.format(account.average_balance), threshold: euroFormatter.format(rates.stamp_duty_threshold) }),
       amount: account.stamp_duty,
     })),
     ...period.sells.map((sell) => ({
-      name: `Capital gains tax, ${sell.ticker} sold ${formatShortDate(sell.date, true)}`,
-      basis: sell.gain > 0 ? `${percentFormatter.format(rates.capital_gains)} × gain ${euroFormatter.format(sell.gain)}` : `a loss of ${euroFormatter.format(-sell.gain)}: no tax`,
+      name: t("Capital gains tax, {ticker} sold {date}", { ticker: sell.ticker, date: formatShortDate(sell.date, true) }),
+      basis: sell.gain > 0 ? t("{rate} × gain {gain}", { rate: percentFormatter.format(rates.capital_gains), gain: euroFormatter.format(sell.gain) }) : t("a loss of {amount}: no tax", { amount: euroFormatter.format(-sell.gain) }),
       amount: sell.tax,
     })),
   ];
   fillTableBody("st-taxes-body", rows, (row) => [row.name, createElement("span", "hint", row.basis), euroFormatter.format(row.amount)]);
   elementById("st-taxes-total").textContent = euroFormatter.format(period.total);
-  elementById("st-taxes-note").textContent = "Estimates next to the statements, not inside them: netto doesn't record what Directa or the bank "
+  elementById("st-taxes-note").textContent = t("Estimates next to the statements, not inside them: netto doesn't record what Directa or the bank "
     + "actually withheld, so the totals above and the bridge only contain what you recorded. The 5.000 € threshold is checked for each "
     + "current account on its own: the law adds up all current accounts at the same bank, and netto doesn't know which bank an account is at. "
-    + "Savings accounts aren't included (a conto deposito pays 0,2% a year like securities, a libretto 34,20 € like a current account). "
-    + `Rates checked on ${formatShortDate(rates.last_checked, true)}, in backend/config/italianTaxRates.js.`;
+    + "Savings accounts aren't included (a conto deposito pays 0,2% a year like securities, a libretto 34,20 € like a current account).")
+    + " " + t("Rates checked on {date}, in backend/config/italianTaxRates.js.", { date: formatShortDate(rates.last_checked, true) });
 }
 
 function renderStatementsPage(statements) {

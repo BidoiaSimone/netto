@@ -218,6 +218,9 @@ frontend/JS/
 │   ├── appState.js                  data shared by several pages (accounts, transactions, …)
 │   ├── dataRefresh.js               loadAllData(), runThenReloadAllData() (netto light loads fewer things)
 │   ├── edition.js                   isLightEdition: the few places the JS treats netto light differently
+│   ├── i18n.js                      the language of Settings > Language: t("…") / tp("…") for the code's texts,
+│   │                                translatePage() for Home.html's, the server's messages, dateLocale
+│   ├── italian.js                   every English text and its Italian (+ the server's messages with a name inside)
 │   ├── domHelpers.js                elementById, createElement, fillTableBody, …
 │   ├── decimalInputs.js             phones: decimal fields that take "12,50" (the Italian keyboard's comma)
 │   ├── pendingChanges.js            edits and deletions kept on this device while the Mac can't be reached (apiClient keeps them)
@@ -284,6 +287,7 @@ frontend/JS/
 │   └── svgHelpers.js
 └── settings/                        Settings page and the preferences it controls
     ├── themeAndAccentColor.js       Settings > Theme, Color, Layout and On this phone
+    ├── languageSetting.js           Settings > Language: English or Italiano on this device (reloads the page)
     ├── privacyMode.js
     ├── autoRefresh.js
     ├── backupSettings.js
@@ -343,6 +347,24 @@ One codebase, two ways to run it. `npm start` / `npm run dev` is the full netto,
 - **Adding a feature:** it's in both editions unless you mark it `full-only`.
 - **A demo:** `npm run light:demo` fills an empty light.db with a few made-up months (start over: delete light.db).
 
+## Languages: English and Italian
+
+Settings > Language picks English or Italiano, per device (localStorage, like the theme), so a phone can be in Italian
+while the Mac stays in English. Everything is written in English, and the English is the key:
+
+- **Home.html** stays in English; at startup `translatePage()` (core/i18n.js) looks up each of its texts and its
+  placeholder / title / aria-label attributes in `core/italian.js`. In Italian, `themeBeforeFirstPaint.js` keeps the
+  page invisible until then (`data-translating`), so the English never flashes. `translate="no"` leaves an element
+  as it is; `data-i18n="…"` gives it its own key, for an English word with two Italian ones ("Income (type)": Entrata).
+- **The JS** writes `t("Saved")`, `t("{count} days ago", { count })` and `tp(count, "{count} day", "{count} days")`.
+  Constants can call `t()` where they're defined: the language never changes while the page is open (a change reloads).
+- **The server speaks English.** `core/apiClient.js` passes its error messages through `translateServerMessage()`
+  (exact ones, then the patterns at the end of italian.js); labels it sends (the bridge's steps, Money flows' boxes)
+  go through `t()` where they're shown. Categories, accounts and tags are your data: never translated.
+- **Amounts** keep the Italian style in both languages (1.234,56 €); **dates** follow the language (`dateLocale`).
+- **Adding a text:** write it in English, then add it to `core/italian.js`. `tests/translations.test.js` fails and
+  names any text of Home.html, t() or tp() that has no Italian yet.
+
 ## The PWA (pwa/)
 
 The same frontend and backend, with no server: `npm run pwa:build` bundles `backend/` into a Web Worker that runs
@@ -379,6 +401,7 @@ tests/
 │   │                                   a tagged trip ("Lisbon 2025")
 │   └── balanceRule.js                  stored balance = opening + in − out, checked in SQL and in JavaScript
 ├── migrations.test.js                  empty and version-0 databases reach the latest version, data intact
+├── translations.test.js                every text of Home.html and every t() / tp() has its Italian, {values} kept, the server's messages
 ├── balances.test.js                    add / edit / delete every kind of transaction: balances stay right
 ├── validation.test.js                  category kinds, closed accounts, euros → cents (1.005 → 101), refusals
 ├── categories.test.js                  rename, merge, move to the other kind (and when it's blocked), icon + colour

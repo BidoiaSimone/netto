@@ -2,6 +2,8 @@
 // The date arithmetic is the same as the server's (backend/server/services/recurrenceSchedule.js), so the
 // dialog can preview the next dates before saving. The server stays the one that decides what is added.
 
+import { isItalian } from "./i18n.js";
+
 const ORDINAL_SUFFIXES = { one: "st", two: "nd", few: "rd", other: "th" };
 const englishOrdinalRules = new Intl.PluralRules("en", { type: "ordinal" });
 const toOrdinal = (number) => `${number}${ORDINAL_SUFFIXES[englishOrdinalRules.select(number)]}`; // 1st, 2nd, 23rd
@@ -48,11 +50,19 @@ const OCCURRENCES_PER_YEAR_BY_UNIT = { week: 52, month: 12, year: 1 };
 export const calculateMonthlyEquivalent = (rule) => (rule.amount * OCCURRENCES_PER_YEAR_BY_UNIT[rule.repeat_unit]) / rule.repeat_interval / 12;
 
 // "Every month on the 5th", "Every 2 weeks on Wednesday", "Every year on 14 October"
+// (Italian: "Ogni mese il giorno 5", "Ogni 2 settimane di mercoledì", "Ogni anno il 14 ottobre")
 export function describeRepeat({ start_date: startDate, repeat_unit: repeatUnit, repeat_interval: repeatInterval }) {
   const start = new Date(startDate + "T00:00");
+  const dayOfMonth = start.getDate();
+  if (isItalian) {
+    const units = { week: ["settimana", "settimane"], month: ["mese", "mesi"], year: ["anno", "anni"] }[repeatUnit];
+    const every = repeatInterval === 1 ? `Ogni ${units[0]}` : `Ogni ${repeatInterval} ${units[1]}`;
+    if (repeatUnit === "week") return `${every} di ${start.toLocaleDateString("it-IT", { weekday: "long" })}`;
+    if (repeatUnit === "year") return `${every} il ${start.toLocaleDateString("it-IT", { day: "numeric", month: "long" })}`;
+    return `${every} il giorno ${dayOfMonth}${dayOfMonth > 28 ? " (o l'ultimo giorno del mese)" : ""}`;
+  }
   const every = repeatInterval === 1 ? `Every ${repeatUnit}` : `Every ${repeatInterval} ${repeatUnit}s`;
   if (repeatUnit === "week") return `${every} on ${start.toLocaleDateString("en-GB", { weekday: "long" })}`;
   if (repeatUnit === "year") return `${every} on ${start.toLocaleDateString("en-GB", { day: "numeric", month: "long" })}`;
-  const dayOfMonth = start.getDate();
   return `${every} on the ${toOrdinal(dayOfMonth)}${dayOfMonth > 28 ? " (or the month's last day)" : ""}`;
 }

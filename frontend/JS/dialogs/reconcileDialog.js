@@ -7,6 +7,7 @@ import { callApi } from "../core/apiClient.js";
 import { appState, isAccountOpen } from "../core/appState.js";
 import { showErrorMessage } from "../core/errorBanner.js";
 import { runThenReloadAllData } from "../core/dataRefresh.js";
+import { t } from "../core/i18n.js";
 
 // Open accounts with a counted amount typed in, ready to be reconciled
 function getAccountsToReconcile() {
@@ -21,20 +22,20 @@ function getAccountsToReconcile() {
 function openReconcileConfirmation() {
   const accountsToReconcile = getAccountsToReconcile();
   if (!accountsToReconcile.length) {
-    showErrorMessage("Type a counted amount for at least one account first.");
+    showErrorMessage(t("Type a counted amount for at least one account first."));
     return;
   }
   showErrorMessage("");
   fillTableBody("reconcile-confirm-body", accountsToReconcile, ({ account, countedAmount, difference }) => {
     const differenceColorClass = difference > 0 ? "pos" : difference < 0 ? "neg" : "";
-    const differenceText = difference === 0 ? "no change" : formatDifferenceWithPlusSign(difference);
+    const differenceText = difference === 0 ? t("no change") : formatDifferenceWithPlusSign(difference);
     return [account.name, euroFormatter.format(account.balance), euroFormatter.format(countedAmount), createElement("span", differenceColorClass, differenceText)];
   });
   const totalDifference = accountsToReconcile.reduce((sum, item) => sum + item.difference, 0);
   const netWorth = appState.netWorth;
   elementById("reconcile-confirm-total").textContent = netWorth
-    ? `Net worth ${euroFormatter.format(netWorth.net_worth)} → ${euroFormatter.format(netWorth.net_worth + totalDifference)} (${formatDifferenceWithPlusSign(totalDifference)})`
-    : `Total difference ${formatDifferenceWithPlusSign(totalDifference)}`;
+    ? t("Net worth {before} → {after} ({difference})", { before: euroFormatter.format(netWorth.net_worth), after: euroFormatter.format(netWorth.net_worth + totalDifference), difference: formatDifferenceWithPlusSign(totalDifference) })
+    : t("Total difference {amount}", { amount: formatDifferenceWithPlusSign(totalDifference) });
   elementById("reconcile-dialog").showModal();
   elementById("reconcile-confirm").focus();
 }

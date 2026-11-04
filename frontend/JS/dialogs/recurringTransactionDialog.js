@@ -11,6 +11,7 @@ import { fillCategoryPicker } from "../core/categoryPickers.js";
 import { getOccurrenceDate, listUpcomingDates, describeRepeat } from "../core/recurrenceDates.js";
 import { openDialog } from "../app/dialogWindows.js";
 import { fillCurrencyPicker } from "../core/currencies.js";
+import { t, tp } from "../core/i18n.js";
 
 const NUMBER_OF_DATES_PREVIEWED = 3;
 
@@ -21,8 +22,8 @@ let ruleBeingEdited = null; // null when adding a new one
 
 export function switchRecurringDialogMode(ruleToEdit) {
   ruleBeingEdited = ruleToEdit;
-  elementById("recurring-title").textContent = ruleToEdit ? "Edit recurring transaction" : "New recurring transaction";
-  elementById("recurring-submit").textContent = ruleToEdit ? "Save changes" : "Add";
+  elementById("recurring-title").textContent = ruleToEdit ? t("Edit recurring transaction") : t("New recurring transaction");
+  elementById("recurring-submit").textContent = ruleToEdit ? t("Save changes") : t("Add");
   elementById("recurring-delete").hidden = !ruleToEdit;
   elementById("recurring-paused-field").hidden = !ruleToEdit;
   document.querySelector("#recurring-dialog .recurring-edit-note").hidden = !ruleToEdit;
@@ -37,7 +38,7 @@ export function prepareNewRecurringTransaction() {
   form.start_date.value = getTodayAsLocalDate();
   form.repeat_interval.value = 1;
   form.repeat_unit.value = "month";
-  fillCurrencyPicker(form.original_currency, { emptyOptionLabel: "Euros" });
+  fillCurrencyPicker(form.original_currency, { emptyOptionLabel: t("Euros") });
   form.original_currency.value = "";
   updateRecurringDialog();
 }
@@ -58,7 +59,7 @@ export function openRecurringTransactionEditor(rule) {
   form.start_date.value = rule.start_date;
   form.end_date.value = rule.end_date ?? "";
   form.paused.checked = rule.paused;
-  fillCurrencyPicker(form.original_currency, { emptyOptionLabel: "Euros" });
+  fillCurrencyPicker(form.original_currency, { emptyOptionLabel: t("Euros") });
   form.original_currency.value = rule.original_currency ?? "";
   form.original_amount.value = rule.original_amount ?? "";
   updateRecurringDialog(); // fills the category list for this type: pick the category after it
@@ -94,7 +95,7 @@ function updateCurrencyFields() {
   elementById("rec-original-amount-field").hidden = !currencyCode;
   elementById("rec-currency-note").hidden = !currencyCode;
   form.original_amount.required = Boolean(currencyCode);
-  elementById("rec-original-amount-label").textContent = currencyCode ? `Amount in ${currencyCode}` : "Amount in that currency";
+  elementById("rec-original-amount-label").textContent = currencyCode ? t("Amount in {currency}", { currency: currencyCode }) : t("Amount in that currency");
 }
 
 // Income only has a destination, expense only a source, movement has both (like a normal transaction);
@@ -112,7 +113,7 @@ function updateAccountAndCategoryFieldsForType() {
 // The units say "week" or "weeks" depending on the number in front of them
 function updateRepeatUnitLabels() {
   const isPlural = Number(elementById("recurring-form").repeat_interval.value) !== 1;
-  for (const option of elementById("rec-unit").options) option.textContent = option.value + (isPlural ? "s" : "");
+  for (const option of elementById("rec-unit").options) option.textContent = t(option.value + (isPlural ? "s" : ""));
 }
 
 // The preset chips light up when the fields match them
@@ -132,13 +133,13 @@ function updatePreview(schedule) {
   }
   const today = getTodayAsLocalDate();
   const upcomingDates = listUpcomingDates(schedule, today, NUMBER_OF_DATES_PREVIEWED);
-  const upcomingText = upcomingDates.length ? `next: ${upcomingDates.map((date) => formatShortDate(date, true)).join(", ")}` : "no more dates";
+  const upcomingText = upcomingDates.length ? t("next: {dates}", { dates: upcomingDates.map((date) => formatShortDate(date, true)).join(", ") }) : t("no more dates");
   let pastDatesText = "";
   if (!ruleBeingEdited) {
     let pastDateCount = 0;
     while (pastDateCount < 1000 && getOccurrenceDate(schedule, pastDateCount) < today
            && (!schedule.end_date || getOccurrenceDate(schedule, pastDateCount) <= schedule.end_date)) pastDateCount++;
-    if (pastDateCount) pastDatesText = ` · ${pastDateCount} past date${pastDateCount === 1 ? "" : "s"} will be added right away`;
+    if (pastDateCount) pastDatesText = " · " + tp(pastDateCount, "{count} past date will be added right away", "{count} past dates will be added right away");
   }
   const amount = Number(elementById("recurring-form").amount.value);
   const amountText = amount > 0 ? `${euroFormatter.format(amount)} ` : "";
@@ -172,7 +173,7 @@ async function deleteRecurringTransactionBeingEdited() {
   const rule = ruleBeingEdited;
   if (!rule) return;
   const name = rule.description || lowercaseFirstLetter(describeRepeat(rule));
-  if (!confirm(`Delete "${name}"?\n\nNo more transactions will be added. The ones it already added stay.`)) return;
+  if (!confirm(t("Delete \"{name}\"?", { name }) + "\n\n" + t("No more transactions will be added. The ones it already added stay."))) return;
   try {
     await callApi(`/recurring-transactions/${rule.id}`, { method: "DELETE" });
   } catch (error) {

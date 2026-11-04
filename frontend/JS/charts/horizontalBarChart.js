@@ -3,11 +3,12 @@
 // so an all-positive chart uses the full width.
 
 import { elementById, createElement } from "../core/domHelpers.js";
+import { t } from "../core/i18n.js";
 
 // bars: [{ name, value, label, colorClass? }]. colorClass defaults to "pos" / "neg" by sign.
 export function drawHorizontalBarChart(containerId, bars, { sortBiggestFirst = true } = {}) {
   const container = elementById(containerId);
-  if (!bars.length) return container.replaceChildren(createElement("p", "chart-empty", "No data yet"));
+  if (!bars.length) return container.replaceChildren(createElement("p", "chart-empty", t("No data yet")));
 
   const largestPositive = Math.max(0, ...bars.map((bar) => bar.value));
   const largestNegative = Math.max(0, ...bars.map((bar) => -bar.value));

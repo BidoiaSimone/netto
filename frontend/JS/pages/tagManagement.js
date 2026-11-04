@@ -11,6 +11,7 @@ import { runThenReloadAllData } from "../core/dataRefresh.js";
 import { fillTagNameList, refreshTagSuggestions } from "../dialogs/transactionTagPicker.js";
 import { fillTagFilter } from "./transactionsPage.js";
 import { renderTagInsights } from "./tagInsights.js";
+import { t } from "../core/i18n.js";
 
 export async function loadTags() {
   [appState.tags, appState.tagReport] = await Promise.all([callApi("/tags"), callApi("/tags/report")]);
@@ -29,12 +30,12 @@ function renderTagManagement() {
     createTagFieldInput(tag, "name"),
     createTagFieldInput(tag, "start_date"),
     createTagFieldInput(tag, "end_date"),
-    tag.used ? formatCount(tag.used, "transaction") : "not used yet",
+    tag.used ? formatCount(tag.used, "transaction") : t("not used yet"),
     createDeleteTagButton(tag),
   ]);
 }
 
-const FIELD_LABELS = { name: "tag name", start_date: "first day", end_date: "last day" };
+const FIELD_LABELS = { name: t("tag name"), start_date: t("first day"), end_date: t("last day") };
 
 // One editable cell: the name (text) or a date. Any change saves the whole tag (PUT /tags/:id).
 function createTagFieldInput(tag, fieldName) {
@@ -63,20 +64,20 @@ function saveTag(tag, editedTag) {
     } catch (error) {
       const mergeTarget = error.data?.merge_into;
       if (!mergeTarget) throw error;
-      const movingTransactions = tag.used ? ` Its ${formatCount(tag.used, "transaction")} will get "${mergeTarget.name}" instead.` : "";
-      if (!confirm(`"${mergeTarget.name}" already exists. Merge "${tag.name}" into it?${movingTransactions}`)) return; // the reload puts the old name back
+      const movingTransactions = tag.used ? " " + t("Its {transactions} will get \"{target}\" instead.", { transactions: formatCount(tag.used, "transaction"), target: mergeTarget.name }) : "";
+      if (!confirm(t("\"{target}\" already exists. Merge \"{name}\" into it?", { target: mergeTarget.name, name: tag.name }) + movingTransactions)) return; // the reload puts the old name back
       await callApi(`/tags/${tag.id}`, { method: "PUT", body: { ...editedTag, merge: true } });
     }
   });
 }
 
 function createDeleteTagButton(tag) {
-  const deleteButton = createElement("button", "", "Delete");
+  const deleteButton = createElement("button", "", t("Delete"));
   deleteButton.type = "button";
   deleteButton.onclick = () => {
     const confirmation = tag.used
-      ? `Delete the tag "${tag.name}"? Its ${formatCount(tag.used, "transaction")} stay, just without this tag.`
-      : `Delete the tag "${tag.name}"?`;
+      ? t("Delete the tag \"{name}\"? Its {transactions} stay, just without this tag.", { name: tag.name, transactions: formatCount(tag.used, "transaction") })
+      : t("Delete the tag \"{name}\"?", { name: tag.name });
     if (confirm(confirmation)) runThenReloadAllData(() => callApi(`/tags/${tag.id}`, { method: "DELETE" }));
   };
   return deleteButton;

@@ -5,6 +5,7 @@ import { createElement } from "./domHelpers.js";
 import { visibleEuroFormatter as euroFormatter, getTodayAsLocalDate, getLocalDateDaysFromToday } from "./formatting.js";
 import { formatForeignAmount, formatUnitsPerEuro } from "./currencies.js";
 import { createCategoryIcon, createTypeIcon, createUncategorizedIcon, findCategory } from "./categoryIcons.js";
+import { t, dateLocale } from "./i18n.js";
 
 const percentFormatter = new Intl.NumberFormat("it-IT", { style: "percent", minimumFractionDigits: 1, maximumFractionDigits: 1 });
 
@@ -30,7 +31,7 @@ export function createDescriptionCell(transaction) {
   const cell = createElement("span", "", transaction.description ?? "");
   if (transaction.recurring_transaction_id) {
     const marker = createElement("span", "recurring-marker", "↻");
-    marker.title = "Added by a recurring transaction";
+    marker.title = t("Added by a recurring transaction");
     cell.prepend(marker);
   }
   return cell;
@@ -55,13 +56,14 @@ export function createSignedAmountCell(transaction) {
 // "1200 ¥ at 157,89 per € · market 160,00 per € · exchange cost 0,10 € (1,3%)"
 function describeExchange(transaction) {
   const parts = [`${formatForeignAmount(transaction.original_amount, transaction.original_currency)}`];
-  if (transaction.charged_rate) parts[0] += ` at ${formatUnitsPerEuro(transaction.charged_rate)} per €`;
-  if (transaction.original_market_rate) parts.push(`market ${formatUnitsPerEuro(transaction.original_market_rate)} per €`);
+  if (transaction.charged_rate) parts[0] += " " + t("at {rate} per €", { rate: formatUnitsPerEuro(transaction.charged_rate) });
+  if (transaction.original_market_rate) parts.push(t("market {rate} per €", { rate: formatUnitsPerEuro(transaction.original_market_rate) }));
   if (transaction.exchange_cost !== null && transaction.exchange_cost !== undefined) {
     const share = transaction.exchange_cost_share === null ? "" : ` (${percentFormatter.format(Math.abs(transaction.exchange_cost_share))})`;
-    parts.push(`exchange ${transaction.exchange_cost >= 0 ? "cost" : "gain"} ${euroFormatter.format(Math.abs(transaction.exchange_cost))}${share}`);
+    const amount = euroFormatter.format(Math.abs(transaction.exchange_cost)) + share;
+    parts.push(transaction.exchange_cost >= 0 ? t("exchange cost {amount}", { amount }) : t("exchange gain {amount}", { amount }));
   } else if (transaction.original_market_rate === null) {
-    parts.push("market rate not known yet");
+    parts.push(t("market rate not known yet"));
   }
   return parts.join(" · ");
 }
@@ -78,13 +80,13 @@ export function createTransactionIcon(transaction) {
   return category ? createCategoryIcon(category) : createUncategorizedIcon();
 }
 
-const dayFormatter = new Intl.DateTimeFormat("en-GB", { weekday: "short", day: "numeric", month: "short" });
-const dayWithYearFormatter = new Intl.DateTimeFormat("en-GB", { weekday: "short", day: "numeric", month: "short", year: "numeric" });
+const dayFormatter = new Intl.DateTimeFormat(dateLocale, { weekday: "short", day: "numeric", month: "short" });
+const dayWithYearFormatter = new Intl.DateTimeFormat(dateLocale, { weekday: "short", day: "numeric", month: "short", year: "numeric" });
 
 // "Today", "Yesterday", "Sun 18 Oct" (with the year when it isn't this year's)
 export function describeDay(date) {
-  if (date === getLocalDateDaysFromToday(0)) return "Today";
-  if (date === getLocalDateDaysFromToday(-1)) return "Yesterday";
+  if (date === getLocalDateDaysFromToday(0)) return t("Today");
+  if (date === getLocalDateDaysFromToday(-1)) return t("Yesterday");
   const day = new Date(`${date}T12:00:00`);
   return (date.slice(0, 4) === getTodayAsLocalDate().slice(0, 4) ? dayFormatter : dayWithYearFormatter).format(day);
 }

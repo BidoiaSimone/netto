@@ -11,10 +11,11 @@ import { runThenReloadAllData } from "../core/dataRefresh.js";
 import { openGoalEditor } from "../dialogs/goalDialog.js";
 import { showToast } from "../core/toast.js";
 import { createCategoryLabel } from "../core/categoryIcons.js";
+import { t, tp, dateLocale } from "../core/i18n.js";
 
 const percentFormatter = new Intl.NumberFormat("it-IT", { style: "percent", maximumFractionDigits: 0 });
-const monthFormatter = new Intl.DateTimeFormat("en-GB", { month: "long", year: "numeric" });
-const shortMonthFormatter = new Intl.DateTimeFormat("en-GB", { month: "short", year: "2-digit" });
+const monthFormatter = new Intl.DateTimeFormat(dateLocale, { month: "long", year: "numeric" });
+const shortMonthFormatter = new Intl.DateTimeFormat(dateLocale, { month: "short", year: "2-digit" });
 const formatMonth = (yearMonth) => shortMonthFormatter.format(new Date(yearMonth + "-15T12:00")); // "Oct 26": the table fits a phone
 
 let goals = [];
@@ -25,12 +26,12 @@ export async function loadSavingsGoals() {
 }
 
 const STATUS_LABELS = {
-  saving: ["saving", ""],
-  reached: ["reached: go get it", "good"],
-  bought: ["bought", "good"],
-  paying_back: ["paying it back", ""],
-  waiting: ["waiting in the queue", ""],
-  not_started: ["not started yet", ""],
+  saving: [t("saving"), ""],
+  reached: [t("reached: go get it"), "good"],
+  bought: [t("bought"), "good"],
+  paying_back: [t("paying it back"), ""],
+  waiting: [t("waiting in the queue"), ""],
+  not_started: [t("not started yet"), ""],
 };
 
 // ---------- the card's parts ----------
@@ -41,7 +42,7 @@ function createCardHead(goal, index) {
   const title = createElement("h4", "goal-name");
   title.append(createElement("span", "goal-position", `#${index + 1}`), goal.name);
   const [statusText, statusClass] = STATUS_LABELS[goal.status];
-  const statusPill = createElement("span", `status-pill ${statusClass}`, goal.status === "not_started" ? `starts ${formatShortDate(goal.start_date, true)}` : statusText);
+  const statusPill = createElement("span", `status-pill ${statusClass}`, goal.status === "not_started" ? t("starts {date}", { date: formatShortDate(goal.start_date, true) }) : statusText);
 
   const buttons = createElement("div", "goal-buttons");
   const moveButton = (label, title, offset) => {
@@ -52,10 +53,10 @@ function createCardHead(goal, index) {
     button.addEventListener("click", () => moveGoal(index, offset));
     return button;
   };
-  const editButton = createElement("button", "ghost", "Edit");
+  const editButton = createElement("button", "ghost", t("Edit"));
   editButton.type = "button";
   editButton.addEventListener("click", () => openGoalEditor(goal));
-  buttons.append(moveButton("↑", "Earlier in the queue: filled first", -1), moveButton("↓", "Later in the queue", 1), editButton);
+  buttons.append(moveButton("↑", t("Earlier in the queue: filled first"), -1), moveButton("↓", t("Later in the queue"), 1), editButton);
 
   head.append(title, statusPill, buttons);
   return head;
@@ -67,8 +68,8 @@ function createProgress(goal) {
   const amounts = createElement("div", "goal-amounts");
   amounts.append(
     createElement("strong", goal.saved < 0 ? "neg" : "", euroFormatter.format(goal.saved)),
-    createElement("span", "hint", ` of ${euroFormatter.format(goal.target)}`
-      + (goal.purchase && goal.planned_target !== goal.target ? ` (you planned ${euroFormatter.format(goal.planned_target)})` : "")),
+    createElement("span", "hint", " " + t("of {amount}", { amount: euroFormatter.format(goal.target) })
+      + (goal.purchase && goal.planned_target !== goal.target ? " " + t("(you planned {amount})", { amount: euroFormatter.format(goal.planned_target) }) : "")),
     createElement("span", "goal-share", percentFormatter.format(Math.max(0, goal.share))),
   );
   const track = createElement("div", "goal-track");
@@ -85,11 +86,11 @@ function createCategoryLine(goal, index) {
   const line = createElement("p", "goal-categories");
   goal.categories.forEach((category, categoryIndex) => {
     if (categoryIndex) line.append(" · ");
-    line.append(createCategoryLabel(category.category_id, category.name), " ", createElement("span", "hint", `${euroFormatter.format(category.monthly_baseline)}/month`), ": ",
+    line.append(createCategoryLabel(category.category_id, category.name), " ", createElement("span", "hint", t("{amount}/month", { amount: euroFormatter.format(category.monthly_baseline) })), ": ",
       createElement("span", category.saved < 0 ? "neg" : category.saved > 0 ? "pos" : "", formatSignedEuros(category.saved)));
     const earlierIndex = goals.findIndex((other, otherIndex) => otherIndex < index && (other.status === "saving" || other.status === "paying_back")
       && other.categories.some((otherCategory) => otherCategory.category_id === category.category_id));
-    if (earlierIndex >= 0) line.append(createElement("span", "hint", ` (paying for #${earlierIndex + 1} first)`));
+    if (earlierIndex >= 0) line.append(createElement("span", "hint", " " + t("(paying for #{position} first)", { position: earlierIndex + 1 })));
   });
   return line;
 }
@@ -99,20 +100,20 @@ function createOutlook(goal) {
   const outlook = createElement("p", "goal-outlook");
   if (goal.status === "bought") {
     const { purchase } = goal;
-    outlook.append(`Bought on ${formatShortDate(purchase.date, true)} for ${euroFormatter.format(purchase.amount)}${purchase.description ? ` (${purchase.description})` : ""}: `,
-      createElement("strong", "pos", `cutting back paid ${percentFormatter.format(purchase.share_paid_by_saving)} of it`),
-      purchase.share_paid_by_income > 0 ? `, income ${percentFormatter.format(purchase.share_paid_by_income)}` : "", ".");
+    outlook.append(t("Bought on {date} for {amount}", { date: formatShortDate(purchase.date, true), amount: euroFormatter.format(purchase.amount) }) + `${purchase.description ? ` (${purchase.description})` : ""}: `,
+      createElement("strong", "pos", t("cutting back paid {share} of it", { share: percentFormatter.format(purchase.share_paid_by_saving) })),
+      purchase.share_paid_by_income > 0 ? t(", income {share}", { share: percentFormatter.format(purchase.share_paid_by_income) }) : "", ".");
   } else if (goal.status === "paying_back") {
     const { purchase } = goal;
-    outlook.append(`Bought on ${formatShortDate(purchase.date, true)} for ${euroFormatter.format(purchase.amount)}: `,
-      createElement("strong", goal.saved > 0 ? "pos" : "", `${euroFormatter.format(Math.max(0, goal.saved))} paid back`),
-      ` of ${euroFormatter.format(goal.target)}. `, describePace(goal, "paid back"));
+    outlook.append(t("Bought on {date} for {amount}", { date: formatShortDate(purchase.date, true), amount: euroFormatter.format(purchase.amount) }) + ": ",
+      createElement("strong", goal.saved > 0 ? "pos" : "", t("{amount} paid back", { amount: euroFormatter.format(Math.max(0, goal.saved)) })),
+      " " + t("of {amount}", { amount: euroFormatter.format(goal.target) }) + ". ", describePace(goal, "paid back"));
   } else if (goal.status === "reached") {
-    outlook.textContent = "Fully paid for by what you didn't spend. When you buy it, link the purchase below.";
+    outlook.textContent = t("Fully paid for by what you didn't spend. When you buy it, link the purchase below.");
   } else if (goal.status === "waiting") {
-    outlook.textContent = "Its categories are paying for a goal earlier in the queue: it starts filling when that one is full (or move it up).";
+    outlook.textContent = t("Its categories are paying for a goal earlier in the queue: it starts filling when that one is full (or move it up).");
   } else if (goal.status === "not_started") {
-    outlook.textContent = `Starts counting on ${formatShortDate(goal.start_date, true)}.`;
+    outlook.textContent = t("Starts counting on {date}.", { date: formatShortDate(goal.start_date, true) });
   } else {
     outlook.append(describePace(goal, "yours"));
   }
@@ -122,18 +123,20 @@ function createOutlook(goal) {
 // "About 60 € a month so far: at this pace it's yours in about 9 months (July 2027)."
 // done: "yours" while saving for it, "paid back" once it's bought
 function describePace(goal, done) {
-  if (goal.monthly_pace === null) return "Too early to tell the pace: give it a week.";
+  if (goal.monthly_pace === null) return t("Too early to tell the pace: give it a week.");
   if (goal.monthly_pace <= 0) {
     const part = createElement("span");
-    part.append(createElement("span", "neg", `Spending above the baselines so far (${formatSignedEuros(goal.monthly_pace)} a month)`),
-      done === "yours" ? ": nothing saved yet." : ": not paying it back yet.");
+    part.append(createElement("span", "neg", t("Spending above the baselines so far ({amount} a month)", { amount: formatSignedEuros(goal.monthly_pace) })),
+      done === "yours" ? t(": nothing saved yet.") : t(": not paying it back yet."));
     return part;
   }
   const months = Math.max(1, Math.round(goal.months_to_go));
   const reachedOn = new Date();
   reachedOn.setMonth(reachedOn.getMonth() + months);
-  const when = `${months} month${months === 1 ? "" : "s"} (${monthFormatter.format(reachedOn)})`;
-  return `About ${euroFormatter.format(goal.monthly_pace)} a month so far: at this pace it's ${done === "yours" ? `yours in about ${when}` : `paid back in about ${when}`}.`;
+  const when = tp(months, "{count} month ({date})", "{count} months ({date})", { date: monthFormatter.format(reachedOn) });
+  const values = { amount: euroFormatter.format(goal.monthly_pace), when };
+  return done === "yours" ? t("About {amount} a month so far: at this pace it's yours in about {when}.", values)
+    : t("About {amount} a month so far: at this pace it's paid back in about {when}.", values);
 }
 
 // "Best case: spending nothing in these categories (150 € a month), it's yours in 3 months (January 2027)."
@@ -146,26 +149,28 @@ function createBestCase(goal) {
   const months = Math.max(1, Math.ceil(left / monthlyMaximum));
   const reachedOn = new Date();
   reachedOn.setMonth(reachedOn.getMonth() + months);
-  const done = goal.status === "paying_back" ? "paid back" : "yours";
-  line.append(createElement("strong", "", "Best case: "),
-    `spending nothing in these categories (${euroFormatter.format(monthlyMaximum)} a month), it's ${done} in ${months} month${months === 1 ? "" : "s"} (${monthFormatter.format(reachedOn)}).`);
+  const when = tp(months, "{count} month ({date})", "{count} months ({date})", { date: monthFormatter.format(reachedOn) });
+  const values = { amount: euroFormatter.format(monthlyMaximum), when };
+  line.append(createElement("strong", "", t("Best case: ")), goal.status === "paying_back"
+    ? t("spending nothing in these categories ({amount} a month), it's paid back in {when}.", values)
+    : t("spending nothing in these categories ({amount} a month), it's yours in {when}.", values));
   return line;
 }
 
 // The month-by-month table, folded away
 function createMonthDetails(goal) {
   const details = createElement("details", "goal-months");
-  details.append(createElement("summary", "", "Month by month"));
+  details.append(createElement("summary", "", t("Month by month")));
   const table = createElement("table");
   const head = createElement("thead");
   const anythingPassedOn = goal.months.some((row) => row.carried_in); // no column (or note) when it would be empty
   const anyIncome = goal.months.some((row) => row.income);
-  head.innerHTML = `<tr><th>Month</th><th>Baseline</th><th>Spent</th><th>Saved</th>${anyIncome ? "<th>Income</th>" : ""}${anythingPassedOn ? "<th>Passed on</th>" : ""}</tr>`;
+  head.innerHTML = `<tr><th>${t("Month")}</th><th>${t("Baseline")}</th><th>${t("Spent")}</th><th>${t("Saved")}</th>${anyIncome ? `<th>${t("Income")}</th>` : ""}${anythingPassedOn ? `<th>${t("Passed on")}</th>` : ""}</tr>`;
   const body = createElement("tbody");
   for (const row of goal.months) {
     const tableRow = createElement("tr");
     const monthCell = createElement("td", "", formatMonth(row.month));
-    if (row.partial) monthCell.append(createElement("small", "hint", " (part)"));
+    if (row.partial) monthCell.append(createElement("small", "hint", ` (${t("part")})`));
     tableRow.append(
       monthCell,
       createElement("td", "", euroFormatter.format(row.baseline)),
@@ -181,7 +186,7 @@ function createMonthDetails(goal) {
   scroller.append(table);
   details.append(scroller);
   if (anythingPassedOn) details.append(createElement("p", "hint small",
-    "Passed on: + what a goal before this one collected above its target, − what this one collected above its own and passed to the next."));
+    t("Passed on: + what a goal before this one collected above its target, − what this one collected above its own and passed to the next.")));
   return details;
 }
 
@@ -189,7 +194,7 @@ function createMonthDetails(goal) {
 function createPurchaseRow(goal) {
   const row = createElement("div", "goal-purchase");
   if (goal.purchase) {
-    const unlinkButton = createElement("button", "ghost", "Unlink the purchase");
+    const unlinkButton = createElement("button", "ghost", t("Unlink the purchase"));
     unlinkButton.type = "button";
     unlinkButton.addEventListener("click", () => linkPurchase(goal, null));
     row.append(unlinkButton);
@@ -204,12 +209,12 @@ function createPurchaseRow(goal) {
     .sort((first, second) => second.amount - first.amount)
     .slice(0, 40);
   const picker = createElement("select", "goal-purchase-picker");
-  picker.append(new Option(goal.status === "reached" ? "Bought it? Pick the expense…" : "Bought it already? Pick it…", ""));
+  picker.append(new Option(goal.status === "reached" ? t("Bought it? Pick the expense…") : t("Bought it already? Pick it…"), ""));
   for (const transaction of candidates) {
-    const label = `${formatShortDate(transaction.date)} · ${euroFormatter.format(transaction.amount)} · ${transaction.description || transaction.category || "expense"}`;
+    const label = `${formatShortDate(transaction.date)} · ${euroFormatter.format(transaction.amount)} · ${transaction.description || transaction.category || t("expense")}`;
     picker.append(new Option(label, transaction.id));
   }
-  const linkButton = createElement("button", "ghost", "Link");
+  const linkButton = createElement("button", "ghost", t("Link"));
   linkButton.type = "button";
   linkButton.addEventListener("click", () => { if (picker.value) linkPurchase(goal, Number(picker.value)); });
   row.append(picker, linkButton);
@@ -223,15 +228,15 @@ function createIncomeRow(goal) {
   const row = createElement("div", "goal-incomes");
   if (goal.incomes.length) {
     const list = createElement("p", "goal-income-list");
-    list.append(createElement("span", "hint", "Income: "));
+    list.append(createElement("span", "hint", t("Income: ")));
     goal.incomes.forEach((income, index) => {
       if (index) list.append(" · ");
       const unlinkButton = createElement("button", "goal-income-unlink", "×");
       unlinkButton.type = "button";
-      unlinkButton.title = "Unlink: it stops counting toward this goal (the income stays)";
-      unlinkButton.setAttribute("aria-label", `Unlink ${income.description || "this income"}`);
+      unlinkButton.title = t("Unlink: it stops counting toward this goal (the income stays)");
+      unlinkButton.setAttribute("aria-label", t("Unlink {name}", { name: income.description || t("this income") }));
       unlinkButton.addEventListener("click", () => unlinkIncome(goal, income.transaction_id));
-      list.append(`${income.description || income.category || "income"} ${formatShortDate(income.date)} `,
+      list.append(`${income.description || income.category || t("income")} ${formatShortDate(income.date)} `,
         createElement("span", "pos", formatSignedEuros(income.amount)), unlinkButton);
     });
     row.append(list);
@@ -247,12 +252,12 @@ function createIncomeRow(goal) {
   if (!candidates.length) return row;
   const linking = createElement("div", "goal-purchase");
   const picker = createElement("select", "goal-purchase-picker");
-  picker.append(new Option("Sold something for it? Pick the income…", ""));
+  picker.append(new Option(t("Sold something for it? Pick the income…"), ""));
   for (const transaction of candidates) {
-    const label = `${formatShortDate(transaction.date)} · ${euroFormatter.format(transaction.amount)} · ${transaction.description || transaction.category || "income"}`;
+    const label = `${formatShortDate(transaction.date)} · ${euroFormatter.format(transaction.amount)} · ${transaction.description || transaction.category || t("income")}`;
     picker.append(new Option(label, transaction.id));
   }
-  const linkButton = createElement("button", "ghost", "Link");
+  const linkButton = createElement("button", "ghost", t("Link"));
   linkButton.type = "button";
   linkButton.addEventListener("click", () => { if (picker.value) linkIncome(goal, Number(picker.value)); });
   linking.append(picker, linkButton);
@@ -305,9 +310,9 @@ export function offerToLinkPurchase(transactionId, transaction) {
     && Math.abs(transaction.amount - goal.target) <= goal.target * LINK_OFFER_SHARE);
   if (candidates.length !== 1) return; // none, or too unsure which
   const [goal] = candidates;
-  showToast(`Is this the ${goal.name}? Link it to the goal`, [
-    { label: "Link it", onClick: () => linkPurchase(goal, transactionId) },
-    { label: "No", onClick: () => {} },
+  showToast(t("Is this the {name}? Link it to the goal", { name: goal.name }), [
+    { label: t("Link it"), onClick: () => linkPurchase(goal, transactionId) },
+    { label: t("No"), onClick: () => {} },
   ], LINK_OFFER_MILLISECONDS);
 }
 

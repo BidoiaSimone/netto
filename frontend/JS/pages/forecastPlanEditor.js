@@ -6,6 +6,7 @@
 import { elementById, createElement, fillTableBody, highlightSelectedChip, hideAmountFieldWhenAmountsHidden } from "../core/domHelpers.js";
 import { euroFormatter } from "../core/formatting.js";
 import { callApi } from "../core/apiClient.js";
+import { t, dateLocale, translateServerMessage } from "../core/i18n.js";
 
 const SLIDER_SAVE_DELAY_MILLISECONDS = 250;
 const percentFormatter = new Intl.NumberFormat("it-IT", { style: "percent", maximumFractionDigits: 1 });
@@ -45,14 +46,14 @@ function createEditableCell(row, fieldName, { type = "text", step, rowToBody, pa
 }
 
 function createDeleteButton(confirmation, path) {
-  const deleteButton = createElement("button", "", "Delete");
+  const deleteButton = createElement("button", "", t("Delete"));
   deleteButton.type = "button";
   deleteButton.onclick = () => { if (confirm(confirmation)) changePlan(path, "DELETE"); };
   return deleteButton;
 }
 
 // "mar 2028"
-const formatMonth = (yearMonth) => new Date(yearMonth + "-01T00:00").toLocaleDateString("it-IT", { month: "short", year: "numeric" });
+const formatMonth = (yearMonth) => new Date(yearMonth + "-01T00:00").toLocaleDateString(dateLocale, { month: "short", year: "numeric" });
 
 // ---------- phases ----------
 
@@ -63,13 +64,13 @@ function renderPhases(forecast) {
     const path = `/forecast/phases/${phase.id}`;
     const savings = phase.monthly_income - phase.monthly_expenses;
     return [
-      createEditableCell(phase, "name", { rowToBody: phaseToBody, path, ariaLabel: "Phase name" }),
-      createEditableCell(phase, "from_month", { type: "month", rowToBody: phaseToBody, path, ariaLabel: `${phase.name}: starts in` }),
-      phase.until_month ? formatMonth(phase.until_month) : "and after",
-      createEditableCell(phase, "monthly_income", { type: "number", step: "0.01", rowToBody: phaseToBody, path, ariaLabel: `${phase.name}: income per month` }),
-      createEditableCell(phase, "monthly_expenses", { type: "number", step: "0.01", rowToBody: phaseToBody, path, ariaLabel: `${phase.name}: expenses per month` }),
+      createEditableCell(phase, "name", { rowToBody: phaseToBody, path, ariaLabel: t("Phase name") }),
+      createEditableCell(phase, "from_month", { type: "month", rowToBody: phaseToBody, path, ariaLabel: t("{name}: starts in", { name: phase.name }) }),
+      phase.until_month ? formatMonth(phase.until_month) : t("and after"),
+      createEditableCell(phase, "monthly_income", { type: "number", step: "0.01", rowToBody: phaseToBody, path, ariaLabel: t("{name}: income per month", { name: phase.name }) }),
+      createEditableCell(phase, "monthly_expenses", { type: "number", step: "0.01", rowToBody: phaseToBody, path, ariaLabel: t("{name}: expenses per month", { name: phase.name }) }),
       createElement("span", savings > 0 ? "pos" : savings < 0 ? "neg" : "", `${savings > 0 ? "+" : savings < 0 ? "−" : ""}${euroFormatter.format(Math.abs(savings))}`),
-      createDeleteButton(`Delete the phase "${phase.name}"?`, path),
+      createDeleteButton(t("Delete the phase \"{name}\"?", { name: phase.name }), path),
     ];
   });
   renderSuggestion(forecast);
@@ -82,12 +83,12 @@ function renderSuggestion(forecast) {
   suggestionBox.hidden = !forecast.suggested_phase;
   if (!forecast.suggested_phase) return;
   const { monthly_income: income, monthly_expenses: expenses } = forecast.suggested_phase;
-  const keepButton = createElement("button", "", "Use as my first phase");
+  const keepButton = createElement("button", "", t("Use as my first phase"));
   keepButton.type = "button";
-  keepButton.onclick = () => changePlan("/forecast/phases", "POST", { ...forecast.suggested_phase, name: "Now" });
+  keepButton.onclick = () => changePlan("/forecast/phases", "POST", { ...forecast.suggested_phase, name: t("Now") });
   suggestionBox.replaceChildren(
-    createElement("strong", "", `Suggested from your numbers: ${euroFormatter.format(income)} in, ${euroFormatter.format(expenses)} out a month`),
-    createElement("p", "hint small", `${forecast.averages.source} The forecast below already uses it; keep it as your first phase to rename and change it.`),
+    createElement("strong", "", t("Suggested from your numbers: {income} in, {expenses} out a month", { income: euroFormatter.format(income), expenses: euroFormatter.format(expenses) })),
+    createElement("p", "hint small", `${translateServerMessage(forecast.averages.source)} ${t("The forecast below already uses it; keep it as your first phase to rename and change it.")}`),
     keepButton,
   );
 }
@@ -109,9 +110,9 @@ const eventToBody = (event) => ({ name: event.name, month: event.month, amount: 
 function createLinkPicker(forecast, selectedLink) {
   const picker = createElement("select");
   picker.append(
-    new Option("— nothing (money in or out) —", ""),
-    new Option("Investments (− buys, + sells)", INVESTMENTS_LINK),
-    ...forecast.personal_use_assets.map((asset) => new Option(`Sells ${asset.name} (${euroFormatter.format(asset.value)})`, asset.account_id)),
+    new Option(t("— nothing (money in or out) —"), ""),
+    new Option(t("Investments (− buys, + sells)"), INVESTMENTS_LINK),
+    ...forecast.personal_use_assets.map((asset) => new Option(t("Sells {name} ({value})", { name: asset.name, value: euroFormatter.format(asset.value) }), asset.account_id)),
   );
   picker.value = selectedLink ?? "";
   return picker;
@@ -121,18 +122,18 @@ function renderEvents(forecast) {
   fillTableBody("fc-events-body", forecast.events, (event) => {
     const path = `/forecast/events/${event.id}`;
     const linkPicker = createLinkPicker(forecast, linkOfEvent(event));
-    linkPicker.setAttribute("aria-label", `${event.name}: linked to`);
+    linkPicker.setAttribute("aria-label", t("{name}: linked to", { name: event.name }));
     linkPicker.addEventListener("change", () => changePlan(path, "PUT", { ...eventToBody(event), ...linkToBody(linkPicker.value) }));
     // a past event keeps its editable name, with a note: it isn't counted until it's moved to a future month
     const nameCell = createElement("span", event.is_past ? "fc-past-event" : "");
-    nameCell.append(createEditableCell(event, "name", { rowToBody: eventToBody, path, ariaLabel: "Event name" }));
-    if (event.is_past) nameCell.append(createElement("small", "hint fc-past-note", "in the past: not counted"));
+    nameCell.append(createEditableCell(event, "name", { rowToBody: eventToBody, path, ariaLabel: t("Event name") }));
+    if (event.is_past) nameCell.append(createElement("small", "hint fc-past-note", t("in the past: not counted")));
     return [
       nameCell,
-      createEditableCell(event, "month", { type: "month", rowToBody: eventToBody, path, ariaLabel: `${event.name}: month` }),
-      createEditableCell(event, "amount", { type: "number", step: "0.01", rowToBody: eventToBody, path, ariaLabel: `${event.name}: amount` }),
+      createEditableCell(event, "month", { type: "month", rowToBody: eventToBody, path, ariaLabel: t("{name}: month", { name: event.name }) }),
+      createEditableCell(event, "amount", { type: "number", step: "0.01", rowToBody: eventToBody, path, ariaLabel: t("{name}: amount", { name: event.name }) }),
       linkPicker,
-      createDeleteButton(`Delete the event "${event.name}"?`, path),
+      createDeleteButton(t("Delete the event \"{name}\"?", { name: event.name }), path),
     ];
   });
   const addFormPicker = elementById("fc-event-link"), pickedBefore = addFormPicker.value;

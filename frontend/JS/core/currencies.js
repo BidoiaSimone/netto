@@ -5,6 +5,7 @@
 
 import { callApi } from "./apiClient.js";
 import { appState } from "./appState.js";
+import { isItalian, dateLocale } from "./i18n.js";
 
 export async function loadCurrencies() {
   appState.currencies = await callApi("/currencies");
@@ -31,10 +32,14 @@ export function formatUnitsPerEuro(unitsPerEuro) {
   return new Intl.NumberFormat("it-IT", { maximumFractionDigits: digits, minimumFractionDigits: 2 }).format(unitsPerEuro);
 }
 
+// A currency's name in the language of Settings ("Japanese yen", "yen giapponese"); the server's English one otherwise
+const currencyNames = typeof Intl.DisplayNames === "function" ? new Intl.DisplayNames([dateLocale], { type: "currency" }) : null;
+const nameCurrency = (currency) => (isItalian && currencyNames?.of(currency.code)) || currency.name;
+
 // The currency dropdowns: "JPY · Japanese yen"
 export function fillCurrencyPicker(selectElement, { emptyOptionLabel } = {}) {
   const pickedCode = selectElement.value;
-  const options = appState.currencies.map((currency) => new Option(`${currency.code} · ${currency.name}`, currency.code));
+  const options = appState.currencies.map((currency) => new Option(`${currency.code} · ${nameCurrency(currency)}`, currency.code));
   selectElement.replaceChildren(...(emptyOptionLabel ? [new Option(emptyOptionLabel, "")] : []), ...options);
   if (pickedCode) selectElement.value = pickedCode;
 }

@@ -4,6 +4,7 @@ import { createElement } from "../core/domHelpers.js";
 import { euroFormatter, formatShortDate, formatSignedPercent } from "../core/formatting.js";
 import { createSvgElement } from "./svgHelpers.js";
 import { chooseValueAxis, drawValueGrid, drawDateLabels, placeTooltipNearPoint, findNearestIndex } from "./chartAxis.js";
+import { t } from "../core/i18n.js";
 
 const CHART_MARGINS = { top: 12, right: 16, bottom: 24, left: 64 };
 
@@ -16,7 +17,7 @@ export function drawLineChart(container, dates, values, referenceValue, referenc
   const xOfIndex = (index) => margins.left + (index / (values.length - 1)) * (width - margins.left - margins.right);
   const yOfValue = (value) => margins.top + (1 - (value - axisBottom) / (axisTop - axisBottom)) * (height - margins.top - margins.bottom);
 
-  const svg = createSvgElement("svg", { viewBox: `0 0 ${width} ${height}`, role: "img", "aria-label": "Price over time" });
+  const svg = createSvgElement("svg", { viewBox: `0 0 ${width} ${height}`, role: "img", "aria-label": t("Price over time") });
   svg.innerHTML = `<defs><linearGradient id="inv-fill" x1="0" y1="0" x2="0" y2="1">
     <stop offset="0" style="stop-color: var(--accent)" stop-opacity="0.22"/><stop offset="1" style="stop-color: var(--accent)" stop-opacity="0"/></linearGradient></defs>`;
 
@@ -65,7 +66,7 @@ function addHoverCrosshair({ svg, dates, values, referenceValue, referenceName, 
 
     const differenceFromReference = values[nearestIndex] - referenceValue;
     tooltip.replaceChildren(document.createTextNode(formatShortDate(dates[nearestIndex], true)), createElement("strong", "", euroFormatter.format(values[nearestIndex])),
-      createElement("span", differenceFromReference >= 0 ? "pos" : "neg", `${formatSignedPercent((differenceFromReference / referenceValue) * 100)} vs ${referenceName.toLowerCase()}`));
+      createElement("span", differenceFromReference >= 0 ? "pos" : "neg", `${formatSignedPercent((differenceFromReference / referenceValue) * 100)} ${t("vs")} ${referenceName.toLowerCase()}`));
     tooltip.hidden = false;
     placeTooltipNearPoint(tooltip, svg, { pointX, pointY, width, height });
   };

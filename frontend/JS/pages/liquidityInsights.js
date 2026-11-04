@@ -8,6 +8,7 @@ import { euroFormatter } from "../core/formatting.js";
 import { appState, isAccountOpen } from "../core/appState.js";
 import { callApi } from "../core/apiClient.js";
 import { ACCOUNT_KINDS, LIQUIDITY_CLASSES } from "../core/accountKinds.js";
+import { t, tp, translateServerMessage } from "../core/i18n.js";
 
 const percentFormatter = new Intl.NumberFormat("it-IT", { style: "percent", maximumFractionDigits: 1 });
 const monthsFormatter = new Intl.NumberFormat("it-IT", { maximumFractionDigits: 1 });
@@ -26,7 +27,7 @@ export async function loadMonthlyExpenses() {
 
 // The open accounts of one class with money in them: "BBVA, BCC, Cash"
 function listAccountsOfClass(liquidityClassKey) {
-  if (liquidityClassKey === "investments") return "ETFs and stocks on the Investments page";
+  if (liquidityClassKey === "investments") return t("ETFs and stocks on the Investments page");
   const names = appState.accounts
     .filter((account) => isAccountOpen(account) && account.balance !== 0 && ACCOUNT_KINDS[account.kind]?.liquidity === liquidityClassKey)
     .map((account) => account.name);
@@ -39,12 +40,12 @@ function renderInvestedVersusLiquidCard(totals) {
   const liquid = totals.cash_and_equivalents, invested = totals.investments;
   elementById("liq-invested-share").textContent = percentFormatter.format(share(invested, invested + liquid));
   elementById("liq-invested-detail").textContent =
-    `${euroFormatter.format(invested)} invested · ${euroFormatter.format(liquid)} liquid (${percentFormatter.format(share(liquid, invested + liquid))})`;
+    t("{invested} invested · {liquid} liquid ({share})", { invested: euroFormatter.format(invested), liquid: euroFormatter.format(liquid), share: percentFormatter.format(share(liquid, invested + liquid)) });
 }
 
 function renderLiquidNetWorthCard(netWorth, totals) {
   elementById("liq-net-worth").textContent = euroFormatter.format(netWorth.net_worth - totals.personal_use);
-  elementById("liq-net-worth-detail").textContent = `net worth without personal-use assets (${euroFormatter.format(totals.personal_use)})`;
+  elementById("liq-net-worth-detail").textContent = t("net worth without personal-use assets ({amount})", { amount: euroFormatter.format(totals.personal_use) });
 }
 
 function renderEmergencyFundCard(totals) {
@@ -52,16 +53,16 @@ function renderEmergencyFundCard(totals) {
   const perMonth = monthlyExpenses.monthly_expenses;
   if (perMonth <= 0) {
     elementById("liq-months").textContent = "—";
-    elementById("liq-months-detail").textContent = "needs some expenses to compare with";
+    elementById("liq-months-detail").textContent = t("needs some expenses to compare with");
     return;
   }
   const monthsCovered = totals.cash_and_equivalents / perMonth;
   const count = monthlyExpenses.months_of_data;
-  const basedOn = count === 0 ? "this month projected to its end: rough until a whole month is recorded"
-    : `the average of the last ${count === 1 ? "complete month" : `${count} complete months`}`;
-  elementById("liq-months").textContent = `${monthsFormatter.format(monthsCovered)} months`;
-  elementById("liq-months-detail").textContent = `cash & equivalents ÷ ${euroFormatter.format(perMonth)} of expenses a month (${basedOn})`;
-  elementById("liq-months-detail").title = monthlyExpenses.source;
+  const basedOn = count === 0 ? t("this month projected to its end: rough until a whole month is recorded")
+    : tp(count, "the average of the last complete month", "the average of the last {count} complete months");
+  elementById("liq-months").textContent = t("{count} months", { count: monthsFormatter.format(monthsCovered) });
+  elementById("liq-months-detail").textContent = t("cash & equivalents ÷ {amount} of expenses a month ({basedOn})", { amount: euroFormatter.format(perMonth), basedOn });
+  elementById("liq-months-detail").title = translateServerMessage(monthlyExpenses.source);
 }
 
 // The bar and the table: each class with its amount and its share of the net worth
@@ -83,7 +84,7 @@ function renderLiquidityBreakdown(netWorth, totals) {
   });
 
   elementById("liq-note").textContent = netWorth.failed_tickers?.length
-    ? `No live price for ${netWorth.failed_tickers.join(", ")}: left out of Investments, so the shares above are off.`
+    ? t("No live price for {tickers}: left out of Investments, so the shares above are off.", { tickers: netWorth.failed_tickers.join(", ") })
     : "";
 }
 

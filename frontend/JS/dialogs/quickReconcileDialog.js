@@ -7,6 +7,7 @@ import { elementById } from "../core/domHelpers.js";
 import { euroFormatter, formatDifferenceWithPlusSign } from "../core/formatting.js";
 import { callApi } from "../core/apiClient.js";
 import { loadAllData } from "../core/dataRefresh.js";
+import { t } from "../core/i18n.js";
 
 let accountBeingCounted = null; // { account_id, name, balance } from the reminders
 
@@ -14,7 +15,7 @@ export function openQuickReconcileDialog(reminder) {
   accountBeingCounted = reminder;
   const form = elementById("quick-reconcile-form");
   form.reset();
-  elementById("quick-reconcile-title").textContent = `Reconcile ${reminder.name}`;
+  elementById("quick-reconcile-title").textContent = t("Reconcile {name}", { name: reminder.name });
   elementById("quick-reconcile-recorded").textContent = euroFormatter.format(reminder.balance);
   elementById("quick-reconcile-error").textContent = "";
   updateDifference();
@@ -27,7 +28,7 @@ function updateDifference() {
   const line = elementById("quick-reconcile-difference");
   if (countedText === "" || !accountBeingCounted) return (line.textContent = "");
   const difference = Math.round((Number(countedText) - accountBeingCounted.balance) * 100) / 100;
-  line.textContent = difference === 0 ? "Matches what netto has." : `Difference ${formatDifferenceWithPlusSign(difference)}: saved as a reconciliation.`;
+  line.textContent = difference === 0 ? t("Matches what netto has.") : t("Difference {amount}: saved as a reconciliation.", { amount: formatDifferenceWithPlusSign(difference) });
   line.className = `trade-total ${difference > 0 ? "pos" : difference < 0 ? "neg" : ""}`;
 }
 

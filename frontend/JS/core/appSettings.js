@@ -4,6 +4,7 @@
 
 import { callApi } from "./apiClient.js";
 import { appState } from "./appState.js";
+import { t } from "./i18n.js";
 
 export async function loadAppSettings() {
   const { values, definitions } = await callApi("/settings");
@@ -25,7 +26,7 @@ export function bindNumberInputToSetting(input, key, { onSaved, showError, toDis
   if (definition) {
     input.min = toDisplay(definition.minimum);
     input.max = toDisplay(definition.maximum);
-    input.title = definition.description;
+    input.title = t(definition.description); // the server's English (backend/config/appSettings.js)
   }
   if (document.activeElement !== input) input.value = toDisplay(appState.settings[key]);
   if (input.dataset.boundSetting) return; // listeners only once; the value above is refreshed every time

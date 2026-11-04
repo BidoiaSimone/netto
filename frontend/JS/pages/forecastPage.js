@@ -14,6 +14,7 @@ import { callApi } from "../core/apiClient.js";
 import { drawStackedAreaChart } from "../charts/stackedAreaChart.js";
 import { renderForecastPlan, initializeForecastPlanEditor } from "./forecastPlanEditor.js";
 import { renderFireNumber, initializeFireNumber, getFireLineValues } from "./fireNumber.js";
+import { t, tp, dateLocale } from "../core/i18n.js";
 
 const REDRAW_DELAY_AFTER_RESIZE_MILLISECONDS = 150;
 const percentFormatter = new Intl.NumberFormat("it-IT", { style: "percent", maximumFractionDigits: 1 });
@@ -30,7 +31,7 @@ function saveSetting(key, value) {
 }
 
 // "mar 2028"
-const formatMonthYear = (date) => new Date(date + "T00:00").toLocaleDateString("it-IT", { month: "short", year: "numeric" });
+const formatMonthYear = (date) => new Date(date + "T00:00").toLocaleDateString(dateLocale, { month: "short", year: "numeric" });
 
 // A forecast amount in the chosen money: nominal as it is, or divided by the inflation up to its month
 const inChosenMoney = (amount, deflator = 1) => (moneyView === "real" ? amount / deflator : amount);
@@ -59,20 +60,20 @@ function renderKeyNumbers() {
   const netWorthCards = forecast.key_numbers.net_worth_in.map((point) => {
     const value = inChosenMoney(point.net_worth, point.deflator);
     const change = value - todayPoint.net_worth;
-    return createKeyNumberCard(`In ${point.years} year${point.years === 1 ? "" : "s"}`, wholeEuroFormatter.format(value),
-      `${change >= 0 ? "+" : "−"}${wholeEuroFormatter.format(Math.abs(change))} from today · ${formatMonthYear(point.date)}`, change < 0 ? "neg" : "");
+    return createKeyNumberCard(tp(point.years, "In {count} year", "In {count} years"), wholeEuroFormatter.format(value),
+      `${t("{amount} from today", { amount: `${change >= 0 ? "+" : "−"}${wholeEuroFormatter.format(Math.abs(change))}` })} · ${formatMonthYear(point.date)}`, change < 0 ? "neg" : "");
   });
 
   const lowestCash = forecast.key_numbers.lowest_cash;
   const lowestCashPoint = forecast.forecast.find((point) => point.date === lowestCash.date);
-  const lowestCashCard = createKeyNumberCard("Lowest cash", wholeEuroFormatter.format(inChosenMoney(lowestCash.value, lowestCashPoint?.deflator)),
-    lowestCash.date === forecast.today ? "today: it only grows from here" : formatMonthYear(lowestCash.date), lowestCash.value <= 0 ? "neg" : "");
+  const lowestCashCard = createKeyNumberCard(t("Lowest cash"), wholeEuroFormatter.format(inChosenMoney(lowestCash.value, lowestCashPoint?.deflator)),
+    lowestCash.date === forecast.today ? t("today: it only grows from here") : formatMonthYear(lowestCash.date), lowestCash.value <= 0 ? "neg" : "");
 
   const runway = forecast.key_numbers.runway;
   const runwayCard = runway.months === null
-    ? createKeyNumberCard("Runway", "∞", runway.phase_name ? `${runway.phase_name} brings in more than it costs` : "no phase yet")
-    : createKeyNumberCard("Runway", `${runway.months.toLocaleString("it-IT", { maximumFractionDigits: 1 })} months`,
-      `${wholeEuroFormatter.format(runway.liquid_now)} cash + investments ÷ ${euroFormatter.format(runway.monthly_deficit)} a month short (${runway.phase_name})`,
+    ? createKeyNumberCard(t("Runway"), "∞", runway.phase_name ? t("{name} brings in more than it costs", { name: t(runway.phase_name) }) : t("no phase yet"))
+    : createKeyNumberCard(t("Runway"), t("{count} months", { count: runway.months.toLocaleString("it-IT", { maximumFractionDigits: 1 }) }),
+      t("{liquid} cash + investments ÷ {deficit} a month short ({name})", { liquid: wholeEuroFormatter.format(runway.liquid_now), deficit: euroFormatter.format(runway.monthly_deficit), name: t(runway.phase_name) }),
       runway.months < 12 ? "neg" : "");
 
   elementById("fc-key-numbers").replaceChildren(...netWorthCards, lowestCashCard, runwayCard);
@@ -82,15 +83,15 @@ function renderWarnings() {
   const { cash_runs_out: cashRunsOut, investments_run_out: investmentsRunOut, largest_shortfall: largestShortfall } = forecast.warnings;
   const warnings = [];
   if (cashRunsOut) {
-    warnings.push(createElement("p", "fc-warning", `Your cash runs out in ${formatMonthYear(cashRunsOut.date)}: from then, investments are sold to cover what's missing.`));
+    warnings.push(createElement("p", "fc-warning", t("Your cash runs out in {month}: from then, investments are sold to cover what's missing.", { month: formatMonthYear(cashRunsOut.date) })));
   }
   if (investmentsRunOut) {
     warnings.push(createElement("p", "fc-warning danger",
-      `Investments run out too in ${formatMonthYear(investmentsRunOut.date)}: after that you'd be short, up to ${wholeEuroFormatter.format(largestShortfall)} (in that month's euros).`));
+      t("Investments run out too in {month}: after that you'd be short, up to {amount} (in that month's euros).", { month: formatMonthYear(investmentsRunOut.date), amount: wholeEuroFormatter.format(largestShortfall) })));
   }
   const pastEvents = forecast.events.filter((event) => event.is_past);
   if (pastEvents.length) {
-    warnings.push(createElement("p", "fc-warning muted", `Not counted, already past: ${pastEvents.map((event) => event.name).join(", ")}. Move them to a future month or delete them.`));
+    warnings.push(createElement("p", "fc-warning muted", t("Not counted, already past: {list}. Move them to a future month or delete them.", { list: pastEvents.map((event) => event.name).join(", ") })));
   }
   elementById("fc-warnings").replaceChildren(...warnings);
 }
@@ -106,15 +107,15 @@ function renderChart() {
   const bandOf = (bandValues) => [...history.map(() => null), ...bandValues.map((value, index) => inChosenMoney(value, future[index].deflator))];
 
   drawStackedAreaChart(chartBox, dates, [
-    { name: "Cash", values: valuesOf("cash"), className: "fc-cash" },
-    { name: "Investments", values: valuesOf("investments"), className: "fc-investments" },
-    { name: "Personal use", values: valuesOf("personal_use"), className: "fc-personal-use" },
-  ], "Net worth", {
+    { name: t("Cash"), values: valuesOf("cash"), className: "fc-cash" },
+    { name: t("Investments"), values: valuesOf("investments"), className: "fc-investments" },
+    { name: t("Personal use"), values: valuesOf("personal_use"), className: "fc-personal-use" },
+  ], t("Net worth"), {
     forecastFromIndex: history.length,
-    band: showBand ? { low: bandOf(forecast.band.low), high: bandOf(forecast.band.high), label: `${percentFormatter.format(forecast.band.low_return)} – ${percentFormatter.format(forecast.band.high_return)} return` } : null,
+    band: showBand ? { low: bandOf(forecast.band.low), high: bandOf(forecast.band.high), label: t("{low} – {high} return", { low: percentFormatter.format(forecast.band.low_return), high: percentFormatter.format(forecast.band.high_return) }) } : null,
     referenceLine: getFireLineValues(forecast, moneyView),
   });
-  elementById("fc-band-label").textContent = `${percentFormatter.format(forecast.band.low_return)} – ${percentFormatter.format(forecast.band.high_return)} return`;
+  elementById("fc-band-label").textContent = t("{low} – {high} return", { low: percentFormatter.format(forecast.band.low_return), high: percentFormatter.format(forecast.band.high_return) });
 }
 
 function renderForecastResults() {

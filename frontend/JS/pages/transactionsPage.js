@@ -13,6 +13,7 @@ import { refreshDescriptionSuggestions } from "../dialogs/transactionDialog.js";
 import { renderInsightsPage } from "./insightsPage.js";
 import { makeRowsOpenTransactionEditor } from "../dialogs/transactionDialog.js";
 import { UNCATEGORIZED_FILTER_VALUE } from "../core/categoryPickers.js";
+import { t } from "../core/i18n.js";
 
 const UNTAGGED_FILTER_VALUE = "__none"; // the "No tags" choice of the tag filter
 
@@ -85,15 +86,15 @@ export function renderTransactionsPage() {
   // a refund counts as less spending, not as income (like every other total)
   const totalOfType = (type) => matchingTransactions.map(asIncomeOrSpending).filter((transaction) => transaction.type === type).reduce((sum, transaction) => sum + transaction.amount, 0);
   const countText = visibleTransactions.length < matchingTransactions.length
-    ? `Latest ${visibleTransactions.length} of ${appState.transactions.length} transactions (filter to see older ones)`
-    : `${matchingTransactions.length} of ${appState.transactions.length} transactions`;
-  elementById("tx-summary").textContent =
-    `${countText} · income ${euroFormatter.format(totalOfType("income"))} · expenses ${euroFormatter.format(totalOfType("expense"))}`;
+    ? t("Latest {count} of {total} transactions (filter to see older ones)", { count: visibleTransactions.length, total: appState.transactions.length })
+    : t("{count} of {total} transactions", { count: matchingTransactions.length, total: appState.transactions.length });
+  elementById("tx-summary").textContent = countText + " · " + t("income {income} · expenses {expenses}",
+    { income: euroFormatter.format(totalOfType("income")), expenses: euroFormatter.format(totalOfType("expense")) });
 }
 
 // "Refunds · pays back Food" for a refund (migration 23), the category otherwise
 const describeCategory = (transaction) =>
-  transaction.refund_category ? `${transaction.category ?? "Refund"} · pays back ${transaction.refund_category}` : transaction.category;
+  transaction.refund_category ? `${transaction.category ?? t("Refund")} · ${t("pays back {category}", { category: transaction.refund_category })}` : transaction.category;
 
 // ---------- Pocket's list: grouped by day, each row led by a round icon ----------
 // Classic doesn't show any of this (10-editable-rows-and-accounts.css hides the day rows and the icons).
@@ -144,7 +145,7 @@ function createTagsCell(transaction) {
   for (const tag of transaction.tags) {
     const chip = createElement("button", "tag-chip", tag.name);
     chip.type = "button";
-    chip.title = `Show only "${tag.name}"`;
+    chip.title = t("Show only \"{name}\"", { name: tag.name });
     chip.onclick = (event) => {
       event.stopPropagation();
       elementById("f-tag").value = String(tag.id);
@@ -159,8 +160,8 @@ function createTagsCell(transaction) {
 // The tag filter: every tag by name, plus "No tags". Called whenever the tags reload.
 export function fillTagFilter() {
   const tagFilter = elementById("f-tag"), filteredTagId = tagFilter.value;
-  tagFilter.replaceChildren(new Option("All tags", ""), ...appState.tags.map((tag) => new Option(tag.name, tag.id)),
-    new Option("No tags", UNTAGGED_FILTER_VALUE));
+  tagFilter.replaceChildren(new Option(t("All tags"), ""), ...appState.tags.map((tag) => new Option(tag.name, tag.id)),
+    new Option(t("No tags"), UNTAGGED_FILTER_VALUE));
   tagFilter.value = filteredTagId;
   if (tagFilter.value !== filteredTagId) tagFilter.value = ""; // the tag was deleted
   renderTransactionsPage();

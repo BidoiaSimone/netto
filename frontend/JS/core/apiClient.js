@@ -4,6 +4,7 @@ import { noteAnswerFromServer, isServerReachable } from "./connectionState.js";
 import { keepChangeForLater } from "./pendingChanges.js";
 import { runsWithoutServer } from "./edition.js";
 import { callLocalApi } from "./localApi.js";
+import { t, translateServerMessage } from "./i18n.js";
 
 const API_BASE_URL = ""; // same server that serves the page
 
@@ -36,7 +37,7 @@ export async function callApi(path, { method = "GET", body, timeoutMilliseconds,
     // Network error (Safari says "Load failed", Firefox "NetworkError..."), or the timeout: the server isn't reachable
     noteAnswerFromServer({ reachable: false });
     if (canKeep) return { kept: true, change_id: keepChangeForLater(method, path, body) };
-    throw Object.assign(new Error("Can't reach netto's server. If this doesn't go away in a few seconds, check it with: bash scripts/service.sh log"),
+    throw Object.assign(new Error(t("Can't reach netto's server. If this doesn't go away in a few seconds, check it with: bash scripts/service.sh log")),
       { isServerUnreachable: true });
   }
   // A copy saved by the service worker (serviceWorker.js) instead of a fresh answer: the server is asleep
@@ -45,7 +46,7 @@ export async function callApi(path, { method = "GET", body, timeoutMilliseconds,
   noteAnswerFromServer({ reachable: !savedAt && !isUnreachable, savedAt });
   const data = await response.json().catch(() => null);
   if (!response.ok) {
-    const error = new Error((data && data.error) || response.statusText);
+    const error = new Error(translateServerMessage((data && data.error) || response.statusText)); // the server speaks English (core/i18n.js)
     error.status = response.status;
     error.data = data; // the whole answer, e.g. merge_into when a rename hits an existing category
     if (isUnreachable) error.isServerUnreachable = true;
@@ -58,7 +59,7 @@ export async function callApi(path, { method = "GET", body, timeoutMilliseconds,
 async function callApiOnThisDevice(path, method, body) {
   const answer = await callLocalApi(method, path, body);
   if (answer.status >= 400) {
-    const error = new Error((answer.body && answer.body.error) || `Error ${answer.status}`);
+    const error = new Error(translateServerMessage((answer.body && answer.body.error) || `Error ${answer.status}`));
     error.status = answer.status;
     error.data = answer.body;
     throw error;

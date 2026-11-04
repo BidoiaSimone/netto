@@ -11,6 +11,7 @@ import { appState } from "../core/appState.js";
 import { drawHorizontalBarChart } from "../charts/horizontalBarChart.js";
 import { loadPriceHistoryIfChanged } from "./investmentPriceHistoryChart.js";
 import { openTradeDialog } from "../dialogs/tradeDialog.js";
+import { t } from "../core/i18n.js";
 
 export async function loadInvestments() {
   const [holdings] = await Promise.all([callApi("/investments"), loadTrades()]);
@@ -28,7 +29,7 @@ const hasLivePrice = (holding) => !holding.price_error;
 function createHoldingRowCells(holding) {
   const buyAndSellButtons = createElement("div", "row-actions");
   for (const side of ["buy", "sell"]) {
-    const button = createElement("button", "ghost", side === "buy" ? "Buy" : "Sell");
+    const button = createElement("button", "ghost", side === "buy" ? t("Buy") : t("Sell"));
     button.type = "button";
     button.onclick = () => openTradeDialog({ side, ticker: holding.ticker });
     buyAndSellButtons.append(button);
@@ -40,9 +41,9 @@ function createHoldingRowCells(holding) {
     shareCountFormatter.format(holding.shares),
     pricePerShareFormatter.format(holding.average_purchase_price),
     euroFormatter.format(holding.amount_invested),
-    isLive ? euroFormatter.format(holding.current_value) : "n/a",
-    isLive ? createElement("span", gainColorClass, euroFormatter.format(holding.gain)) : "n/a",
-    isLive && holding.gain_pct != null ? createElement("span", gainColorClass, holding.gain_pct.toFixed(2) + "%") : "n/a",
+    isLive ? euroFormatter.format(holding.current_value) : t("n/a"),
+    isLive ? createElement("span", gainColorClass, euroFormatter.format(holding.gain)) : t("n/a"),
+    isLive && holding.gain_pct != null ? createElement("span", gainColorClass, holding.gain_pct.toFixed(2) + "%") : t("n/a"),
     buyAndSellButtons,
   ];
 }
@@ -65,7 +66,7 @@ function renderInvestmentSummary(holdings) {
   gainPercentElement.className = totalGain >= 0 ? "pos" : "neg";
   // gains already cashed in by selling are not in the gain above (that's on shares still held)
   const totalRealizedGain = appState.trades.reduce((sum, trade) => sum + (trade.realized_gain ?? 0), 0);
-  if (totalRealizedGain) gainPercentElement.textContent += `${gainPercentElement.textContent ? " · " : ""}${formatSignedEuros(totalRealizedGain)} realized from sales`;
+  if (totalRealizedGain) gainPercentElement.textContent += `${gainPercentElement.textContent ? " · " : ""}${t("{amount} realized from sales", { amount: formatSignedEuros(totalRealizedGain) })}`;
 
   // Allocation: share of current value, biggest first
   const holdingsWithValue = liveHoldings.filter((holding) => holding.current_value > 0).sort((first, second) => second.current_value - first.current_value);
@@ -90,10 +91,10 @@ async function loadTrades() {
     pricePerShareFormatter.format(trade.price),
     trade.fees ? euroFormatter.format(trade.fees) : "",
     (trade.side === "buy" ? "−" : "+") + euroFormatter.format(trade.amount),
-    trade.account ?? (trade.note?.startsWith("Opening position") ? "opening position" : "not tracked"),
+    trade.account ?? (trade.note?.startsWith("Opening position") ? t("opening position") : t("not tracked")),
     trade.realized_gain == null ? "" : createElement("span", trade.realized_gain >= 0 ? "pos" : "neg", formatSignedEuros(trade.realized_gain)),
   ]);
   makeTableRowsOpenItems("trades-body", appState.trades,
     (trade) => openTradeDialog(trade, { isEditing: true }),
-    (trade) => (trade.note ? `${trade.note} · click to edit` : "Click to edit"));
+    (trade) => (trade.note ? `${t(trade.note)} · ${t("click to edit")}` : t("Click to edit")));
 }

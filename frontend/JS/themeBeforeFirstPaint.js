@@ -4,6 +4,8 @@
 // in Settings, see settings/themeAndAccentColor.js.
 // Layout: "classic" (default, the sidebar) or "pocket": <html data-ui>, Pocket styled by 37-ui-pocket.css. Kept per device, like the theme: the Mac and the phone can each have their own.
 // Phone features: "core" (default) or "all": <html data-phone-features>, see core/phoneFeatures.js.
+// Language: "en" (default) or "it": <html lang data-language>. In Italian the page stays invisible
+// (data-translating, 01-theme-colors.css) until main.js has translated it, so the English never flashes first.
 (function applySavedThemeAccentColorAndLayout() {
   var theme = "dark";
   try { theme = localStorage.getItem("theme") || "dark"; } catch (error) {}
@@ -23,4 +25,10 @@
   var phoneFeatures = "core";
   try { phoneFeatures = localStorage.getItem("phoneFeatures") === "all" ? "all" : "core"; } catch (error) {}
   document.documentElement.dataset.phoneFeatures = phoneFeatures;
+
+  var language = "en";
+  try { language = localStorage.getItem("language") === "it" ? "it" : "en"; } catch (error) {}
+  document.documentElement.lang = language;
+  document.documentElement.dataset.language = language;
+  if (language !== "en") document.documentElement.dataset.translating = "";
 })();
