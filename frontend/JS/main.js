@@ -49,6 +49,13 @@ import { askServiceWorkerToRetry } from "./core/connectionState.js";
 import { initializeDecimalInputs } from "./core/decimalInputs.js";
 import { initializePhoneTables } from "./app/phoneTables.js";
 import { runsWithoutServer } from "./core/edition.js";
+import { translatePage } from "./core/i18n.js";
+import { initializeLanguageSetting } from "./settings/languageSetting.js";
+
+// ---- the page's words, in the language of Settings > Language (core/i18n.js): first, so what the features copy
+// from Home.html (the type buttons take their names from the type dropdown) is already translated ----
+translatePage();
+delete document.documentElement.dataset.translating; // themeBeforeFirstPaint.js hid the page until now
 
 // ---- connect buttons, forms and shortcuts ----
 initializeDecimalInputs(); // first: phones get decimal fields that take "12,50"
@@ -82,6 +89,7 @@ initializeCategoryTrends();
 initializeQuickReconcileDialog();
 initializeAutoRefreshButton();
 initializeThemeAndAccentColor();
+initializeLanguageSetting();
 initializeBackupSettings();
 if (!runsWithoutServer) connectToServerSession(); // the PWA has no server to tell (core/localApi.js)
 

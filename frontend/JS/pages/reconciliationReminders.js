@@ -8,6 +8,7 @@ import { formatCount } from "../core/formatting.js";
 import { callApi } from "../core/apiClient.js";
 import { appState } from "../core/appState.js";
 import { openQuickReconcileDialog } from "../dialogs/quickReconcileDialog.js";
+import { t } from "../core/i18n.js";
 
 export async function loadReconciliationReminders() {
   appState.reconciliationReminders = await callApi("/reconciliation-reminders");
@@ -15,13 +16,13 @@ export async function loadReconciliationReminders() {
 }
 
 // "never counted", "35 days ago"
-const describeLastCount = (reminder) => (reminder.days_since === null ? "never counted" : `${formatCount(reminder.days_since, "day")} ago`);
+const describeLastCount = (reminder) => (reminder.days_since === null ? t("never counted") : t("{days} ago", { days: formatCount(reminder.days_since, "day") }));
 
 function createReminderButton(reminder, className) {
   const button = createElement("button", className);
   button.type = "button";
   button.append(createElement("strong", "", reminder.name), createElement("span", "reminder-when", describeLastCount(reminder)));
-  button.title = `Due every ${reminder.every_days} days: count it now`;
+  button.title = t("Due every {days} days: count it now", { days: reminder.every_days });
   button.addEventListener("click", () => openQuickReconcileDialog(reminder));
   return button;
 }
@@ -33,7 +34,7 @@ function renderReconciliationReminders() {
   const homeBox = elementById("home-reminders");
   homeBox.hidden = reminders.length === 0;
   homeBox.replaceChildren(
-    createElement("span", "reminder-badge", `${reminders.length} to reconcile`),
+    createElement("span", "reminder-badge", t("{count} to reconcile", { count: reminders.length })),
     ...reminders.map((reminder) => createReminderButton(reminder, "ghost reminder-chip")),
   );
 }

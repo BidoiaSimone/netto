@@ -261,3 +261,8 @@
 
 /* the sidebar has a logo for each background; only the one for the current theme shows */
 :root[data-theme="light"] .logo-dark, :root:not([data-theme="light"]) .logo-light { display: none; }
+
+/* Italian (Settings > Language): the page waits, invisible, until JS/main.js has translated it (JS/core/i18n.js), so
+   the English written in Home.html never flashes first. themeBeforeFirstPaint.js sets it; main.js and the
+   "couldn't start" message at the end of Home.html take it away. */
+html[data-translating] body { visibility: hidden; }

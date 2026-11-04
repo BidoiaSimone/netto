@@ -2,6 +2,7 @@
 
 import { areAmountsHidden, HIDDEN_AMOUNT } from "./formatting.js";
 import { makeDecimalFieldCommaFriendly } from "./decimalInputs.js";
+import { t } from "./i18n.js";
 
 export const elementById = (id) => document.getElementById(id);
 
@@ -14,7 +15,7 @@ export function createElement(tagName, className, textContent) {
 }
 
 // The coloured label showing a transaction type or a trade side ("expense", "buy"...)
-export const createTypeBadge = (type) => createElement("span", `badge ${type}`, type);
+export const createTypeBadge = (type) => createElement("span", `badge ${type}`, t(type));
 
 // Fills a table body, one row per item. createCells(item) returns the row's cells:
 // text values or DOM nodes.
@@ -43,7 +44,7 @@ export function replaceSelectOptions(selectElement, options, emptyOptionLabel) {
 }
 
 // Makes every row of a table body clickable (and openable with Enter), each opening its own item
-export function makeTableRowsOpenItems(tableBodyId, items, openItem, getTitle = () => "Click to edit") {
+export function makeTableRowsOpenItems(tableBodyId, items, openItem, getTitle = () => t("Click to edit")) {
   [...elementById(tableBodyId).rows].forEach((tableRow, index) => {
     tableRow.classList.add("clickable");
     tableRow.tabIndex = 0;

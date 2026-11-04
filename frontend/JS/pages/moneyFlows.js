@@ -7,38 +7,43 @@
 import { elementById } from "../core/domHelpers.js";
 import { euroFormatter, wholeEuroFormatter } from "../core/formatting.js";
 import { drawSankeyChart } from "../charts/sankeyChart.js";
+import { t, translateServerMessage } from "../core/i18n.js";
 
 const percentFormatter = new Intl.NumberFormat("it-IT", { style: "percent", maximumFractionDigits: 1 });
-const DEFAULT_READOUT = "Hover or tap a band to see its amount.";
+const DEFAULT_READOUT = t("Hover or tap a band to see its amount.");
 
 let moneyFlows = null;
 
 // "Groceries: 315,43 € · 18% of the money that came in" (+ what an "Other" box is made of)
 function describeBox(box, side) {
-  const share = moneyFlows.total ? ` · ${percentFormatter.format(box.amount / moneyFlows.total)} of ${side === "source" ? "where the money came from" : "where it went"}` : "";
+  const shareText = moneyFlows.total ? percentFormatter.format(box.amount / moneyFlows.total) : "";
+  const share = !moneyFlows.total ? "" : " · " + (side === "source" ? t("{share} of where the money came from", { share: shareText }) : t("{share} of where it went", { share: shareText }));
   const grouped = box.grouped ? ` (${box.grouped.map((item) => `${item.name} ${euroFormatter.format(item.amount)}`).join(", ")})` : "";
   return `${box.label}: ${euroFormatter.format(box.amount)}${share}${grouped}`;
 }
 
 function drawMoneyFlows() {
   const chartBox = elementById("st-flows-chart");
-  drawSankeyChart(chartBox, { ...moneyFlows, middleLabel: "Money in the period" }, {
+  drawSankeyChart(chartBox, { ...moneyFlows, middleLabel: t("Money in the period") }, {
     formatAmount: (amount) => wholeEuroFormatter.format(amount),
     onPick: (box, side) => { elementById("st-flows-readout").textContent = describeBox(box, side); },
   });
 }
 
+// The server names its own boxes in English ("Into investments", "Other income (3 categories)"); categories keep their names
+const translateBoxes = (boxes) => boxes.map((box) => (box.category_id == null ? { ...box, label: translateServerMessage(box.label) } : box));
+
 export function renderMoneyFlows(flows) {
-  moneyFlows = flows;
+  moneyFlows = { ...flows, sources: translateBoxes(flows.sources ?? []), uses: translateBoxes(flows.uses ?? []) };
   const isEmpty = !(flows.total > 0);
   elementById("st-flows-empty").hidden = !isEmpty;
   elementById("st-flows-box").hidden = isEmpty;
   elementById("st-flows-readout").textContent = DEFAULT_READOUT;
-  const savingsText = flows.savings > 0 ? `${euroFormatter.format(flows.savings)} left as savings`
-    : flows.savings < 0 ? `${euroFormatter.format(-flows.savings)} taken from savings` : "nothing saved or taken from savings";
-  const investmentsText = flows.into_investments > 0 ? ` · ${euroFormatter.format(flows.into_investments)} into investments`
-    : flows.into_investments < 0 ? ` · ${euroFormatter.format(-flows.into_investments)} from investments sold` : "";
-  elementById("st-flows-summary").textContent = `${euroFormatter.format(flows.total)} moved through the period · ${savingsText}${investmentsText}`;
+  const savingsText = flows.savings > 0 ? t("{amount} left as savings", { amount: euroFormatter.format(flows.savings) })
+    : flows.savings < 0 ? t("{amount} taken from savings", { amount: euroFormatter.format(-flows.savings) }) : t("nothing saved or taken from savings");
+  const investmentsText = flows.into_investments > 0 ? ` · ${t("{amount} into investments", { amount: euroFormatter.format(flows.into_investments) })}`
+    : flows.into_investments < 0 ? ` · ${t("{amount} from investments sold", { amount: euroFormatter.format(-flows.into_investments) })}` : "";
+  elementById("st-flows-summary").textContent = `${t("{amount} moved through the period", { amount: euroFormatter.format(flows.total) })} · ${savingsText}${investmentsText}`;
   if (!isEmpty) drawMoneyFlows();
 }
 

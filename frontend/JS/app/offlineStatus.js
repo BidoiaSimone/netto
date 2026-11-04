@@ -12,6 +12,7 @@ import { listPendingTransactions, forgetPendingTransaction } from "../core/offli
 import { listPendingChanges, forgetPendingChange } from "../core/pendingChanges.js";
 import { loadAllData } from "../core/dataRefresh.js";
 import { renderTodaySpending } from "../pages/quickAdd.js";
+import { t, tp } from "../core/i18n.js";
 
 const CHECK_AGAIN_EVERY_MILLISECONDS = 30000;
 let isTrying = false; // a "try again" is under way
@@ -26,18 +27,18 @@ function describePending({ transaction }) {
     ? `${accountName(transaction.from_account_id)} → ${accountName(transaction.to_account_id)}`
     : accountName(transaction.from_account_id ?? transaction.to_account_id);
   return [formatShortDate(transaction.date), sign + visibleEuroFormatter.format(transaction.amount),
-    transaction.description || categoryName(transaction.category_id) || transaction.type, accounts].join(" · ");
+    transaction.description || categoryName(transaction.category_id) || t(transaction.type), accounts].join(" · ");
 }
 
 function createPendingRow(item) {
   const row = createElement("li", item.refused_because ? "refused" : "");
   row.append(createElement("span", "", describePending(item)));
-  if (item.refused_because) row.append(createElement("small", "neg", ` refused by the server: ${item.refused_because}`));
+  if (item.refused_because) row.append(createElement("small", "neg", " " + t("refused by the server: {reason}", { reason: item.refused_because })));
   const removeButton = createElement("button", "ghost", "✕");
   removeButton.type = "button";
-  removeButton.title = "Delete it from this device (it was never added)";
+  removeButton.title = t("Delete it from this device (it was never added)");
   removeButton.addEventListener("click", () => {
-    if (confirm(`Delete "${describePending(item)}"? It hasn't been added to netto, so it will be gone.`)) forgetPendingTransaction(item.offline_id);
+    if (confirm(t("Delete \"{name}\"? It hasn't been added to netto, so it will be gone.", { name: describePending(item) }))) forgetPendingTransaction(item.offline_id);
   });
   row.append(removeButton);
   return row;
@@ -47,12 +48,12 @@ function createPendingRow(item) {
 function createChangeRow(change) {
   const row = createElement("li", change.refused_because ? "refused" : "");
   row.append(createElement("span", "", change.label));
-  if (change.refused_because) row.append(createElement("small", "neg", ` refused by the server: ${change.refused_because}`));
+  if (change.refused_because) row.append(createElement("small", "neg", " " + t("refused by the server: {reason}", { reason: change.refused_because })));
   const removeButton = createElement("button", "ghost", "✕");
   removeButton.type = "button";
-  removeButton.title = "Don't send it: the Mac keeps it as it was";
+  removeButton.title = t("Don't send it: the Mac keeps it as it was");
   removeButton.addEventListener("click", () => {
-    if (confirm(`Don't send "${change.label}"? On your Mac it stays as it was.`)) { forgetPendingChange(change.change_id); loadAllData(); }
+    if (confirm(t("Don't send \"{name}\"? On your Mac it stays as it was.", { name: change.label }))) { forgetPendingChange(change.change_id); loadAllData(); }
   });
   row.append(removeButton);
   return row;
@@ -66,9 +67,9 @@ function renderPhoneBadge(pending, isReachable) {
   const refusedCount = pending.length - waitingCount;
   badge.hidden = isReachable && !pending.length;
   badge.classList.toggle("refused", refusedCount > 0);
-  badge.textContent = refusedCount ? `! ${refusedCount}` : waitingCount ? `↑ ${waitingCount}` : isTrying ? "…" : "offline";
-  badge.title = refusedCount ? "Something kept on this device was refused: see the top of the page"
-    : waitingCount ? `${waitingCount} waiting to be sent` : "Your Mac can't be reached: tap to try again";
+  badge.textContent = refusedCount ? `! ${refusedCount}` : waitingCount ? `↑ ${waitingCount}` : isTrying ? "…" : t("offline");
+  badge.title = refusedCount ? t("Something kept on this device was refused: see the top of the page")
+    : waitingCount ? t("{count} waiting to be sent", { count: waitingCount }) : t("Your Mac can't be reached: tap to try again");
 }
 
 export function renderOfflineStatus() {
@@ -88,12 +89,12 @@ export function renderOfflineStatus() {
     const newOnes = listPendingTransactions();
     const waitingCount = pending.filter((item) => !item.refused_because).length;
     const head = createElement("p", "offline-line");
-    const what = [newOnes.length && `${newOnes.length} new transaction${newOnes.length === 1 ? "" : "s"}`,
-      changes.length && `${changes.length} change${changes.length === 1 ? "" : "s"}`].filter(Boolean).join(" and ");
-    head.append(createElement("strong", "", `${what} kept on this device`),
-      waitingCount ? ` · ${waitingCount} waiting to be sent ` : " ");
+    const what = [newOnes.length && tp(newOnes.length, "{count} new transaction", "{count} new transactions"),
+      changes.length && tp(changes.length, "{count} change", "{count} changes")].filter(Boolean).join(t(" and "));
+    head.append(createElement("strong", "", t("{what} kept on this device", { what })),
+      waitingCount ? ` · ${t("{count} waiting to be sent", { count: waitingCount })} ` : " ");
     if (waitingCount) {
-      const sendButton = createElement("button", "ghost", "Send now");
+      const sendButton = createElement("button", "ghost", t("Send now"));
       sendButton.type = "button";
       sendButton.addEventListener("click", tryAgainNow);
       head.append(sendButton);
@@ -107,9 +108,9 @@ export function renderOfflineStatus() {
 
 // "● Offline": tap to try reaching the Mac again
 function createOfflineButton() {
-  const button = createElement("button", "offline-pill", isTrying ? "Connecting…" : "Offline");
+  const button = createElement("button", "offline-pill", isTrying ? t("Connecting…") : t("Offline"));
   button.type = "button";
-  button.title = "Your Mac can't be reached: tap to try again";
+  button.title = t("Your Mac can't be reached: tap to try again");
   button.disabled = isTrying;
   button.addEventListener("click", tryAgainNow);
   return button;

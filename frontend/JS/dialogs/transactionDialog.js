@@ -31,13 +31,14 @@ import {
   fillForeignCurrencyFields, hideForeignCurrencyFields, readForeignCurrencyFields, setForeignCurrencyFieldsDisabled,
   rememberLastCurrency, initializeForeignCurrencyFields,
 } from "./foreignCurrencyFields.js";
+import { t } from "../core/i18n.js";
 
 let transactionBeingEdited = null; // null when adding a new one
 
 export function switchTransactionDialogMode(transactionToEdit) {
   transactionBeingEdited = transactionToEdit;
-  elementById("tx-title").textContent = transactionToEdit ? "Edit transaction" : "New transaction";
-  elementById("tx-submit").textContent = transactionToEdit ? "Save changes" : "Add transaction";
+  elementById("tx-title").textContent = transactionToEdit ? t("Edit transaction") : t("New transaction");
+  elementById("tx-submit").textContent = transactionToEdit ? t("Save changes") : t("Add transaction");
   elementById("tx-dialog").classList.toggle("editing", Boolean(transactionToEdit)); // Pocket's sheet: Delete at the bottom
   elementById("tx-delete").hidden = !transactionToEdit;
   elementById("tx-error").textContent = "";
@@ -109,7 +110,7 @@ export function updateTransactionFieldsForType() {
 function fillRefundCategoryPicker(isIncome) {
   const picker = elementById("tx-refund-category");
   const picked = picker.value;
-  picker.replaceChildren(new Option("— not a refund —", ""),
+  picker.replaceChildren(new Option(t("— not a refund —"), ""),
     ...appState.categories.filter((category) => category.kind === "expense").map((category) => new Option(category.name, category.id)));
   picker.value = isIncome ? picked : "";
   if (picker.value !== picked && isIncome) picker.value = "";
@@ -136,8 +137,8 @@ function showTypeInSegments(type) {
     segment.disabled = typePicker.disabled;
   }
   const [fromLabel, toLabel] = elementById("tx-form").querySelectorAll(".tx-accounts .form-label");
-  fromLabel.textContent = type === "movement" ? "From" : "Account";
-  toLabel.textContent = type === "movement" ? "To" : "Account";
+  fromLabel.textContent = type === "movement" ? t("From") : t("Account");
+  toLabel.textContent = type === "movement" ? t("To") : t("Account");
 }
 
 function createTypeSegments() {
@@ -202,7 +203,7 @@ async function saveTransaction(event) {
     }
   } catch (error) {
     elementById("tx-error").textContent = error.isServerUnreachable
-      ? "Your Mac can't be reached, and this device couldn't keep the change."
+      ? t("Your Mac can't be reached, and this device couldn't keep the change.")
       : error.message; // shown inside the dialog, which stays open
     return;
   }
@@ -234,9 +235,9 @@ const toNewTransaction = (transaction) => ({
 async function deleteTransactionBeingEdited() {
   const transaction = transactionBeingEdited;
   if (!transaction) return;
-  const typeName = transaction.type === "adjustment" ? "reconciliation" : transaction.type;
+  const typeName = t(transaction.type === "adjustment" ? "reconciliation" : transaction.type);
   const undoable = canBeUndone(transaction);
-  if (!undoable && !confirm(`Delete this ${typeName} of ${euroFormatter.format(transaction.amount)} from ${transaction.date}?\n\nThe account balances are corrected automatically.`)) return;
+  if (!undoable && !confirm(t("Delete this {type} of {amount} from {date}?", { type: typeName, amount: euroFormatter.format(transaction.amount), date: transaction.date }) + "\n\n" + t("The account balances are corrected automatically."))) return;
   let result;
   try {
     result = await callApi(`/transactions/${transaction.id}`, { method: "DELETE" });
@@ -248,16 +249,16 @@ async function deleteTransactionBeingEdited() {
   if (result?.kept) {
     // the Mac can't be reached: deleted here now, on the Mac when it's back (core/pendingChanges.js); undo = don't send it
     const name = transaction.description || transaction.category || typeName;
-    showToast(`${name} ${euroFormatter.format(transaction.amount)} deleted: sent when your Mac is back`, [{
-      label: "Undo", onClick: () => { forgetPendingChange(result.change_id); loadAllData(); },
+    showToast(t("{what} deleted: sent when your Mac is back", { what: `${name} ${euroFormatter.format(transaction.amount)}` }), [{
+      label: t("Undo"), onClick: () => { forgetPendingChange(result.change_id); loadAllData(); },
     }]);
   } else if (undoable) {
     const name = transaction.description || transaction.category || typeName;
-    showToast(`${name} ${euroFormatter.format(transaction.amount)} deleted`, [{
-      label: "Undo",
+    showToast(t("{what} deleted", { what: `${name} ${euroFormatter.format(transaction.amount)}` }), [{
+      label: t("Undo"),
       onClick: () => callApi("/transactions", { method: "POST", body: toNewTransaction(transaction) })
         .then(() => loadAllData())
-        .catch((error) => showToast(`Couldn't put it back: ${error.message}`)),
+        .catch((error) => showToast(t("Couldn't put it back: {reason}", { reason: error.message }))),
     }]);
   }
   loadAllData();
@@ -273,7 +274,7 @@ function updateAmountResult() {
   const input = elementById("tx-form").amount;
   const value = evaluateAmount(input.value);
   const isValid = input.value.trim() === "" || (value !== null && value > 0);
-  input.setCustomValidity(isValid ? "" : value !== null && value <= 0 ? "The amount must be above 0" : "Type an amount like 4,70 or a sum like 4,70+1,20");
+  input.setCustomValidity(isValid ? "" : value !== null && value <= 0 ? t("The amount must be above 0") : t("Type an amount like 4,70 or a sum like 4,70+1,20"));
   elementById("tx-amount-result").textContent = isValid && isSum(input.value) ? `= ${euroFormatter.format(value)}` : "";
 }
 

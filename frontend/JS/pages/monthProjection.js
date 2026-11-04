@@ -17,6 +17,7 @@ import { asIncomeOrSpending } from "../core/transactionDisplay.js";
 import { euroFormatter, getTodayAsLocalDate } from "../core/formatting.js";
 import { appState } from "../core/appState.js";
 import { getOccurrenceDate } from "../core/recurrenceDates.js";
+import { t } from "../core/i18n.js";
 
 const percentFormatter = new Intl.NumberFormat("it-IT", { style: "percent", maximumFractionDigits: 0 });
 const DAYS_BEFORE_THE_PACE_MEANS_SOMETHING = 5; // before this, a single purchase decides the whole projection
@@ -120,22 +121,22 @@ export function renderMonthProjection() {
 
   elementById("month-spent").textContent = euroFormatter.format(projection.spentSoFar);
   renderBreakdown("month-spent-breakdown", [
-    { className: "recurring", label: "Recurring", amount: projection.recurringSpentSoFar },
-    { className: "habitual", label: "Habitual", amount: projection.everydaySpentSoFar },
-    { className: "one-off", label: "One-off", amount: projection.oneOffSpentSoFar },
+    { className: "recurring", label: t("Recurring"), amount: projection.recurringSpentSoFar },
+    { className: "habitual", label: t("Habitual"), amount: projection.everydaySpentSoFar },
+    { className: "one-off", label: t("One-off"), amount: projection.oneOffSpentSoFar },
   ], full);
-  elementById("month-spent-detail").textContent = `day ${projection.dayOfMonth} of ${projection.daysInMonth}`;
+  elementById("month-spent-detail").textContent = t("day {day} of {days}", { day: projection.dayOfMonth, days: projection.daysInMonth });
 
   elementById("month-projected-spending").textContent = euroFormatter.format(full);
   renderBreakdown("month-projected-spending-breakdown", [
-    { className: "recurring", label: "Recurring", note: "incl. still due", amount: projection.projectedRecurring },
-    { className: "habitual", label: "Habitual", note: `${euroFormatter.format(projection.everydayDailyPace)}/day`, amount: projection.projectedEveryday },
-    { className: "one-off", label: "One-off", note: "as spent", amount: projection.oneOffSpentSoFar },
+    { className: "recurring", label: t("Recurring"), note: t("incl. still due"), amount: projection.projectedRecurring },
+    { className: "habitual", label: t("Habitual"), note: t("{amount}/day", { amount: euroFormatter.format(projection.everydayDailyPace) }), amount: projection.projectedEveryday },
+    { className: "one-off", label: t("One-off"), note: t("as spent"), amount: projection.oneOffSpentSoFar },
   ], full);
-  elementById("month-projected-spending-detail").textContent = projection.isEarlyInTheMonth ? "early in the month: rough" : "";
+  elementById("month-projected-spending-detail").textContent = projection.isEarlyInTheMonth ? t("early in the month: rough") : "";
 
   elementById("month-projected-savings").textContent = euroFormatter.format(projection.projectedSavings);
   elementById("month-projected-savings-detail").textContent = projection.projectedIncome > 0
-    ? `${percentFormatter.format(projection.projectedSavings / projection.projectedIncome)} of ${euroFormatter.format(projection.projectedIncome)} expected income`
-    : "no income expected this month";
+    ? t("{share} of {amount} expected income", { share: percentFormatter.format(projection.projectedSavings / projection.projectedIncome), amount: euroFormatter.format(projection.projectedIncome) })
+    : t("no income expected this month");
 }

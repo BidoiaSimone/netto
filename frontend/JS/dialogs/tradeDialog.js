@@ -9,6 +9,7 @@ import { loadAllData } from "../core/dataRefresh.js";
 import { addClosedAccountOptionIfMissing } from "../core/accountPickers.js";
 import { openDialog } from "../app/dialogWindows.js";
 import { readStored, writeStored } from "../core/deviceStorage.js";
+import { t } from "../core/i18n.js";
 
 let tradeBeingEdited = null; // null for a new trade
 let tradesWaitingToBeRecorded = []; // Investments > Target allocation > "Record these trades": the ones after this one
@@ -51,10 +52,10 @@ function updateTradeDialogTexts() {
   const isBuy = elementById("trade-side").value === "buy";
   const ticker = form.ticker.value.trim().toUpperCase();
   const waitingCount = tradeBeingEdited ? 0 : tradesWaitingToBeRecorded.length;
-  elementById("trade-title").textContent = (tradeBeingEdited ? `Edit ${isBuy ? "buy" : "sale"}` : isBuy ? "Buy shares" : "Sell shares")
-    + (waitingCount ? ` (${waitingCount} more after this)` : "");
-  elementById("trade-submit").textContent = tradeBeingEdited ? "Save changes" : isBuy ? "Buy" : "Sell";
-  elementById("trade-account-label").textContent = isBuy ? "Paid from" : "Paid into";
+  elementById("trade-title").textContent = (tradeBeingEdited ? (isBuy ? t("Edit buy") : t("Edit sale")) : isBuy ? t("Buy shares") : t("Sell shares"))
+    + (waitingCount ? " " + t("({count} more after this)", { count: waitingCount }) : "");
+  elementById("trade-submit").textContent = tradeBeingEdited ? t("Save changes") : isBuy ? t("Buy") : t("Sell");
+  elementById("trade-account-label").textContent = isBuy ? t("Paid from") : t("Paid into");
 
   const shares = Number(form.shares.value), pricePerShare = Number(form.price.value), fees = Number(form.fees.value) || 0;
   const total = shares > 0 && pricePerShare > 0 ? Math.round((shares * pricePerShare + (isBuy ? fees : -fees)) * 100) / 100 : null;
@@ -63,11 +64,11 @@ function updateTradeDialogTexts() {
   const totalLine = elementById("trade-total");
   totalLine.replaceChildren();
   if (total !== null) {
-    totalLine.append(`${isBuy ? "Total cost" : "You receive"} `, createElement("strong", "", euroFormatter.format(total)),
-      accountName ? ` · ${isBuy ? "taken from" : "paid into"} ${accountName}` : " · no account changes");
+    totalLine.append(`${isBuy ? t("Total cost") : t("You receive")} `, createElement("strong", "", euroFormatter.format(total)),
+      accountName ? ` · ${isBuy ? t("taken from {name}", { name: accountName }) : t("paid into {name}", { name: accountName })}` : ` · ${t("no account changes")}`);
   }
   const sharesHeld = getSharesHeld(ticker);
-  if (ticker && sharesHeld && !tradeBeingEdited) totalLine.append(`${totalLine.textContent ? " · " : ""}you hold ${shareCountFormatter.format(sharesHeld)} ${ticker}`);
+  if (ticker && sharesHeld && !tradeBeingEdited) totalLine.append(`${totalLine.textContent ? " · " : ""}${t("you hold {shares} {ticker}", { shares: shareCountFormatter.format(sharesHeld), ticker })}`);
 }
 
 // The form's values in the shape the API expects
@@ -119,8 +120,10 @@ async function deleteTradeBeingEdited() {
   const trade = tradeBeingEdited;
   if (!trade) return;
   const isBuy = trade.side === "buy";
-  const moneyNote = trade.account ? `\n\n${euroFormatter.format(trade.amount)} goes back ${isBuy ? "to" : "out of"} ${trade.account}.` : "";
-  if (!confirm(`Delete this ${isBuy ? "buy" : "sale"} of ${shareCountFormatter.format(trade.shares)} ${trade.ticker} from ${trade.date}?\n\nThe holding is recalculated.${moneyNote}`)) return;
+  const values = { amount: euroFormatter.format(trade.amount), account: trade.account, shares: shareCountFormatter.format(trade.shares), ticker: trade.ticker, date: trade.date };
+  const moneyNote = trade.account ? "\n\n" + (isBuy ? t("{amount} goes back to {account}.", values) : t("{amount} goes back out of {account}.", values)) : "";
+  const question = isBuy ? t("Delete this buy of {shares} {ticker} from {date}?", values) : t("Delete this sale of {shares} {ticker} from {date}?", values);
+  if (!confirm(`${question}\n\n${t("The holding is recalculated.")}${moneyNote}`)) return;
   try {
     await callApi(`/investments/trades/${trade.id}`, { method: "DELETE" });
   } catch (error) {

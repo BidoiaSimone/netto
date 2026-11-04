@@ -1,4 +1,6 @@
-// ---- how numbers and dates are shown (Italian style: 1.234,56 €) ----
+// ---- how numbers and dates are shown (amounts Italian style in every language: 1.234,56 €; dates in the language of Settings) ----
+
+import { tp, dateLocale } from "./i18n.js";
 
 // ---- Hide amounts (privacy mode): amounts become ***** € ----
 // Every amount on the page is written by one of the formatters below, so they check the switch themselves:
@@ -37,12 +39,12 @@ export const formatSignedPercent = (number) => signOf(number) + Math.abs(number)
 // Reconciliation differences: "+" added only to positive amounts, negatives keep the formatter's own "-"
 export const formatDifferenceWithPlusSign = (difference) => (difference > 0 ? "+" : "") + euroFormatter.format(difference);
 
-// "3 transactions", "1 transaction"
-export const formatCount = (count, singularWord) => `${count} ${singularWord}${count === 1 ? "" : "s"}`;
+// "3 transactions", "1 transaction" (core/italian.js has "{count} transaction" and "{count} transactions")
+export const formatCount = (count, singularWord, pluralWord = `${singularWord}s`) => tp(count, `{count} ${singularWord}`, `{count} ${pluralWord}`);
 
-// "2026-10-14" -> "14 ott" (or "14 ott 26" with the year)
+// "2026-10-14" -> "14 Oct" / "14 ott" (or "14 Oct 26" with the year)
 export const formatShortDate = (dateText, withYear) =>
-  new Date(dateText + "T00:00").toLocaleDateString("it-IT", withYear ? { day: "numeric", month: "short", year: "2-digit" } : { day: "numeric", month: "short" });
+  new Date(dateText + "T00:00").toLocaleDateString(dateLocale, withYear ? { day: "numeric", month: "short", year: "2-digit" } : { day: "numeric", month: "short" });
 
 // Local YYYY-MM-DD ("sv-SE" happens to format dates that way; toISOString would give the UTC date)
 export const getTodayAsLocalDate = () => new Date().toLocaleDateString("sv-SE");

@@ -18,6 +18,7 @@ import { showErrorMessage } from "../core/errorBanner.js";
 import { runThenReloadAllData } from "../core/dataRefresh.js";
 import { saveAppSetting } from "../core/appSettings.js";
 import { readStored, writeStored } from "../core/deviceStorage.js";
+import { t, tp, dateLocale } from "../core/i18n.js";
 
 const MILLISECONDS_PER_DAY = 864e5;
 const BACKUP_REMINDER_DAYS = 7;
@@ -29,9 +30,9 @@ let reminderShownThisVisit = false;
 function describeBackupDay(savedAt) {
   const savedDay = savedAt.toLocaleDateString("sv-SE");
   const yesterday = new Date(Date.now() - MILLISECONDS_PER_DAY).toLocaleDateString("sv-SE");
-  if (savedDay === getTodayAsLocalDate()) return "today";
-  if (savedDay === yesterday) return "yesterday";
-  return savedAt.toLocaleDateString("it-IT");
+  if (savedDay === getTodayAsLocalDate()) return t("today");
+  if (savedDay === yesterday) return t("yesterday");
+  return savedAt.toLocaleDateString(dateLocale);
 }
 
 // When the last automatic daily backup was made (services/automaticDailyBackups.js on the server)
@@ -42,16 +43,16 @@ export async function loadBackupStatus() {
   const statusLine = elementById("backup-status");
   statusLine.classList.toggle("neg", Boolean(backupStatus.error));
   if (backupStatus.error) {
-    statusLine.textContent = `Automatic backup failed: ${backupStatus.error}`;
+    statusLine.textContent = t("Automatic backup failed: {reason}", { reason: backupStatus.error });
     return;
   }
   if (!backupStatus.last) {
-    statusLine.textContent = "Automatic backups: the first one is made shortly after the server starts.";
+    statusLine.textContent = t("Automatic backups: the first one is made shortly after the server starts.");
     return;
   }
   const savedAt = new Date(backupStatus.last.saved_at);
-  const savedTime = savedAt.toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" });
-  statusLine.textContent = `Automatic backup every day: last one ${describeBackupDay(savedAt)} at ${savedTime} · the last ${backupStatus.keep} are kept in ${BACKUPS_FOLDER} (${backupStatus.count} now).`;
+  const savedTime = savedAt.toLocaleTimeString(dateLocale, { hour: "2-digit", minute: "2-digit" });
+  statusLine.textContent = t("Automatic backup every day: last one {day} at {time} · the last {keep} are kept in {folder} ({count} now).", { day: describeBackupDay(savedAt), time: savedTime, keep: backupStatus.keep, folder: BACKUPS_FOLDER, count: backupStatus.count });
 }
 
 // The copy in iCloud Drive (on by default): the tick box, and where the copies are
@@ -61,12 +62,12 @@ function renderOffsiteStatus(offsite) {
   toggle.checked = offsite.enabled;
   toggle.disabled = !offsite.available;
   statusLine.classList.toggle("neg", Boolean(offsite.error));
-  if (!offsite.available) statusLine.textContent = "iCloud Drive isn't on for this Mac (System Settings → your name → iCloud → iCloud Drive), so the backups stay only on this Mac.";
-  else if (offsite.error) statusLine.textContent = `Copying to iCloud Drive failed: ${offsite.error}`;
-  else if (!offsite.enabled) statusLine.textContent = "Off: the backups are only on this Mac.";
+  if (!offsite.available) statusLine.textContent = t("iCloud Drive isn't on for this Mac (System Settings → your name → iCloud → iCloud Drive), so the backups stay only on this Mac.");
+  else if (offsite.error) statusLine.textContent = t("Copying to iCloud Drive failed: {reason}", { reason: offsite.error });
+  else if (!offsite.enabled) statusLine.textContent = t("Off: the backups are only on this Mac.");
   else statusLine.textContent = offsite.last
-    ? `${offsite.count} cop${offsite.count === 1 ? "y" : "ies"} in iCloud Drive, newest ${offsite.last.slice(5, 15)}.`
-    : "The first copy is made with the next daily backup.";
+    ? tp(offsite.count, "{count} copy in iCloud Drive, newest {date}.", "{count} copies in iCloud Drive, newest {date}.", { date: offsite.last.slice(5, 15) })
+    : t("The first copy is made with the next daily backup.");
 }
 
 // Restore a backup made with "Download backup"
@@ -75,17 +76,19 @@ async function restoreBackupFromFile(file) {
   try {
     backupData = JSON.parse(await file.text());
   } catch {
-    return showErrorMessage("That file is not valid JSON.");
+    return showErrorMessage(t("That file is not valid JSON."));
   }
   const countRows = (listName) => (Array.isArray(backupData[listName]) ? backupData[listName].length : 0);
   const safetyCopy = runsWithoutServer
-    ? "The data on this device is replaced and not kept: if you might want it back, cancel and Save backup first."
-    : `A copy of the current data is saved first in ${BACKUPS_FOLDER}.`;
-  const confirmation = `Replace ALL current data with this backup?\n\n${countRows("accounts")} accounts, ${countRows("investments")} investments, ${countRows("transactions")} transactions.\n\n${safetyCopy}`;
+    ? t("The data on this device is replaced and not kept: if you might want it back, cancel and Save backup first.")
+    : t("A copy of the current data is saved first in {folder}.", { folder: BACKUPS_FOLDER });
+  const confirmation = t("Replace ALL current data with this backup?") + "\n\n"
+    + t("{accounts} accounts, {investments} investments, {transactions} transactions.", { accounts: countRows("accounts"), investments: countRows("investments"), transactions: countRows("transactions") })
+    + `\n\n${safetyCopy}`;
   if (!confirm(confirmation)) return;
   runThenReloadAllData(async () => {
     const importedCounts = await callApi("/import", { method: "POST", body: backupData });
-    alert(`Backup restored: ${importedCounts.accounts} accounts, ${importedCounts.investments} investments, ${importedCounts.categories} categories, ${importedCounts.transactions} transactions, ${importedCounts.tags} tags.`);
+    alert(t("Backup restored: {accounts} accounts, {investments} investments, {categories} categories, {transactions} transactions, {tags} tags.", importedCounts));
   });
 }
 
@@ -96,7 +99,7 @@ const daysSince = (isoDate) => Math.floor((Date.now() - new Date(isoDate).getTim
 // The same JSON /export answers, as a file named like the Mac's downloads
 async function makeBackupFile() {
   const answer = await callLocalApi("GET", "/export");
-  if (answer.status >= 400) throw new Error((answer.body && answer.body.error) || "Could not make the backup");
+  if (answer.status >= 400) throw new Error((answer.body && answer.body.error) || t("Could not make the backup"));
   const fileName = /filename="([^"]+)"/.exec(answer.headers["content-disposition"] || "")?.[1] || "netto-backup.json";
   return new File([JSON.stringify(answer.body, null, 2)], fileName, { type: "application/json" });
 }
@@ -120,7 +123,7 @@ async function handOverBackupFile(file) {
     if (error.name === "AbortError") return false; // closed the share sheet
     if (error.name === "NotAllowedError") {
       // Safari wants the share sheet opened right after a tap, and making the file took too long: one more tap
-      showToast("Your backup is ready", [{ label: "Save", onClick: () => handOverBackupFile(file).then(noteBackupSaved) }], 15000);
+      showToast(t("Your backup is ready"), [{ label: t("Save"), onClick: () => handOverBackupFile(file).then(noteBackupSaved) }], 15000);
       return false;
     }
     throw error;
@@ -137,7 +140,7 @@ async function saveBackupFromThisDevice() {
   try {
     noteBackupSaved(await handOverBackupFile(await makeBackupFile()));
   } catch (error) {
-    showErrorMessage(`Backup not saved: ${error.message}`);
+    showErrorMessage(t("Backup not saved: {reason}", { reason: error.message }));
   }
 }
 
@@ -148,16 +151,16 @@ async function renderBackupStatusOfThisDevice() {
   const isOverdue = !savedAt || daysSince(savedAt) >= BACKUP_REMINDER_DAYS;
   statusLine.classList.toggle("neg", isOverdue);
   statusLine.textContent = savedAt
-    ? `Last backup saved ${describeBackupDay(new Date(savedAt))}${daysSince(savedAt) > 1 ? ` (${daysSince(savedAt)} days ago)` : ""}.`
-    : "No backup saved from this device yet.";
+    ? t("Last backup saved {day}.", { day: describeBackupDay(new Date(savedAt)) + (daysSince(savedAt) > 1 ? ` (${t("{count} days ago", { count: daysSince(savedAt) })})` : "") })
+    : t("No backup saved from this device yet.");
 
   if (!isOverdue || reminderShownThisVisit || readStored(REMINDER_SNOOZED_KEY) === getTodayAsLocalDate()) return;
   const accounts = await callApi("/accounts").catch(() => []);
   if (!accounts.length) return; // nothing to lose yet
   reminderShownThisVisit = true;
-  showToast(savedAt ? `No backup for ${daysSince(savedAt)} days` : "Your data is only on this device", [
-    { label: "Save backup", onClick: saveBackupFromThisDevice },
-    { label: "Later", onClick: () => writeStored(REMINDER_SNOOZED_KEY, getTodayAsLocalDate()) },
+  showToast(savedAt ? t("No backup for {count} days", { count: daysSince(savedAt) }) : t("Your data is only on this device"), [
+    { label: t("Save backup"), onClick: saveBackupFromThisDevice },
+    { label: t("Later"), onClick: () => writeStored(REMINDER_SNOOZED_KEY, getTodayAsLocalDate()) },
   ], 20000);
 }
 

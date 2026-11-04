@@ -11,6 +11,7 @@
 import { callApi } from "./apiClient.js";
 import { isServerReachable } from "./connectionState.js";
 import { listPendingChanges, writePendingChanges } from "./pendingChanges.js";
+import { t } from "./i18n.js";
 
 const STORAGE_KEY = "netto.pendingTransactions";
 const SEND_TIMEOUT_MILLISECONDS = 8000;
@@ -127,8 +128,9 @@ function secondsSinceSameOne(transaction, today) {
 export async function addTransactionNowOrLater(transaction, today) {
   const secondsAgo = secondsSinceSameOne(transaction, today);
   if (secondsAgo !== null) {
-    const what = `${transaction.description || "this"} (${Number(transaction.amount).toFixed(2).replace(".", ",")} €)`;
-    if (!confirm(`You added ${what} ${secondsAgo < 60 ? `${secondsAgo} seconds` : "a minute"} ago. Add it again?`)) return { cancelled: true };
+    const what = `${transaction.description || t("this")} (${Number(transaction.amount).toFixed(2).replace(".", ",")} €)`;
+    const question = secondsAgo < 60 ? t("You added {what} {seconds} seconds ago. Add it again?", { what, seconds: secondsAgo }) : t("You added {what} a minute ago. Add it again?", { what });
+    if (!confirm(question)) return { cancelled: true };
   }
   const offlineId = makeOfflineId(); // the same id now and on a later send: added only once
   try {
@@ -141,7 +143,7 @@ export async function addTransactionNowOrLater(transaction, today) {
     try {
       keepTransactionForLater(transaction, today, offlineId);
     } catch (storageError) {
-      throw new Error(`The server can't be reached, and this device couldn't keep it either: ${storageError.message}`);
+      throw new Error(t("The server can't be reached, and this device couldn't keep it either: {reason}", { reason: storageError.message }));
     }
     rememberAdded(transaction, today);
     return { kept: true, offlineId };

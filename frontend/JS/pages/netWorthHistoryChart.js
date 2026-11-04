@@ -6,6 +6,7 @@ import { euroFormatter, formatSignedEuros, formatSignedPercent, formatShortDate 
 import { callApi } from "../core/apiClient.js";
 import { drawStackedAreaChart } from "../charts/stackedAreaChart.js";
 import { readStored, writeStored } from "../core/deviceStorage.js";
+import { t } from "../core/i18n.js";
 
 const REDRAW_DELAY_AFTER_RESIZE_MILLISECONDS = 150;
 
@@ -30,7 +31,7 @@ function renderPeriodSummary() {
   const changeText = firstValue > 0 ? `${formatSignedEuros(change)} (${formatSignedPercent((change / firstValue) * 100)})` : formatSignedEuros(change);
   summary.replaceChildren(createElement("strong", "", euroFormatter.format(lastValue)),
     createElement("span", change >= 0 ? "pos" : "neg", changeText),
-    document.createTextNode(` since ${formatShortDate(netWorthHistory.dates[0], true)}`));
+    document.createTextNode(" " + t("since {date}", { date: formatShortDate(netWorthHistory.dates[0], true) })));
 }
 
 function renderNetWorthHistory() {
@@ -38,19 +39,19 @@ function renderNetWorthHistory() {
   const chartBox = elementById("nw-chart");
   const failedTickers = netWorthHistory.failed_tickers;
   elementById("nw-note").textContent = failedTickers.length
-    ? `No price history for ${failedTickers.join(", ")}: valued at what you paid for it.`
+    ? t("No price history for {tickers}: valued at what you paid for it.", { tickers: failedTickers.join(", ") })
     : "";
 
   if (netWorthHistory.dates.length < 2) {
     elementById("nw-summary").replaceChildren();
-    chartBox.replaceChildren(createElement("p", "chart-empty", "Not enough history yet: the chart starts from your first record, come back tomorrow"));
+    chartBox.replaceChildren(createElement("p", "chart-empty", t("Not enough history yet: the chart starts from your first record, come back tomorrow")));
     return;
   }
   renderPeriodSummary();
   drawStackedAreaChart(chartBox, netWorthHistory.dates, [
-    { name: "Accounts", values: netWorthHistory.accounts, className: "accounts" },
-    { name: "Investments", values: netWorthHistory.investments, className: "investments" },
-  ], "Net worth");
+    { name: t("Accounts"), values: netWorthHistory.accounts, className: "accounts" },
+    { name: t("Investments"), values: netWorthHistory.investments, className: "investments" },
+  ], t("Net worth"));
 }
 
 export function initializeNetWorthHistoryChart() {
@@ -59,9 +60,9 @@ export function initializeNetWorthHistoryChart() {
     if (!chip) return;
     selectedRange = chip.dataset.value;
     writeStored("netWorthRange", selectedRange);
-    elementById("nw-chart").replaceChildren(createElement("p", "chart-empty", "Loading…"));
+    elementById("nw-chart").replaceChildren(createElement("p", "chart-empty", t("Loading…")));
     loadNetWorthHistory().catch((error) => {
-      elementById("nw-chart").replaceChildren(createElement("p", "chart-empty", "Net worth history unavailable: " + error.message));
+      elementById("nw-chart").replaceChildren(createElement("p", "chart-empty", t("Net worth history unavailable: {reason}", { reason: error.message })));
     });
   });
 

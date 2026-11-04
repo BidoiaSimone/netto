@@ -15,6 +15,7 @@ import { callApi } from "../core/apiClient.js";
 import { appState } from "../core/appState.js";
 import { evaluateAmount } from "../core/amountExpression.js";
 import { fillCurrencyPicker, formatForeignAmount, formatUnitsPerEuro, getCurrencySymbol } from "../core/currencies.js";
+import { t } from "../core/i18n.js";
 
 const LAST_CURRENCY_KEY = "lastForeignCurrency";
 const DEFAULT_CURRENCY = "USD";
@@ -37,7 +38,7 @@ const euroAmountInput = () => elementById("tx-form").amount;
 // "Paid in JPY" when a currency was used before (one tap), "Paid in another currency" the first time
 function updateToggleLabel() {
   const lastCurrency = readLastCurrency();
-  elementById("tx-fx-toggle").textContent = lastCurrency ? `+ Paid in ${lastCurrency}` : "+ Paid in another currency";
+  elementById("tx-fx-toggle").textContent = lastCurrency ? t("+ Paid in {currency}", { currency: lastCurrency }) : t("+ Paid in another currency");
 }
 
 export function showForeignCurrencyFields(currencyCode, foreignAmount = "") {
@@ -46,7 +47,7 @@ export function showForeignCurrencyFields(currencyCode, foreignAmount = "") {
   elementById("tx-fx-amount").value = foreignAmount;
   elementById("tx-fx-inputs").hidden = false;
   elementById("tx-fx-toggle").hidden = true;
-  euroAmountInput().placeholder = "€ charged";
+  euroAmountInput().placeholder = t("€ charged");
   updateForeignAmountPlaceholder();
   refreshRateAndInfo();
 }
@@ -56,7 +57,7 @@ export function hideForeignCurrencyFields() {
   elementById("tx-fx-toggle").hidden = false;
   elementById("tx-fx-amount").value = "";
   elementById("tx-fx-info").textContent = "";
-  euroAmountInput().placeholder = "Amount";
+  euroAmountInput().placeholder = t("Amount");
   euroAmountTypedByHand = false;
   updateToggleLabel();
 }
@@ -85,7 +86,7 @@ function updateForeignAmountPlaceholder() {
   const currencyCode = elementById("tx-fx-currency").value;
   const decimals = appState.currencies.find((currency) => currency.code === currencyCode)?.decimals ?? 2;
   const amountInput = elementById("tx-fx-amount");
-  amountInput.placeholder = `Amount in ${currencyCode}`;
+  amountInput.placeholder = t("Amount in {currency}", { currency: currencyCode });
   amountInput.step = decimals === 0 ? "1" : String(1 / 10 ** decimals);
 }
 
@@ -118,7 +119,7 @@ async function refreshRateAndInfo() {
   const rate = await getMarketRate(currencyCode, date);
   if (!isForeignCurrencyOn() || currencyCode !== elementById("tx-fx-currency").value) return; // changed meanwhile
   if (rate instanceof Error) {
-    info.textContent = "No exchange rate right now: type the euros charged.";
+    info.textContent = t("No exchange rate right now: type the euros charged.");
     return;
   }
 
@@ -127,16 +128,16 @@ async function refreshRateAndInfo() {
   if (marketValueInEuros !== null && !euroAmountTypedByHand) euroAmountInput().value = marketValueInEuros.toFixed(2);
 
   const rateDateNote = rate.rate_date !== date ? ` (${formatShortDate(rate.rate_date)})` : "";
-  const parts = [`Market: 1 € = ${formatUnitsPerEuro(rate.units_per_euro)} ${symbol}${rateDateNote}`];
+  const parts = [t("Market: 1 € = {rate}", { rate: `${formatUnitsPerEuro(rate.units_per_euro)} ${symbol}${rateDateNote}` })];
   const eurosCharged = evaluateAmount(euroAmountInput().value) ?? 0;
   if (marketValueInEuros !== null && eurosCharged > 0 && euroAmountTypedByHand) {
     const isIncome = elementById("tx-type").value === "income";
     const exchangeCost = Math.round((isIncome ? marketValueInEuros - eurosCharged : eurosCharged - marketValueInEuros) * 100) / 100;
-    parts.push(`charged: 1 € = ${formatUnitsPerEuro(foreignAmount / eurosCharged)} ${symbol}`);
-    parts.push(exchangeCost === 0 ? "no exchange cost"
-      : `exchange ${exchangeCost > 0 ? "cost" : "gain"} ${euroFormatter.format(Math.abs(exchangeCost))} (${percentFormatter.format(Math.abs(exchangeCost) / marketValueInEuros)})`);
+    parts.push(t("charged: 1 € = {rate}", { rate: `${formatUnitsPerEuro(foreignAmount / eurosCharged)} ${symbol}` }));
+    const amount = `${euroFormatter.format(Math.abs(exchangeCost))} (${percentFormatter.format(Math.abs(exchangeCost) / marketValueInEuros)})`;
+    parts.push(exchangeCost === 0 ? t("no exchange cost") : exchangeCost > 0 ? t("exchange cost {amount}", { amount }) : t("exchange gain {amount}", { amount }));
   } else if (marketValueInEuros !== null) {
-    parts.push(`${formatForeignAmount(foreignAmount, currencyCode)} ≈ ${euroFormatter.format(marketValueInEuros)}: change the euros to what the bank charged`);
+    parts.push(t("{foreign} ≈ {euros}: change the euros to what the bank charged", { foreign: formatForeignAmount(foreignAmount, currencyCode), euros: euroFormatter.format(marketValueInEuros) }));
   }
   info.textContent = parts.join(" · ");
 }

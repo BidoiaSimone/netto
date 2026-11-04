@@ -30,6 +30,7 @@ import { renderRecurringPage } from "./recurringPage.js";
 import { redrawBudgetProgress } from "./budgetProgress.js";
 import { renderCategoryTrends } from "./categoryTrends.js";
 import { renderGoalsPage } from "./goalsPage.js";
+import { t, tp } from "../core/i18n.js";
 
 const CATEGORY_KINDS = ["expense", "income"];
 const tableBodyIdForKind = (kind) => `${kind}-categories-body`;
@@ -77,8 +78,8 @@ function renderBudgetsTotal() {
   const budgetedCategories = appState.categories.filter((category) => category.kind === "expense" && category.monthly_budget !== null);
   const totalOfBudgets = budgetedCategories.reduce((sum, category) => sum + Math.round(category.monthly_budget * 100), 0) / 100; // in cents: no float drift
   elementById("budgets-total").textContent = budgetedCategories.length
-    ? `Budgets: ${euroFormatter.format(totalOfBudgets)} a month across ${budgetedCategories.length} ${budgetedCategories.length === 1 ? "category" : "categories"}`
-    : "No budgets yet.";
+    ? tp(budgetedCategories.length, "Budgets: {amount} a month across {count} category", "Budgets: {amount} a month across {count} categories", { amount: euroFormatter.format(totalOfBudgets) })
+    : t("No budgets yet.");
 }
 
 // The monthly limit of an expense category. Saved when you leave the field or press Enter; Escape puts it back.
@@ -87,10 +88,10 @@ function createBudgetInput(category) {
   budgetInput.type = "number";
   budgetInput.min = "0";
   budgetInput.step = "0.01";
-  budgetInput.placeholder = "budget"; // empty: no budget (short, so it fits the phone's narrower field)
-  budgetInput.title = "Monthly budget: empty = no budget";
+  budgetInput.placeholder = t("budget"); // empty: no budget (short, so it fits the phone's narrower field)
+  budgetInput.title = t("Monthly budget: empty = no budget");
   budgetInput.value = category.monthly_budget ?? "";
-  budgetInput.setAttribute("aria-label", `${category.name}: monthly budget in euros`);
+  budgetInput.setAttribute("aria-label", t("{name}: monthly budget in euros", { name: category.name }));
   budgetInput.addEventListener("change", () => {
     const newLimit = budgetInput.value === "" ? null : Number(budgetInput.value);
     if (newLimit === category.monthly_budget) return;
@@ -107,11 +108,11 @@ function createBudgetInput(category) {
 // "habitual" / "one-off": how the month projections on Insights treat this category. Saved as soon as it changes.
 function createSpendingPacePicker(category) {
   const pacePicker = createElement("select", "pace-select");
-  pacePicker.append(new Option("habitual", "daily"), new Option("one-off", "occasional"));
+  pacePicker.append(new Option(t("habitual"), "daily"), new Option(t("one-off"), "occasional"));
   pacePicker.value = category.spending_pace;
-  pacePicker.setAttribute("aria-label", `${category.name}: habitual or one-off`);
-  pacePicker.title = "Habitual: bought all month long, Insights projects the rest of the month at this month's pace (groceries, coffee).\n"
-    + "One-off: bought once in a while, only what's already spent counts (gifts, a new phone).";
+  pacePicker.setAttribute("aria-label", t("{name}: habitual or one-off", { name: category.name }));
+  pacePicker.title = t("Habitual: bought all month long, Insights projects the rest of the month at this month's pace (groceries, coffee).") + "\n"
+    + t("One-off: bought once in a while, only what's already spent counts (gifts, a new phone).");
   pacePicker.addEventListener("change", () =>
     runThenReloadAllData(() => callApi(`/categories/${category.id}/spending-pace`, { method: "PUT", body: { spending_pace: pacePicker.value } })));
   return pacePicker;
@@ -122,7 +123,7 @@ function createUseCell(category) {
   const parts = [];
   if (category.used) parts.push(formatCount(category.used, "transaction"));
   if (category.used_by_recurring) parts.push(`↻ ${category.used_by_recurring}`);
-  const useCell = createElement("span", "category-use", parts.length ? parts.join(" · ") : "not used yet");
+  const useCell = createElement("span", "category-use", parts.length ? parts.join(" · ") : t("not used yet"));
   useCell.title = describeUse(category);
   return useCell;
 }
@@ -131,8 +132,8 @@ function createUseCell(category) {
 function describeUse(category) {
   const uses = [];
   if (category.used) uses.push(formatCount(category.used, "transaction"));
-  if (category.used_by_recurring) uses.push(`${category.used_by_recurring} recurring`);
-  return uses.length ? uses.join(" · ") : "not used yet";
+  if (category.used_by_recurring) uses.push(t("{count} recurring", { count: category.used_by_recurring }));
+  return uses.length ? uses.join(" · ") : t("not used yet");
 }
 
 // The icon button and the name, in one cell (so the phone layout of 31-phone.css keeps its cell numbers)
@@ -146,8 +147,8 @@ function createNameCell(category) {
 function createLookButton(category) {
   const lookButton = createElement("button", "category-look-button");
   lookButton.type = "button";
-  lookButton.title = "Change icon and colour";
-  lookButton.setAttribute("aria-label", `${category.name}: icon and colour`);
+  lookButton.title = t("Change icon and colour");
+  lookButton.setAttribute("aria-label", t("{name}: icon and colour", { name: category.name }));
   lookButton.append(createCategoryIcon(category, "category-icon"));
   lookButton.addEventListener("click", () => openCategoryLookPicker(category, (look) => {
     if (look.icon === category.icon && look.color === category.color) return;
@@ -159,7 +160,7 @@ function createLookButton(category) {
 function createCategoryNameInput(category) {
   const nameInput = createElement("input");
   nameInput.value = category.name;
-  nameInput.setAttribute("aria-label", `${category.kind} category name`);
+  nameInput.setAttribute("aria-label", category.kind === "income" ? t("income category name") : t("expense category name"));
   nameInput.addEventListener("change", () => {
     const newName = nameInput.value.trim();
     if (!newName || newName === category.name) {
@@ -183,12 +184,12 @@ function createCategoryActions(category) {
 }
 
 function createDeleteCategoryButton(category) {
-  const deleteButton = createElement("button", "", "Delete");
+  const deleteButton = createElement("button", "", t("Delete"));
   deleteButton.type = "button";
   deleteButton.onclick = () => {
     const confirmation = category.used || category.used_by_recurring
-      ? `Delete "${category.name}"? Its ${describeUse(category)} will become uncategorized.`
-      : `Delete "${category.name}"?`;
+      ? t("Delete \"{name}\"? Its {uses} will become uncategorized.", { name: category.name, uses: describeUse(category) })
+      : t("Delete \"{name}\"?", { name: category.name });
     if (confirm(confirmation)) runThenReloadAllData(() => callApi(`/categories/${category.id}`, { method: "DELETE" }));
   };
   return deleteButton;
@@ -202,8 +203,8 @@ function renameCategory(category, newName) {
     } catch (error) {
       const mergeTarget = error.data?.merge_into;
       if (!mergeTarget) throw error;
-      const movingTransactions = category.used ? ` Its ${formatCount(category.used, "transaction")} will move to "${mergeTarget.name}".` : "";
-      if (!confirm(`"${mergeTarget.name}" already exists. Merge "${category.name}" into it?${movingTransactions}`)) return; // the reload puts the old name back
+      const movingTransactions = category.used ? " " + t("Its {transactions} will move to \"{target}\".", { transactions: formatCount(category.used, "transaction"), target: mergeTarget.name }) : "";
+      if (!confirm(t("\"{target}\" already exists. Merge \"{name}\" into it?", { target: mergeTarget.name, name: category.name }) + movingTransactions)) return; // the reload puts the old name back
       await callApi(`/categories/${category.id}`, { method: "PUT", body: { name: newName, merge: true } });
     }
   });

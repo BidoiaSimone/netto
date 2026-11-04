@@ -9,11 +9,12 @@ import { euroFormatter, wholeEuroFormatter, formatSignedWholeEuros, formatShortD
 import { callApi } from "../core/apiClient.js";
 import { showErrorMessage } from "../core/errorBanner.js";
 import { drawHorizontalBarChart } from "../charts/horizontalBarChart.js";
+import { t, dateLocale, nameOfCategory } from "../core/i18n.js";
 
 const SAVED_YEAR_KEY = "yearInReviewYear";
 const percentFormatter = new Intl.NumberFormat("it-IT", { style: "percent", maximumFractionDigits: 0 });
 const precisePercentFormatter = new Intl.NumberFormat("it-IT", { style: "percent", minimumFractionDigits: 1, maximumFractionDigits: 1 });
-const formatMonth = (yearMonth) => new Date(yearMonth + "-15T12:00").toLocaleDateString("en-GB", { month: "long" });
+const formatMonth = (yearMonth) => new Date(yearMonth + "-15T12:00").toLocaleDateString(dateLocale, { month: "long" });
 const formatSignedPercent = (share) => `${share > 0 ? "+" : share < 0 ? "−" : ""}${percentFormatter.format(Math.abs(share))}`;
 
 let selectedYear = null;
@@ -57,20 +58,20 @@ function createNetWorthCard(review) {
   const headline = createElement("p", "yr-headline");
   headline.append(createElement("strong", "", wholeEuroFormatter.format(netWorth.end)),
     createElement("span", signClass(netWorth.change), ` ${formatSignedWholeEuros(netWorth.change)}`),
-    createElement("span", "yr-muted", ` from ${wholeEuroFormatter.format(netWorth.start)}`));
-  return createCard(review.is_year_to_date ? "Net worth so far" : "Net worth", headline, createFigureRows([
-    ["You saved (income − expenses)", formatSignedWholeEuros(netWorth.from_savings), signClass(netWorth.from_savings)],
-    ["Your investments did", formatSignedWholeEuros(netWorth.from_investments), signClass(netWorth.from_investments)],
-    ...(Math.abs(netWorth.other) >= 0.5 ? [["Other (reconciliations, new accounts)", formatSignedWholeEuros(netWorth.other), signClass(netWorth.other)]] : []),
+    createElement("span", "yr-muted", " " + t("from {amount}", { amount: wholeEuroFormatter.format(netWorth.start) })));
+  return createCard(review.is_year_to_date ? t("Net worth so far") : t("Net worth"), headline, createFigureRows([
+    [t("You saved (income − expenses)"), formatSignedWholeEuros(netWorth.from_savings), signClass(netWorth.from_savings)],
+    [t("Your investments did"), formatSignedWholeEuros(netWorth.from_investments), signClass(netWorth.from_investments)],
+    ...(Math.abs(netWorth.other) >= 0.5 ? [[t("Other (reconciliations, new accounts)"), formatSignedWholeEuros(netWorth.other), signClass(netWorth.other)]] : []),
   ]));
 }
 
 function createMoneyInAndOutCard(review) {
-  return createCard("Money in and out", createFigureRows([
-    ["Income", euroFormatter.format(review.income)],
-    ["Expenses", euroFormatter.format(review.expenses)],
-    ["Saved", euroFormatter.format(review.net_savings), signClass(review.net_savings)],
-    ["Savings rate", review.savings_rate === null ? "—" : percentFormatter.format(review.savings_rate), signClass(review.savings_rate ?? 0)],
+  return createCard(t("Money in and out"), createFigureRows([
+    [t("Income"), euroFormatter.format(review.income)],
+    [t("Expenses"), euroFormatter.format(review.expenses)],
+    [t("Saved"), euroFormatter.format(review.net_savings), signClass(review.net_savings)],
+    [t("Savings rate"), review.savings_rate === null ? "—" : percentFormatter.format(review.savings_rate), signClass(review.savings_rate ?? 0)],
   ]));
 }
 
@@ -78,31 +79,32 @@ function createTopCategoriesCard(review) {
   if (!review.top_expense_categories.length) return null;
   const chart = createElement("div", "hbars");
   chart.id = "yr-top-categories";
-  return createCard("Where it went", chart);
+  return createCard(t("Where it went"), chart);
 }
 
 function createChangesCard(review) {
   const changes = review.category_changes;
   if (!changes || (!changes.grew.length && !changes.shrank.length)) return null;
   const sameDates = review.is_year_to_date
-    ? `Against the same dates of ${review.year - 1} (${formatShortDate(changes.compared_with.from, true)} – ${formatShortDate(changes.compared_with.to, true)}).`
-    : `Against ${review.year - 1}.`;
-  const describe = (row) => `${formatSignedWholeEuros(row.change)}${row.change_share === null ? " (new)" : ` (${formatSignedPercent(row.change_share)})`}`;
+    ? t("Against the same dates of {year} ({from} – {to}).", { year: review.year - 1, from: formatShortDate(changes.compared_with.from, true), to: formatShortDate(changes.compared_with.to, true) })
+    : t("Against {year}.", { year: review.year - 1 });
+  const describe = (row) => `${formatSignedWholeEuros(row.change)}${row.change_share === null ? ` (${t("new")})` : ` (${formatSignedPercent(row.change_share)})`}`;
   const rows = [
-    ...changes.grew.map((row) => [`${row.name} ↑`, describe(row), "neg"]),
-    ...changes.shrank.map((row) => [`${row.name} ↓`, describe(row), "pos"]),
+    ...changes.grew.map((row) => [`${nameOfCategory(row)} ↑`, describe(row), "neg"]),
+    ...changes.shrank.map((row) => [`${nameOfCategory(row)} ↓`, describe(row), "pos"]),
   ];
-  return createCard("Compared with last year", createElement("p", "hint small yr-note", sameDates), createFigureRows(rows));
+  return createCard(t("Compared with last year"), createElement("p", "hint small yr-note", sameDates), createFigureRows(rows));
 }
 
 function createMonthsCard(review) {
   if (!review.best_month) return null;
-  const rows = [["Best month", `${formatMonth(review.best_month.month)} · saved ${wholeEuroFormatter.format(review.best_month.saved)}`, "pos"]];
+  const rows = [[t("Best month"), `${formatMonth(review.best_month.month)} · ${t("saved {amount}", { amount: wholeEuroFormatter.format(review.best_month.saved) })}`, "pos"]];
   if (review.worst_month && review.worst_month.month !== review.best_month.month) {
-    rows.push(["Worst month", `${formatMonth(review.worst_month.month)} · ${review.worst_month.saved >= 0 ? "saved" : "spent"} ${wholeEuroFormatter.format(Math.abs(review.worst_month.saved))}${review.worst_month.saved < 0 ? " more than came in" : ""}`, signClass(Math.min(0, review.worst_month.saved))]);
+    const worstAmount = wholeEuroFormatter.format(Math.abs(review.worst_month.saved));
+    rows.push([t("Worst month"), `${formatMonth(review.worst_month.month)} · ${review.worst_month.saved >= 0 ? t("saved {amount}", { amount: worstAmount }) : t("spent {amount} more than came in", { amount: worstAmount })}`, signClass(Math.min(0, review.worst_month.saved))]);
   }
-  return createCard("Best and worst month", createFigureRows(rows),
-    review.is_year_to_date ? createElement("p", "hint small yr-note", "Complete months only: this one isn't over yet.") : null);
+  return createCard(t("Best and worst month"), createFigureRows(rows),
+    review.is_year_to_date ? createElement("p", "hint small yr-note", t("Complete months only: this one isn't over yet.")) : null);
 }
 
 function createTripsCard(review) {
@@ -110,16 +112,16 @@ function createTripsCard(review) {
   const list = createElement("div", "yr-trips");
   for (const trip of review.trips) {
     const tripBox = createElement("div", "yr-trip");
-    const dates = trip.start_date && trip.end_date ? `${formatShortDate(trip.start_date)} – ${formatShortDate(trip.end_date, true)} · ${trip.days} days` : formatShortDate(trip.start_date ?? trip.end_date, true);
+    const dates = trip.start_date && trip.end_date ? `${formatShortDate(trip.start_date)} – ${formatShortDate(trip.end_date, true)} · ${t("{count} days", { count: trip.days })}` : formatShortDate(trip.start_date ?? trip.end_date, true);
     tripBox.append(createElement("strong", "", trip.name), createElement("span", "yr-muted", dates));
-    const details = [`cost ${euroFormatter.format(trip.cost)}`];
-    if (trip.cost_per_day !== null) details.push(`${euroFormatter.format(trip.cost_per_day)} a day`);
-    if (trip.currencies.length) details.push(`exchange cost ${euroFormatter.format(trip.exchange_cost)} (${trip.currencies.join(", ")})`);
+    const details = [t("cost {amount}", { amount: euroFormatter.format(trip.cost) })];
+    if (trip.cost_per_day !== null) details.push(t("{amount} a day", { amount: euroFormatter.format(trip.cost_per_day) }));
+    if (trip.currencies.length) details.push(t("exchange cost {amount}", { amount: `${euroFormatter.format(trip.exchange_cost)} (${trip.currencies.join(", ")})` }));
     tripBox.append(createElement("span", "", details.join(" · ")));
     list.append(tripBox);
   }
-  return createCard(review.trips.length === 1 ? "Trip" : `Trips (${review.trips.length})`, list,
-    createElement("p", "hint small yr-note", "A trip is a tag with dates. Cost = what was spent with the tag minus what came back (refunds)."));
+  return createCard(review.trips.length === 1 ? t("Trip") : t("Trips ({count})", { count: review.trips.length }), list,
+    createElement("p", "hint small yr-note", t("A trip is a tag with dates. Cost = what was spent with the tag minus what came back (refunds).")));
 }
 
 function createInvestmentsCard(review) {
@@ -129,26 +131,26 @@ function createInvestmentsCard(review) {
   const moneyWeighted = investments.money_weighted, timeWeighted = investments.time_weighted;
   // a year-to-date period under a year: the plain return (annualising a few months gives silly numbers)
   const isShort = investments.days < 365;
-  if (moneyWeighted) returnRows.push([`Your return (money-weighted${isShort ? ", so far" : ""})`, precisePercentFormatter.format(isShort ? moneyWeighted.period : moneyWeighted.annual), signClass(moneyWeighted.period)]);
-  if (timeWeighted) returnRows.push([`The investments (time-weighted${isShort ? ", so far" : ""})`, precisePercentFormatter.format(isShort ? timeWeighted.period : timeWeighted.annual), signClass(timeWeighted.period)]);
+  if (moneyWeighted) returnRows.push([isShort ? t("Your return (money-weighted, so far)") : t("Your return (money-weighted)"), precisePercentFormatter.format(isShort ? moneyWeighted.period : moneyWeighted.annual), signClass(moneyWeighted.period)]);
+  if (timeWeighted) returnRows.push([isShort ? t("The investments (time-weighted, so far)") : t("The investments (time-weighted)"), precisePercentFormatter.format(isShort ? timeWeighted.period : timeWeighted.annual), signClass(timeWeighted.period)]);
   const allocationChart = createElement("div", "hbars");
   allocationChart.id = "yr-allocation";
-  return createCard("Investments", createFigureRows([
-    [investments.net_put_in >= 0 ? "Money put in" : "Money taken out", `${euroFormatter.format(Math.abs(investments.net_put_in))}${investments.sold && investments.bought ? ` (bought ${wholeEuroFormatter.format(investments.bought)}, sold ${wholeEuroFormatter.format(investments.sold)})` : ""}`],
-    ["Gain", formatSignedWholeEuros(investments.gain), signClass(investments.gain)],
+  return createCard(t("Investments"), createFigureRows([
+    [investments.net_put_in >= 0 ? t("Money put in") : t("Money taken out"), `${euroFormatter.format(Math.abs(investments.net_put_in))}${investments.sold && investments.bought ? " " + t("(bought {bought}, sold {sold})", { bought: wholeEuroFormatter.format(investments.bought), sold: wholeEuroFormatter.format(investments.sold) }) : ""}`],
+    [t("Gain"), formatSignedWholeEuros(investments.gain), signClass(investments.gain)],
     ...returnRows,
   ]),
-  investments.allocation.length ? createElement("h4", "yr-subtitle", investments.targets_set ? "At the end of the year, against your targets" : "At the end of the year") : null,
+  investments.allocation.length ? createElement("h4", "yr-subtitle", investments.targets_set ? t("At the end of the year, against your targets") : t("At the end of the year")) : null,
   investments.allocation.length ? allocationChart : null);
 }
 
 function createStampDutyCard(review) {
   if (!review.stamp_duty.total) return null;
-  return createCard("Imposta di bollo (estimate)", createFigureRows([
-    ["On securities", euroFormatter.format(review.stamp_duty.securities)],
-    ["On current accounts", euroFormatter.format(review.stamp_duty.current_accounts)],
-    ["Total", euroFormatter.format(review.stamp_duty.total)],
-  ]), createElement("p", "hint small yr-note", "The same estimate as on Statements, prorated to the days of the year so far."));
+  return createCard(t("Imposta di bollo (estimate)"), createFigureRows([
+    [t("On securities"), euroFormatter.format(review.stamp_duty.securities)],
+    [t("On current accounts"), euroFormatter.format(review.stamp_duty.current_accounts)],
+    [t("Total"), euroFormatter.format(review.stamp_duty.total)],
+  ]), createElement("p", "hint small yr-note", t("The same estimate as on Statements, prorated to the days of the year so far.")));
 }
 
 function renderYearChips(review) {
@@ -165,8 +167,8 @@ function renderYearChips(review) {
 function renderYearInReview(review) {
   selectedYear = review.year;
   renderYearChips(review);
-  const period = review.is_year_to_date ? `${formatShortDate(review.from)} – ${formatShortDate(review.to, true)}, so far` : `the whole year`;
-  const startNote = review.from !== `${review.year}-01-01` ? ` (your records start on ${formatShortDate(review.from, true)})` : "";
+  const period = review.is_year_to_date ? t("{from} – {to}, so far", { from: formatShortDate(review.from), to: formatShortDate(review.to, true) }) : t("the whole year");
+  const startNote = review.from !== `${review.year}-01-01` ? " " + t("(your records start on {date})", { date: formatShortDate(review.from, true) }) : "";
   elementById("yr-period").textContent = `${review.year}: ${period}${startNote}.`;
   elementById("yr-cards").replaceChildren(...[
     createNetWorthCard(review), createMoneyInAndOutCard(review), createTopCategoriesCard(review), createChangesCard(review),
@@ -176,14 +178,14 @@ function renderYearInReview(review) {
   // the bar charts need their containers on the page first
   if (review.top_expense_categories.length) {
     drawHorizontalBarChart("yr-top-categories", review.top_expense_categories.map((category) => ({
-      name: category.name, value: category.total, colorClass: "neg",
+      name: nameOfCategory(category), value: category.total, colorClass: "neg",
       label: `${wholeEuroFormatter.format(category.total)} · ${percentFormatter.format(category.share)}`,
     })));
   }
   if (review.investments?.allocation.length) {
     drawHorizontalBarChart("yr-allocation", review.investments.allocation.map((row) => ({
       name: row.ticker, value: row.share, colorClass: "share",
-      label: `${precisePercentFormatter.format(row.share)}${row.target_share ? ` · target ${percentFormatter.format(row.target_share)}` : ""}`,
+      label: `${precisePercentFormatter.format(row.share)}${row.target_share ? ` · ${t("target {share}", { share: percentFormatter.format(row.target_share) })}` : ""}`,
     })));
   }
 }

@@ -9,6 +9,7 @@ import { euroFormatter, formatSignedEuros, formatShortDate, formatCount } from "
 import { appState } from "../core/appState.js";
 import { drawHorizontalBarChart } from "../charts/horizontalBarChart.js";
 import { formatForeignAmount } from "../core/currencies.js";
+import { t, nameOfCategory } from "../core/i18n.js";
 
 const SAVED_TAG_KEY = "insightsSelectedTagId";
 const percentFormatter = new Intl.NumberFormat("it-IT", { style: "percent", maximumFractionDigits: 0 });
@@ -19,7 +20,7 @@ try { selectedTagId = Number(localStorage.getItem(SAVED_TAG_KEY)) || null; } cat
 // "3 apr – 17 apr 27"; across two years "28 dic 26 – 4 gen 27"; one day "3 apr 27"; nothing "—"
 function formatDateRange(firstDay, lastDay) {
   if (!firstDay && !lastDay) return "—";
-  if (!firstDay || !lastDay) return `${firstDay ? "from" : "until"} ${formatShortDate(firstDay ?? lastDay, true)}`;
+  if (!firstDay || !lastDay) return firstDay ? t("from {date}", { date: formatShortDate(firstDay, true) }) : t("until {date}", { date: formatShortDate(lastDay, true) });
   if (firstDay === lastDay) return formatShortDate(firstDay, true);
   const sameYear = firstDay.slice(0, 4) === lastDay.slice(0, 4);
   return `${formatShortDate(firstDay, !sameYear)} – ${formatShortDate(lastDay, true)}`;
@@ -40,7 +41,7 @@ function renderTagTable(tags) {
     euroFormatter.format(tag.received),
     createNetCell(tag.net),
   ]);
-  makeTableRowsOpenItems("tag-report-body", tags, (tag) => selectTag(tag.id), (tag) => `Show what "${tag.name}" adds up to`);
+  makeTableRowsOpenItems("tag-report-body", tags, (tag) => selectTag(tag.id), (tag) => t("Show what \"{name}\" adds up to", { name: tag.name }));
   [...elementById("tag-report-body").rows].forEach((tableRow, index) => tableRow.classList.toggle("selected", tags[index].id === selectedTagId));
 }
 
@@ -54,16 +55,16 @@ function renderTagDetail(tag) {
   netElement.textContent = formatSignedEuros(tag.net);
   netElement.className = tag.net > 0 ? "pos" : tag.net < 0 ? "neg" : "";
 
-  const plannedDates = tag.start_date || tag.end_date ? ` · planned ${formatDateRange(tag.start_date, tag.end_date)}` : "";
+  const plannedDates = tag.start_date || tag.end_date ? ` · ${t("planned {dates}", { dates: formatDateRange(tag.start_date, tag.end_date) })}` : "";
   const transactionDates = tag.transaction_count ? `, ${formatDateRange(tag.first_date, tag.last_date)}` : "";
   elementById("tag-spent-detail").textContent = `${formatCount(tag.transaction_count, "transaction")}${transactionDates}${plannedDates}`;
-  const incomeNames = tag.income_by_category.map((row) => `${row.name} ${euroFormatter.format(row.total)}`).join(", ");
-  elementById("tag-received-detail").textContent = incomeNames || "nothing received";
-  elementById("tag-net-detail").textContent = tag.net < 0 ? "what it cost you overall" : "more came in than went out";
+  const incomeNames = tag.income_by_category.map((row) => `${nameOfCategory(row)} ${euroFormatter.format(row.total)}`).join(", ");
+  elementById("tag-received-detail").textContent = incomeNames || t("nothing received");
+  elementById("tag-net-detail").textContent = tag.net < 0 ? t("what it cost you overall") : t("more came in than went out");
 
   renderTagCurrencies(tag);
   drawHorizontalBarChart("tag-category-chart", tag.expenses_by_category.map((row) => ({
-    name: row.name,
+    name: nameOfCategory(row),
     value: row.total,
     label: `${euroFormatter.format(row.total)} · ${percentFormatter.format(tag.spent ? row.total / tag.spent : 0)}`,
     colorClass: "neg",
@@ -87,9 +88,9 @@ function renderTagCurrencies(tag) {
   elementById("tag-exchange-cost").textContent = euroFormatter.format(tag.exchange_cost);
   const ratelessCount = currencyRows.reduce((sum, row) => sum + row.rateless_count, 0);
   elementById("tag-currencies-note").textContent =
-    "Exchange cost: what the rates your card and the ATMs used cost you compared with the market rate of each day, "
-    + "cash withdrawals included. It's part of the euros you paid, not an extra on top of them."
-    + (ratelessCount ? ` ${formatCount(ratelessCount, "transaction")} still without a market rate (they're added once netto can reach Yahoo) aren't counted yet.` : "");
+    t("Exchange cost: what the rates your card and the ATMs used cost you compared with the market rate of each day, "
+    + "cash withdrawals included. It's part of the euros you paid, not an extra on top of them.")
+    + (ratelessCount ? " " + t("{transactions} still without a market rate (they're added once netto can reach Yahoo) aren't counted yet.", { transactions: formatCount(ratelessCount, "transaction") }) : "");
 }
 
 function selectTag(tagId) {

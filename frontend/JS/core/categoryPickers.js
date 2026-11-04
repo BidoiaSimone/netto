@@ -4,10 +4,11 @@
 
 import { elementById } from "./domHelpers.js";
 import { appState } from "./appState.js";
+import { t, isItalian } from "./i18n.js";
 
 export const UNCATEGORIZED_FILTER_VALUE = "__none"; // the "Uncategorized" choice of the filter
 
-const KIND_LABELS = { expense: "Expense", income: "Income" };
+const KIND_LABELS = isItalian ? { expense: "Uscite", income: "Entrate" } : { expense: "Expense", income: "Income" };
 
 // The kind of category a transaction type uses: income and expense have their own, anything else
 // (movements, reconciliations) may use either, so null = both kinds
@@ -31,7 +32,7 @@ function createCategoryOptions(kind) {
 // otherwise the dropdown goes back to "no category" (switching an expense to income clears "Rent").
 export function fillCategoryPicker(selectElement, transactionType) {
   const pickedCategoryId = selectElement.value;
-  selectElement.replaceChildren(new Option("— no category —", ""), ...createCategoryOptions(getCategoryKindForType(transactionType)));
+  selectElement.replaceChildren(new Option(t("— no category —"), ""), ...createCategoryOptions(getCategoryKindForType(transactionType)));
   selectElement.value = pickedCategoryId;
   if (selectElement.value !== pickedCategoryId) selectElement.value = "";
 }
@@ -39,8 +40,8 @@ export function fillCategoryPicker(selectElement, transactionType) {
 // The Transactions page filter: every category, grouped by kind, plus "Uncategorized"
 export function fillCategoryFilter() {
   const categoryFilter = elementById("f-category"), filteredCategoryId = categoryFilter.value;
-  categoryFilter.replaceChildren(new Option("All categories", ""), ...createCategoryOptions(null),
-    new Option("Uncategorized", UNCATEGORIZED_FILTER_VALUE));
+  categoryFilter.replaceChildren(new Option(t("All categories"), ""), ...createCategoryOptions(null),
+    new Option(t("Uncategorized"), UNCATEGORIZED_FILTER_VALUE));
   categoryFilter.value = filteredCategoryId;
   if (categoryFilter.value !== filteredCategoryId) categoryFilter.value = ""; // the category was deleted
 }

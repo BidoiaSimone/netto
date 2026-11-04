@@ -12,6 +12,7 @@
 import { elementById, createElement } from "../core/domHelpers.js";
 import { getTodayAsLocalDate } from "../core/formatting.js";
 import { appState } from "../core/appState.js";
+import { t } from "../core/i18n.js";
 
 const MAXIMUM_SUGGESTIONS = 3;
 
@@ -29,11 +30,11 @@ function renderPickedTags() {
   const chipsContainer = elementById("tx-tag-chips");
   chipsContainer.replaceChildren(...pickedTags.map((tag) => {
     const chip = createElement("span", tag.id === null ? "tag-chip new" : "tag-chip", tag.name);
-    if (tag.id === null) chip.title = "New tag: created when the transaction is saved";
+    if (tag.id === null) chip.title = t("New tag: created when the transaction is saved");
     if (!isPickerDisabled) {
       const removeButton = createElement("button", "tag-chip-remove", "×");
       removeButton.type = "button";
-      removeButton.setAttribute("aria-label", `Remove tag ${tag.name}`);
+      removeButton.setAttribute("aria-label", t("Remove tag {name}", { name: tag.name }));
       removeButton.onclick = () => removePickedTag(tag);
       chip.append(removeButton);
     }
@@ -70,7 +71,7 @@ function renderTagSuggestions() {
     .filter((tag) => tagDatesContain(tag, transactionDay) && !pickedTags.some((picked) => picked.id === tag.id))
     .slice(0, MAXIMUM_SUGGESTIONS);
   suggestionsLine.hidden = suggestedTags.length === 0;
-  suggestionsLine.replaceChildren(createElement("span", "hint small", "Dates match:"), ...suggestedTags.map((tag) => {
+  suggestionsLine.replaceChildren(createElement("span", "hint small", t("Dates match:")), ...suggestedTags.map((tag) => {
     const suggestionButton = createElement("button", "ghost tag-suggestion", `+ ${tag.name}`);
     suggestionButton.type = "button";
     suggestionButton.onclick = () => {

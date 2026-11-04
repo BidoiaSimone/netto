@@ -6,6 +6,7 @@ import { elementById } from "../core/domHelpers.js";
 import { loadAllData } from "../core/dataRefresh.js";
 import { askServiceWorkerToRetry } from "../core/connectionState.js";
 import { readStored, writeStored } from "../core/deviceStorage.js";
+import { t } from "../core/i18n.js";
 
 const AUTO_REFRESH_INTERVAL_MILLISECONDS = 10000;
 const REFRESH_WHEN_BACK_AFTER_MILLISECONDS = 60000;
@@ -16,7 +17,7 @@ let autoRefreshTimer = null; // null = off
 function setAutoRefresh(isOn) {
   clearInterval(autoRefreshTimer);
   autoRefreshTimer = isOn ? setInterval(loadAllData, AUTO_REFRESH_INTERVAL_MILLISECONDS) : null;
-  elementById("refreshToggle").textContent = `Auto Refresh: ${isOn ? "ON" : "OFF"}`;
+  elementById("refreshToggle").textContent = isOn ? t("Auto Refresh: ON") : t("Auto Refresh: OFF");
   writeStored("autoRefresh", isOn ? "on" : "off");
 }
 

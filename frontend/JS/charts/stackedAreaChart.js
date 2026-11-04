@@ -16,6 +16,7 @@ import { createElement } from "../core/domHelpers.js";
 import { euroFormatter, wholeEuroFormatter, formatShortDate } from "../core/formatting.js";
 import { createSvgElement } from "./svgHelpers.js";
 import { chooseValueAxis, drawValueGrid, drawDateLabels, placeTooltipNearPoint, findNearestIndex } from "./chartAxis.js";
+import { t } from "../core/i18n.js";
 
 const CHART_MARGINS = { top: 12, right: 16, bottom: 24, left: 72 };
 
@@ -48,7 +49,7 @@ export function drawStackedAreaChart(container, dates, layers, totalName, { fore
   const yOfValue = (value) => margins.top + (1 - (value - axisBottom) / (axisTop - axisBottom)) * (height - margins.top - margins.bottom);
   const pointsOf = (edgeValues) => edgeValues.map((value, index) => `${xOfIndex(index).toFixed(1)},${yOfValue(value).toFixed(1)}`);
 
-  const svg = createSvgElement("svg", { viewBox: `0 0 ${width} ${height}`, role: "img", "aria-label": `${totalName} over time` });
+  const svg = createSvgElement("svg", { viewBox: `0 0 ${width} ${height}`, role: "img", "aria-label": t("{name} over time", { name: totalName }) });
   drawValueGrid(svg, valueAxis, { margins, width, yOfValue });
   drawDateLabels(svg, dates, { height, xOfIndex });
 
@@ -78,7 +79,7 @@ export function drawStackedAreaChart(container, dates, layers, totalName, { fore
     svg.append(drawAreas(createSvgElement("g", { class: "forecast-part", "clip-path": `url(#${clipId}-forecast)` })));
     svg.append(createSvgElement("line", { class: "today-line", x1: todayX, x2: todayX, y1: margins.top, y2: height - margins.bottom }));
     const todayLabel = createSvgElement("text", { class: "today-label", x: todayX + 4, y: margins.top + 10 });
-    todayLabel.textContent = "today";
+    todayLabel.textContent = t("today");
     svg.append(todayLabel);
   }
 
@@ -110,7 +111,7 @@ function drawReferenceLine(svg, referenceLine, { isReferenceAboveChart, pointsOf
   const className = referenceLine.className ?? "";
   if (isReferenceAboveChart) {
     const label = createSvgElement("text", { class: `reference-label ${className}`, x: width - margins.right, y: margins.top + 10, "text-anchor": "end" });
-    label.textContent = `↑ ${referenceLine.label} ${wholeEuroFormatter.format(Math.min(...referenceLine.values.filter((value) => value !== null)))} (above the chart)`;
+    label.textContent = `↑ ${referenceLine.label} ${wholeEuroFormatter.format(Math.min(...referenceLine.values.filter((value) => value !== null)))} ${t("(above the chart)")}`;
     svg.append(label);
     return;
   }

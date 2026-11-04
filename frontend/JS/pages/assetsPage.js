@@ -8,6 +8,7 @@ import { refreshAccountPickers } from "../core/accountPickers.js";
 import { renderAssetsPieChart } from "./assetsPieChart.js";
 import { openAccountEditor } from "../dialogs/accountDialog.js";
 import { getAccountKindLabel } from "../core/accountKinds.js";
+import { t } from "../core/i18n.js";
 
 const differenceCellByAccountId = new Map(); // the "Difference" cell of each row
 let isShowingClosedAccounts = false;
@@ -36,7 +37,7 @@ function createAccountRowCells(account) {
   const countedAmountInput = document.createElement("input");
   countedAmountInput.type = "number";
   countedAmountInput.step = "0.01";
-  countedAmountInput.placeholder = isOpen ? "unchanged" : "closed";
+  countedAmountInput.placeholder = isOpen ? t("unchanged") : t("closed");
   countedAmountInput.disabled = !isOpen;
   countedAmountInput.value = appState.countedAmountByAccountId[account.id] ?? "";
   countedAmountInput.oninput = () => {
@@ -50,18 +51,18 @@ function createAccountRowCells(account) {
   // the name is the way in to edit / close the account (a separate column didn't fit)
   const nameButton = createElement("button", "name-link", account.name);
   nameButton.type = "button";
-  nameButton.title = `Edit ${account.name}`;
+  nameButton.title = t("Edit {name}", { name: account.name });
   nameButton.onclick = () => openAccountEditor(account);
 
-  const kindLabel = isOpen ? getAccountKindLabel(account.kind) : `${getAccountKindLabel(account.kind)} · closed`;
-  return [nameButton, kindLabel, euroFormatter.format(account.balance), account.last_reconciled ?? "never", countedAmountInput, differenceCell];
+  const kindLabel = isOpen ? getAccountKindLabel(account.kind) : `${getAccountKindLabel(account.kind)} · ${t("closed")}`;
+  return [nameButton, kindLabel, euroFormatter.format(account.balance), account.last_reconciled ?? t("never"), countedAmountInput, differenceCell];
 }
 
 function updateShowClosedAccountsButton() {
   const closedAccountCount = appState.accounts.filter((account) => !isAccountOpen(account)).length;
   const button = elementById("show-closed");
   button.hidden = !closedAccountCount;
-  button.textContent = isShowingClosedAccounts ? "Hide closed accounts" : `Show closed accounts (${closedAccountCount})`;
+  button.textContent = isShowingClosedAccounts ? t("Hide closed accounts") : t("Show closed accounts ({count})", { count: closedAccountCount });
 }
 
 // Live feedback while typing counted amounts: the difference per account,
@@ -81,7 +82,8 @@ export function updateReconcileDifferences() {
   }
   const netWorth = appState.netWorth;
   elementById("reconcile-summary").textContent = netWorth
-    ? `Net worth now ${euroFormatter.format(netWorth.net_worth)} → after reconciling ${euroFormatter.format(netWorth.net_worth + totalDifference)} (${totalDifference >= 0 ? "+" : ""}${euroFormatter.format(totalDifference)})`
+    ? t("Net worth now {now} → after reconciling {after} ({difference})", { now: euroFormatter.format(netWorth.net_worth),
+      after: euroFormatter.format(netWorth.net_worth + totalDifference), difference: `${totalDifference >= 0 ? "+" : ""}${euroFormatter.format(totalDifference)}` })
     : "";
 }
 

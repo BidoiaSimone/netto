@@ -7,6 +7,7 @@
 
 import { elementById, createElement } from "../core/domHelpers.js";
 import { CATEGORY_ICONS, CATEGORY_COLORS, createCategoryIcon, createIconDrawing, getCategoryColor } from "../core/categoryIcons.js";
+import { t } from "../core/i18n.js";
 
 let pickedLook = { name: "", icon: null, color: null };
 let whenChosen = null;
@@ -24,9 +25,9 @@ export function openCategoryLookPicker(look, onChoose) {
 function renderPicker() {
   const shownColor = getCategoryColor(pickedLook);
   elementById("look-preview-icon").replaceChildren(createCategoryIcon(pickedLook, "category-icon large"));
-  elementById("look-preview-name").textContent = pickedLook.name || "New category";
+  elementById("look-preview-name").textContent = pickedLook.name || t("New category");
 
-  const autoSwatch = createChoiceButton("look-swatch auto", "Auto: the icon's own colour", pickedLook.color === null, () => pick({ color: null }));
+  const autoSwatch = createChoiceButton("look-swatch auto", t("Auto: the icon's own colour"), pickedLook.color === null, () => pick({ color: null }));
   autoSwatch.textContent = "A";
   elementById("look-colors").replaceChildren(autoSwatch, ...CATEGORY_COLORS.map(({ color, label }) => {
     const swatch = createChoiceButton("look-swatch", label, pickedLook.color === color, () => pick({ color }));
@@ -34,7 +35,7 @@ function renderPicker() {
     return swatch;
   }));
 
-  const initialTile = createChoiceButton("look-tile", "No icon: the name's initial", pickedLook.icon === null, () => pick({ icon: null }));
+  const initialTile = createChoiceButton("look-tile", t("No icon: the name's initial"), pickedLook.icon === null, () => pick({ icon: null }));
   initialTile.textContent = (pickedLook.name.trim()[0] ?? "A").toUpperCase();
   initialTile.style.setProperty("--icon-color", shownColor);
   elementById("look-icons").replaceChildren(initialTile, ...Object.entries(CATEGORY_ICONS).map(([icon, { label }]) => {

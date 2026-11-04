@@ -10,6 +10,7 @@
 
 import { appState } from "./appState.js";
 import { visibleEuroFormatter } from "./formatting.js";
+import { t, dateLocale } from "./i18n.js";
 
 const STORAGE_KEY = "netto.pendingChanges";
 
@@ -25,12 +26,12 @@ export function writePendingChanges(changes) {
 // "Delete Coffee −0,60 € (15 ott)", "Change Food −12,10 € (16 ott)", "Change: savings-goals/1"
 function describeChange(method, path, body) {
   const transactionMatch = path.match(/^\/transactions\/(\d+)$/);
-  const verb = method === "DELETE" ? "Delete" : "Change";
+  const verb = method === "DELETE" ? t("Delete") : t("Change");
   if (transactionMatch) {
     const transaction = appState.transactions.find((candidate) => candidate.id === Number(transactionMatch[1]));
     if (transaction) {
       const name = transaction.description || transaction.category || transaction.type;
-      const day = new Date(transaction.date + "T12:00").toLocaleDateString("it-IT", { day: "numeric", month: "short" });
+      const day = new Date(transaction.date + "T12:00").toLocaleDateString(dateLocale, { day: "numeric", month: "short" });
       return `${verb} ${name} ${visibleEuroFormatter.format(transaction.amount)} (${day})${method === "PUT" && body?.amount != null && body.amount !== transaction.amount ? ` → ${visibleEuroFormatter.format(body.amount)}` : ""}`;
     }
   }

@@ -181,9 +181,9 @@
       <button type="button" id="f-more" class="ghost phone-only" aria-expanded="false">Filters</button>
       <select id="account-select"><option value="">All accounts</option></select>
       <select id="f-type">
-        <option value="">All types</option><option value="income">Income</option><option value="expense">Expense</option>
-        <option value="movement">Movement</option><option value="adjustment">Reconciliation</option>
-        <option value="investment">Investment</option>
+        <option value="">All types</option><option value="income" data-i18n="Income (type)">Income</option><option value="expense" data-i18n="Expense (type)">Expense</option>
+        <option value="movement" data-i18n="Movement (type)">Movement</option><option value="adjustment" data-i18n="Reconciliation (type)">Reconciliation</option>
+        <option value="investment" data-i18n="Investment (type)">Investment</option>
       </select>
       <select id="f-category"><option value="">All categories</option></select>
       <select id="f-tag" aria-label="Tag"><option value="">All tags</option></select>
@@ -745,6 +745,14 @@
 
   <section data-page="settings">
     <div class="page-head"><h2>Settings</h2></div>
+    <!-- per device, like the theme: JS/settings/languageSetting.js (the words: JS/core/i18n.js and JS/core/italian.js) -->
+    <p class="setting-row">
+      <span>Language</span>
+      <span id="language-chips" class="chips option-chips" translate="no">
+        <button type="button" class="ghost" data-value="en" lang="en">English</button>
+        <button type="button" class="ghost" data-value="it" lang="it">Italiano</button>
+      </span>
+    </p>
     <p class="setting-row">
       <span>Theme</span>
       <span id="theme-chips" class="chips theme-chips">
@@ -855,9 +863,9 @@
   <h3 id="tx-title">New transaction</h3>
   <form id="tx-form">
     <select name="type" id="tx-type">
-      <option value="expense">Expense</option><option value="income">Income</option><option value="movement">Movement</option>
-      <option value="adjustment" disabled hidden>Reconciliation</option>
-      <option value="investment" disabled hidden>Investment</option>
+      <option value="expense" data-i18n="Expense (type)">Expense</option><option value="income" data-i18n="Income (type)">Income</option><option value="movement" data-i18n="Movement (type)">Movement</option>
+      <option value="adjustment" disabled hidden data-i18n="Reconciliation (type)">Reconciliation</option>
+      <option value="investment" disabled hidden data-i18n="Investment (type)">Investment</option>
     </select>
     <div class="segmented" id="tx-type-segments" role="radiogroup" aria-label="Type"></div>
     <div class="form-group tx-accounts">
@@ -925,7 +933,7 @@
   <form id="recurring-form">
     <label class="field"><span>Type</span>
       <select name="type" id="rec-type">
-        <option value="expense">Expense</option><option value="income">Income</option><option value="movement">Movement</option>
+        <option value="expense" data-i18n="Expense (type)">Expense</option><option value="income" data-i18n="Income (type)">Income</option><option value="movement" data-i18n="Movement (type)">Movement</option>
       </select></label>
     <label class="field"><span>Amount (€)</span>
       <input name="amount" type="number" step="0.01" min="0.01" placeholder="0,00" required></label>
@@ -1133,8 +1141,13 @@
       if (window.nettoStarted) return;
       var message = document.createElement("div");
       message.className = "start-failed";
-      message.innerHTML = "<h2>netto couldn't start</h2><p>Try closing it and opening it again. If this keeps happening, "
-        + "send a screenshot of this screen to whoever shared netto with you.</p><p class='hint small'></p>";
+      var isItalian = document.documentElement.dataset.language === "it"; // themeBeforeFirstPaint.js
+      document.documentElement.removeAttribute("data-translating");
+      message.innerHTML = isItalian
+        ? "<h2>netto non è riuscito ad avviarsi</h2><p>Prova a chiuderlo e riaprirlo. Se continua a succedere, "
+          + "manda uno screenshot di questa schermata a chi ti ha dato netto.</p><p class='hint small'></p>"
+        : "<h2>netto couldn't start</h2><p>Try closing it and opening it again. If this keeps happening, "
+          + "send a screenshot of this screen to whoever shared netto with you.</p><p class='hint small'></p>";
       message.lastChild.textContent = (window.nettoStartError || "The page's script didn't run.") + " · " + navigator.userAgent;
       document.body.replaceChildren(message);
     }, 3000);

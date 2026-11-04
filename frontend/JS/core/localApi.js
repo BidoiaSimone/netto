@@ -3,6 +3,8 @@
 // apiWorker.js), with the database in the browser's own storage. callApi (core/apiClient.js) sends each request here
 // instead of fetch(), and gets back the same { status, body } the server would have answered.
 
+import { t } from "./i18n.js";
+
 let apiWorker = null;
 let nextRequestId = 1;
 const waitingRequests = new Map(); // id -> resolve
@@ -25,8 +27,8 @@ function startApiWorker() {
 // The browser refused netto a place for its database (site storage blocked, a private tab): it works, but in memory
 const warnThatNothingIsKept = () => {
   const warning = document.getElementById("storage-warning");
-  warning.textContent = "This browser isn't letting netto keep its data: anything you add is lost when netto closes. "
-    + "On an iPhone: Settings → Apps → Safari → turn off Block All Cookies, then open netto again (not in a Private tab).";
+  warning.textContent = t("This browser isn't letting netto keep its data: anything you add is lost when netto closes. "
+    + "On an iPhone: Settings → Apps → Safari → turn off Block All Cookies, then open netto again (not in a Private tab).");
   warning.hidden = false;
 };
 

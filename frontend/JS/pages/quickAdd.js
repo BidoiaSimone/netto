@@ -14,6 +14,7 @@ import { addTransactionNowOrLater, forgetPendingTransaction, listPendingTransact
 import { openTransactionEditor } from "../dialogs/transactionDialog.js";
 import { showToast } from "../core/toast.js";
 import { createTransactionIcon } from "../core/transactionDisplay.js";
+import { t, tp } from "../core/i18n.js";
 
 const QUICK_ADD_DAYS = 90;
 const NUMBER_OF_BUTTONS = 6;
@@ -39,7 +40,7 @@ export function findFrequentTransactions(transactions, today, accounts) {
     .slice(0, NUMBER_OF_BUTTONS)
     .map(({ newest, description, accountId, count }) => ({
       count,
-      name: description || newest.category || newest.type,
+      name: description || newest.category || t(newest.type),
       account: newest.type === "expense" ? newest.from_account : newest.to_account,
       transaction: {
         type: newest.type, amount: newest.amount, category_id: newest.category_id, description: description || null,
@@ -58,19 +59,19 @@ async function addAgain(frequent, button) {
   try {
     result = await addTransactionNowOrLater(frequent.transaction, getTodayAsLocalDate());
   } catch (error) {
-    showToast(`Not added: ${error.message}`, []);
+    showToast(t("Not added: {reason}", { reason: error.message }), []);
     button.disabled = false;
     return;
   }
   button.disabled = false;
   if (result.cancelled) return; // the same one a moment ago, and you said no
   if (result.kept) {
-    showToast(`${what}: kept on this device, sent when your Mac is back`, [{ label: "Undo", onClick: () => forgetPendingTransaction(result.offlineId) }]);
+    showToast(t("{what}: kept on this device, sent when your Mac is back", { what }), [{ label: t("Undo"), onClick: () => forgetPendingTransaction(result.offlineId) }]);
     return loadAllData();
   }
-  showToast(`${what} added`, [
-    { label: "Undo", onClick: () => callApi(`/transactions/${result.id}`, { method: "DELETE" }).then(loadAllData).catch((error) => showToast(error.message, [])) },
-    { label: "Change", onClick: () => { const added = appState.transactions.find((transaction) => transaction.id === result.id); if (added) openTransactionEditor(added); } },
+  showToast(t("{what} added", { what }), [
+    { label: t("Undo"), onClick: () => callApi(`/transactions/${result.id}`, { method: "DELETE" }).then(loadAllData).catch((error) => showToast(error.message, [])) },
+    { label: t("Change"), onClick: () => { const added = appState.transactions.find((transaction) => transaction.id === result.id); if (added) openTransactionEditor(added); } },
   ]);
   await loadAllData();
 }
@@ -86,12 +87,12 @@ export function renderTodaySpending() {
   ];
   const line = elementById("today-spent");
   if (!expensesToday.length) {
-    line.textContent = "Nothing added today yet";
+    line.textContent = t("Nothing added today yet");
     return;
   }
   const total = expensesToday.reduce((sum, transaction) => sum + transaction.amount, 0);
-  line.replaceChildren("Today: ", createElement("strong", "", visibleEuroFormatter.format(total)),
-    ` spent · ${expensesToday.length} expense${expensesToday.length === 1 ? "" : "s"}`);
+  line.replaceChildren(t("Today: "), createElement("strong", "", visibleEuroFormatter.format(total)),
+    tp(expensesToday.length, " spent · {count} expense", " spent · {count} expenses"));
 }
 
 export function renderQuickAdd() {
@@ -102,7 +103,7 @@ export function renderQuickAdd() {
   container.replaceChildren(...frequentTransactions.map((frequent) => {
     const button = createElement("button", `quick-add-button ${frequent.transaction.type}`);
     button.type = "button";
-    button.title = `Add it again, dated today (added ${frequent.count} times in the last ${QUICK_ADD_DAYS} days)`;
+    button.title = t("Add it again, dated today (added {count} times in the last {days} days)", { count: frequent.count, days: QUICK_ADD_DAYS });
     const sign = frequent.transaction.type === "expense" ? "−" : "+";
     const icon = createTransactionIcon(frequent.transaction); // Pocket only (32-quick-add.css)
     icon.className = `category-icon small quick-add-icon${icon.classList.contains("uncategorized") ? " uncategorized" : ""}`;

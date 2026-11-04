@@ -10,11 +10,13 @@ import { callApi } from "../core/apiClient.js";
 import { appState } from "../core/appState.js";
 import { bindNumberInputToSetting } from "../core/appSettings.js";
 import { openTradeDialogsOneAfterAnother } from "../dialogs/tradeDialog.js";
+import { t } from "../core/i18n.js";
 
 const NEW_MONEY_DELAY_MILLISECONDS = 300;
 const percentFormatter = new Intl.NumberFormat("it-IT", { style: "percent", minimumFractionDigits: 1, maximumFractionDigits: 1 });
 const pointsFormatter = new Intl.NumberFormat("it-IT", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
 // +4,2 pt / −4,2 pt (a real minus sign, like the amounts)
+const targetInputLabel = (ticker) => t("{ticker}: target %", { ticker });
 const formatSignedPoints = (points) => `${points > 0.05 ? "+" : points < -0.05 ? "−" : ""}${pointsFormatter.format(Math.abs(points))} pt`;
 
 
@@ -43,7 +45,7 @@ function createTargetInput(row) {
   input.step = "0.5";
   input.inputMode = "decimal";
   input.placeholder = "0";
-  input.setAttribute("aria-label", `${row.ticker}: target %`);
+  input.setAttribute("aria-label", targetInputLabel(row.ticker));
   const percent = currentTargetPercentByTicker().get(row.ticker);
   input.value = percent ?? "";
   input.addEventListener("input", () => {
@@ -68,11 +70,11 @@ function renderTargetAllocation() {
   if (!isEditing) {
     fillTableBody("allocation-body", allocation.rows, (row) => [
       row.ticker,
-      row.value === null ? "n/a" : euroFormatter.format(row.value),
-      row.current_share === null ? "n/a" : percentFormatter.format(row.current_share),
+      row.value === null ? t("n/a") : euroFormatter.format(row.value),
+      row.current_share === null ? t("n/a") : percentFormatter.format(row.current_share),
       createTargetInput(row),
-      row.drift_points === null ? "n/a" : createDriftCell(row, formatSignedPoints(row.drift_points)),
-      row.drift === null ? "n/a" : createDriftCell(row, formatSignedEuros(row.drift)),
+      row.drift_points === null ? t("n/a") : createDriftCell(row, formatSignedPoints(row.drift_points)),
+      row.drift === null ? t("n/a") : createDriftCell(row, formatSignedEuros(row.drift)),
     ]);
   }
   elementById("allocation-total-value").textContent = euroFormatter.format(allocation.total_value);
@@ -97,10 +99,10 @@ function renderTargetTotal() {
   saveButton.hidden = !editedTargetByTicker;
   elementById("allocation-undo").hidden = !editedTargetByTicker;
   saveButton.disabled = !(totalPercent === 100 || targetPercents.length === 0);
-  if (!editedTargetByTicker) status.textContent = allocation.targets_set ? "" : "No targets yet: type a % for each fund (they must add up to 100%).";
-  else if (totalPercent === 100) status.textContent = "Adds up to 100%: save to use these targets.";
-  else if (targetPercents.length === 0) status.textContent = "No targets: saving removes them all.";
-  else status.textContent = totalPercent < 100 ? `${(100 - totalPercent).toLocaleString("it-IT")}% still to assign.` : `${(totalPercent - 100).toLocaleString("it-IT")}% too much.`;
+  if (!editedTargetByTicker) status.textContent = allocation.targets_set ? "" : t("No targets yet: type a % for each fund (they must add up to 100%).");
+  else if (totalPercent === 100) status.textContent = t("Adds up to 100%: save to use these targets.");
+  else if (targetPercents.length === 0) status.textContent = t("No targets: saving removes them all.");
+  else status.textContent = totalPercent < 100 ? t("{share}% still to assign.", { share: (100 - totalPercent).toLocaleString("it-IT") }) : t("{share}% too much.", { share: (totalPercent - 100).toLocaleString("it-IT") });
 }
 
 // "I'm investing 500 €": one line per fund that gets money, with roughly how many shares that buys
@@ -111,25 +113,25 @@ function renderNewMoneySplit() {
   const newMoney = Number(elementById("allocation-new-money").value);
   recordButton.hidden = true;
   if (!(newMoney > 0)) return buysList.replaceChildren();
-  if (!allocation.targets_set) return buysList.replaceChildren(createElement("p", "hint small", "Set your targets above first."));
-  if (!split) return buysList.replaceChildren(createElement("p", "hint small", "Can't work it out without a live price for every fund."));
+  if (!allocation.targets_set) return buysList.replaceChildren(createElement("p", "hint small", t("Set your targets above first.")));
+  if (!split) return buysList.replaceChildren(createElement("p", "hint small", t("Can't work it out without a live price for every fund.")));
 
   const buys = split.buys.filter((buy) => buy.amount > 0);
   buysList.replaceChildren(...buys.map((buy) => {
     const line = createElement("div", "allocation-buy");
     const sharesText = buy.approximate_shares === null ? ""
-      : `≈ ${shareCountFormatter.format(Math.round(buy.approximate_shares * 100) / 100)} shares at ${pricePerShareFormatter.format(buy.price)}`
-        + (buy.whole_shares !== null && buy.whole_shares !== Math.round(buy.approximate_shares * 100) / 100 ? ` (${buy.whole_shares} whole)` : "");
+      : t("≈ {shares} shares at {price}", { shares: shareCountFormatter.format(Math.round(buy.approximate_shares * 100) / 100), price: pricePerShareFormatter.format(buy.price) })
+        + (buy.whole_shares !== null && buy.whole_shares !== Math.round(buy.approximate_shares * 100) / 100 ? " " + t("({count} whole)", { count: buy.whole_shares }) : "");
     const after = split.after.find((row) => row.ticker === buy.ticker);
     line.append(
       createElement("strong", "allocation-buy-ticker", buy.ticker),
       createElement("span", "allocation-buy-amount", euroFormatter.format(buy.amount)),
-      createElement("span", "allocation-buy-detail", [sharesText, after ? `then ${percentFormatter.format(after.share)}` : ""].filter(Boolean).join(" · ")),
+      createElement("span", "allocation-buy-detail", [sharesText, after ? t("then {share}", { share: percentFormatter.format(after.share) }) : ""].filter(Boolean).join(" · ")),
     );
     return line;
   }));
   const fundsLeftOut = split.buys.filter((buy) => buy.amount === 0).map((buy) => buy.ticker);
-  if (fundsLeftOut.length) buysList.append(createElement("p", "hint small", `Nothing for ${fundsLeftOut.join(", ")}: already above where this money brings the others.`));
+  if (fundsLeftOut.length) buysList.append(createElement("p", "hint small", t("Nothing for {tickers}: already above where this money brings the others.", { tickers: fundsLeftOut.join(", ") })));
   recordButton.hidden = !buys.some((buy) => buy.price);
 }
 
@@ -161,7 +163,7 @@ function addTickerToTargets(event) {
   tickerInput.value = "";
   tickerInput.blur();
   renderTargetAllocation();
-  elementById("allocation-body").querySelector(`input[aria-label="${ticker}: target %"]`)?.focus();
+  elementById("allocation-body").querySelector(`input[aria-label="${targetInputLabel(ticker)}"]`)?.focus();
 }
 
 // The buys, opened one after another in the trade dialog at today's price: whole shares (an ETF on Borsa Italiana

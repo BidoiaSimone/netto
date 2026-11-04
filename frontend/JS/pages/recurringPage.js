@@ -10,6 +10,7 @@ import { describeRepeat, calculateMonthlyEquivalent } from "../core/recurrenceDa
 import { createSignedAmountCell, createTransactionIcon } from "../core/transactionDisplay.js";
 import { openRecurringTransactionEditor } from "../dialogs/recurringTransactionDialog.js";
 import { renderMonthProjection, sumRecurringStillDueThisMonth } from "./monthProjection.js";
+import { t, translateServerMessage, dateLocale } from "../core/i18n.js";
 
 export async function loadRecurringTransactions() {
   appState.recurringTransactions = await callApi("/recurring-transactions");
@@ -32,9 +33,9 @@ const describeAccounts = (rule) =>
 
 // The "Next" column: the date, or why there is none
 function createNextDateCell(rule) {
-  if (rule.next_date === null) return createElement("span", "muted", "ended");
-  if (rule.paused) return createElement("span", "status-pill", "paused");
-  if (rule.blocked_reason) return createElement("span", "status-pill warn", `stopped: ${rule.blocked_reason}`);
+  if (rule.next_date === null) return createElement("span", "muted", t("ended"));
+  if (rule.paused) return createElement("span", "status-pill", t("paused"));
+  if (rule.blocked_reason) return createElement("span", "status-pill warn", t("stopped: {reason}", { reason: translateServerMessage(rule.blocked_reason) }));
   return formatShortDate(rule.next_date, true);
 }
 
@@ -78,16 +79,16 @@ function renderMonthlySummary() {
   }
   const moneyIn = monthlyTotalOfType("income"), moneyOut = monthlyTotalOfType("expense");
   const stillDue = sumRecurringStillDueThisMonth();
-  const monthName = new Date().toLocaleDateString("en-GB", { month: "long" });
+  const monthName = new Date().toLocaleDateString(dateLocale, { month: "long" });
   summary.replaceChildren(
-    "Per month on average: ",
-    createElement("span", "pos", `+${euroFormatter.format(moneyIn)} in`), " · ",
-    createElement("span", "neg", `−${euroFormatter.format(moneyOut)} out`), " · ",
-    createElement("strong", "", `${formatSignedEuros(moneyIn - moneyOut)} net`),
+    t("Per month on average: "),
+    createElement("span", "pos", t("{amount} in", { amount: `+${euroFormatter.format(moneyIn)}` })), " · ",
+    createElement("span", "neg", t("{amount} out", { amount: `−${euroFormatter.format(moneyOut)}` })), " · ",
+    createElement("strong", "", t("{amount} net", { amount: formatSignedEuros(moneyIn - moneyOut) })),
     createElement("br"),
-    `Still due in ${monthName}: `,
-    createElement("span", "pos", `+${euroFormatter.format(stillDue.income)} in`), " · ",
-    createElement("span", "neg", `−${euroFormatter.format(stillDue.expense)} out`), " · ",
-    createElement("strong", "", `${formatSignedEuros(stillDue.income - stillDue.expense)} net`),
+    t("Still due in {month}: ", { month: monthName }),
+    createElement("span", "pos", t("{amount} in", { amount: `+${euroFormatter.format(stillDue.income)}` })), " · ",
+    createElement("span", "neg", t("{amount} out", { amount: `−${euroFormatter.format(stillDue.expense)}` })), " · ",
+    createElement("strong", "", t("{amount} net", { amount: formatSignedEuros(stillDue.income - stillDue.expense) })),
   );
 }

@@ -10,6 +10,7 @@ import { isLightEdition } from "../core/edition.js";
 import { renderMonthProjection } from "./monthProjection.js";
 import { createCategoryLabel } from "../core/categoryIcons.js";
 import { asIncomeOrSpending } from "../core/transactionDisplay.js";
+import { t } from "../core/i18n.js";
 
 const NUMBER_OF_MONTHS_SHOWN = 6;
 const UNCATEGORIZED_KEY = "uncategorized";
@@ -21,7 +22,7 @@ function sumThisMonthByCategory(transactionType, currentMonth) {
   for (const transaction of appState.transactions.map(asIncomeOrSpending)) { // a refund: less spending in its category
     if (transaction.type !== transactionType || !transaction.date.startsWith(currentMonth)) continue;
     const key = transaction.category_id ?? UNCATEGORIZED_KEY;
-    if (!totalByCategoryId.has(key)) totalByCategoryId.set(key, { categoryId: transaction.category_id, name: transaction.category ?? "Uncategorized", total: 0 });
+    if (!totalByCategoryId.has(key)) totalByCategoryId.set(key, { categoryId: transaction.category_id, name: transaction.category ?? t("Uncategorized"), total: 0 });
     totalByCategoryId.get(key).total += transaction.amount;
   }
   return [...totalByCategoryId.values()].sort((first, second) => second.total - first.total);
@@ -71,13 +72,13 @@ function renderThisMonthTotals(monthTotals, currentMonth) {
   const daysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
 
   elementById("light-month-income").textContent = euroFormatter.format(monthTotals.income);
-  elementById("light-month-income-detail").textContent = countOfType("income") ? `${formatCount(countOfType("income"), "payment")} in` : "nothing in yet";
+  elementById("light-month-income-detail").textContent = countOfType("income") ? t("{payments} in", { payments: formatCount(countOfType("income"), "payment") }) : t("nothing in yet");
   elementById("light-month-spent").textContent = euroFormatter.format(monthTotals.expense);
-  elementById("light-month-spent-detail").textContent = `${formatCount(countOfType("expense"), "expense")} · day ${today.getDate()} of ${daysInMonth}`;
+  elementById("light-month-spent-detail").textContent = `${formatCount(countOfType("expense"), "expense")} · ${t("day {day} of {days}", { day: today.getDate(), days: daysInMonth })}`;
   const savedElement = elementById("light-month-saved");
   savedElement.textContent = euroFormatter.format(saved);
   savedElement.classList.toggle("neg", saved < 0);
   elementById("light-month-saved-detail").textContent = monthTotals.income > 0
-    ? `${formatSavingsRate(monthTotals)} of what came in`
-    : "income minus spending";
+    ? t("{share} of what came in", { share: formatSavingsRate(monthTotals) })
+    : t("income minus spending");
 }

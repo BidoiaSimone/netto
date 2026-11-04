@@ -11,6 +11,7 @@ import { createSignedAmountCell, createTransactionIcon, describeDay, describeMov
 import { updateReconcileDifferences } from "./assetsPage.js";
 import { makeRowsOpenTransactionEditor } from "../dialogs/transactionDialog.js";
 import { renderLiquidityInsights } from "./liquidityInsights.js";
+import { t, dateLocale } from "../core/i18n.js";
 
 const NUMBER_OF_LATEST_TRANSACTIONS = 5;
 
@@ -28,34 +29,34 @@ export async function loadNetWorth() {
   const priceNote = elementById("inv-price-note");
   priceNote.hidden = !failedTickers.length && !lastKnownNote;
   priceNote.textContent = [
-    failedTickers.length && `No price at all yet for ${failedTickers.join(", ")}: left out of the totals, the net worth and the target allocation until one comes.`,
-    lastKnownNote && `${lastKnownNote[0].toUpperCase()}${lastKnownNote.slice(1)} (markets closed, or Yahoo not answering right now).`,
+    failedTickers.length && t("No price at all yet for {tickers}: left out of the totals, the net worth and the target allocation until one comes.", { tickers: failedTickers.join(", ") }),
+    lastKnownNote && t("{note} (markets closed, or Yahoo not answering right now).", { note: `${lastKnownNote[0].toUpperCase()}${lastKnownNote.slice(1)}` }),
   ].filter(Boolean).join(" ");
-  if (failedTickers.length) elementById("h-inv-note").append(createElement("span", "price-missing", ` · no price for ${failedTickers.join(", ")}`));
+  if (failedTickers.length) elementById("h-inv-note").append(createElement("span", "price-missing", ` · ${t("no price for {tickers}", { tickers: failedTickers.join(", ") })}`));
   else if (lastKnownNote) elementById("h-inv-note").append(createElement("span", "hint", ` · ${lastKnownNote}`));
 }
 
 // "last prices from ven 16 ott, 17:35" (or one per ticker when they differ): the values shown use them
 function describeLastKnownPrices(lastKnownPrices) {
   if (!lastKnownPrices.length) return "";
-  const format = (isoDate) => new Date(isoDate).toLocaleString("it-IT", { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+  const format = (isoDate) => new Date(isoDate).toLocaleString(dateLocale, { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
   const moments = [...new Set(lastKnownPrices.map((item) => format(item.as_of).slice(0, 10)))];
   return moments.length === 1
-    ? `last prices from ${format(lastKnownPrices[0].as_of)}`
-    : `last prices: ${lastKnownPrices.map((item) => `${item.ticker} ${format(item.as_of)}`).join(", ")}`;
+    ? t("last prices from {moment}", { moment: format(lastKnownPrices[0].as_of) })
+    : t("last prices: {list}", { list: lastKnownPrices.map((item) => `${item.ticker} ${format(item.as_of)}`).join(", ") });
 }
 
 const percentFormatter = new Intl.NumberFormat("it-IT", { style: "percent", maximumFractionDigits: 0 });
 
 // The three cards (amount + what's in it + its share of the net worth) and the bar under them
 function renderNetWorthGroups(groups) {
-  const shareOfNetWorth = (amount) => (groups.netWorth > 0 ? `${percentFormatter.format(amount / groups.netWorth)} of net worth · ` : "");
+  const shareOfNetWorth = (amount) => (groups.netWorth > 0 ? t("{share} of net worth · ", { share: percentFormatter.format(amount / groups.netWorth) }) : "");
   const cards = [
     ["h-liquid", groups.liquid, groups.restrictedPartOfLiquid
-      ? `cash and bank accounts, incl. ${euroFormatter.format(groups.restrictedPartOfLiquid)} in vouchers`
-      : "cash and bank accounts: spendable today"],
-    ["h-inv", groups.investments, "ETFs and stocks at today's prices"],
-    ["h-immobilized", groups.immobilized, "car and other things you use: money only once sold"],
+      ? t("cash and bank accounts, incl. {amount} in vouchers", { amount: euroFormatter.format(groups.restrictedPartOfLiquid) })
+      : t("cash and bank accounts: spendable today")],
+    ["h-inv", groups.investments, t("ETFs and stocks at today's prices")],
+    ["h-immobilized", groups.immobilized, t("car and other things you use: money only once sold")],
   ];
   for (const [elementId, amount, whatIsInIt] of cards) {
     const amountElement = elementById(elementId);

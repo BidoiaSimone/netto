@@ -7,8 +7,9 @@ import { appState } from "../core/appState.js";
 import { drawLineChart } from "../charts/lineChart.js";
 import { drawHorizontalBarChart } from "../charts/horizontalBarChart.js";
 import { readStored, writeStored } from "../core/deviceStorage.js";
+import { t } from "../core/i18n.js";
 
-const RANGE_LABELS = { "1m": "1 month", "6m": "6 months", "1y": "1 year", "5y": "5 years" };
+const RANGE_LABELS = { "1m": t("1 month"), "6m": t("6 months"), "1y": t("1 year"), "5y": t("5 years") };
 const REDRAW_DELAY_AFTER_RESIZE_MILLISECONDS = 150;
 
 let selectedRange = readStored("invRange") || "1y";
@@ -28,7 +29,7 @@ export async function loadPriceHistoryIfChanged(holdings, forceReload) {
     return renderPriceHistory();
   }
 
-  elementById("inv-line").replaceChildren(createElement("p", "chart-empty", "Loading price history…"));
+  elementById("inv-line").replaceChildren(createElement("p", "chart-empty", t("Loading price history…")));
   try {
     const answer = await callApi(`/investments/history?range=${selectedRange}`);
     if (requestKey !== priceHistoryRequestKey) return; // the range changed while loading
@@ -36,7 +37,7 @@ export async function loadPriceHistoryIfChanged(holdings, forceReload) {
   } catch (error) {
     priceHistory = null;
     priceHistoryRequestKey = null; // retry on the next refresh
-    elementById("inv-line").replaceChildren(createElement("p", "chart-empty", "Price history unavailable: " + error.message));
+    elementById("inv-line").replaceChildren(createElement("p", "chart-empty", t("Price history unavailable: {reason}", { reason: error.message })));
     return;
   }
   renderPriceHistory();
@@ -56,7 +57,7 @@ function renderTickerChips(fundsWithHistory) {
 }
 
 function renderPriceHistory() {
-  elementById("inv-period-title").textContent = `Change over ${RANGE_LABELS[selectedRange]}`;
+  elementById("inv-period-title").textContent = t("Change over {range}", { range: RANGE_LABELS[selectedRange] });
   const periodSummary = elementById("inv-period-summary");
 
   const fundsWithHistory = priceHistory?.holdings ?? [];
@@ -65,8 +66,8 @@ function renderPriceHistory() {
 
   const selectedFund = fundsWithHistory.find((fund) => fund.ticker === selectedTicker);
   if (!selectedFund || selectedFund.prices.length < 2) {
-    periodSummary.textContent = priceHistory?.failed_tickers?.length ? `No price history for ${priceHistory.failed_tickers.join(", ")}` : "";
-    const emptyMessage = priceHistory ? "Not enough price history for this range" : "Add an investment to see how it's doing";
+    periodSummary.textContent = priceHistory?.failed_tickers?.length ? t("No price history for {tickers}", { tickers: priceHistory.failed_tickers.join(", ") }) : "";
+    const emptyMessage = priceHistory ? t("Not enough price history for this range") : t("Add an investment to see how it's doing");
     elementById("inv-line").replaceChildren(createElement("p", "chart-empty", emptyMessage));
     drawHorizontalBarChart("inv-period", []);
     return;
@@ -75,10 +76,10 @@ function renderPriceHistory() {
   const latestPrice = selectedFund.prices[selectedFund.prices.length - 1];
   periodSummary.replaceChildren(createElement("strong", "", euroFormatter.format(latestPrice)),
     createElement("span", selectedFund.change_pct >= 0 ? "pos" : "neg", formatSignedPercent(selectedFund.change_pct)),
-    document.createTextNode(` over ${RANGE_LABELS[selectedRange]}`));
-  if (priceHistory.failed_tickers.length) periodSummary.append(document.createTextNode(` · no history for ${priceHistory.failed_tickers.join(", ")}`));
+    document.createTextNode(" " + t("over {range}", { range: RANGE_LABELS[selectedRange] })));
+  if (priceHistory.failed_tickers.length) periodSummary.append(document.createTextNode(` · ${t("no history for {tickers}", { tickers: priceHistory.failed_tickers.join(", ") })}`));
 
-  drawLineChart(elementById("inv-line"), selectedFund.dates, selectedFund.prices, selectedFund.average_purchase_price, "Your avg price");
+  drawLineChart(elementById("inv-line"), selectedFund.dates, selectedFund.prices, selectedFund.average_purchase_price, t("Your avg price"));
   drawHorizontalBarChart("inv-period", fundsWithHistory.map((fund) => ({
     name: fund.ticker, value: fund.change_pct, label: `${formatSignedPercent(fund.change_pct)} · ${formatSignedWholeEuros(fund.change)}`,
   })));

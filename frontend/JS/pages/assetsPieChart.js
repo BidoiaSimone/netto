@@ -6,6 +6,7 @@ import { elementById, createElement } from "../core/domHelpers.js";
 import { euroFormatter, animateEuroAmount } from "../core/formatting.js";
 import { appState, isAccountOpen } from "../core/appState.js";
 import { createSvgElement } from "../charts/svgHelpers.js";
+import { t } from "../core/i18n.js";
 
 export const SLICE_COLORS = ["#3987e5", "#d95926", "#199e70", "#c98500", "#d55181", "#008300", "#9085e9", "#e66767"];
 const OTHER_SLICE_COLOR = "#5b6b62";
@@ -24,7 +25,7 @@ function buildSlices() {
     const foldedSlices = slices.slice(SLICE_COLORS.length - 1);
     slices = slices.slice(0, SLICE_COLORS.length - 1);
     slices.push({
-      name: `Other (${foldedSlices.length})`,
+      name: t("Other ({count})", { count: foldedSlices.length }),
       value: foldedSlices.reduce((sum, slice) => sum + slice.value, 0),
       color: OTHER_SLICE_COLOR,
       memberAccountIds: foldedSlices.map((slice) => slice.accountId),
@@ -48,16 +49,16 @@ export function renderAssetsPieChart() {
   const slices = buildSlices();
   const accountsLeftOut = appState.accounts.filter((account) => isAccountOpen(account) && account.balance <= 0);
   elementById("assets-pie-note").textContent = accountsLeftOut.length
-    ? `Not in the chart (zero or negative): ${accountsLeftOut.map((account) => `${account.name} ${euroFormatter.format(account.balance)}`).join(", ")}`
+    ? t("Not in the chart (zero or negative): {list}", { list: accountsLeftOut.map((account) => `${account.name} ${euroFormatter.format(account.balance)}`).join(", ") })
     : "";
 
   const chartBox = elementById("assets-pie");
   if (!slices.length) {
     elementById("assets-legend").replaceChildren();
-    return chartBox.replaceChildren(createElement("p", "chart-empty", "Add an account to see how your assets are split"));
+    return chartBox.replaceChildren(createElement("p", "chart-empty", t("Add an account to see how your assets are split")));
   }
 
-  const svg = createSvgElement("svg", { viewBox: "0 0 200 200", role: "img", "aria-label": "How your assets are split" });
+  const svg = createSvgElement("svg", { viewBox: "0 0 200 200", role: "img", "aria-label": t("How your assets are split") });
   const tooltip = createElement("div", "tip");
   tooltip.hidden = true;
   const sliceMarks = drawSlicesWithLegendRows(svg, slices); // [{ slice, slicePath, legendRow }]
@@ -109,7 +110,7 @@ function addHoverHighlighting(sliceMarks, chartBox, tooltip) {
     }
     const { slice } = highlightedMark;
     tooltip.replaceChildren(document.createTextNode(slice.name), createElement("strong", "", euroFormatter.format(slice.value)),
-      document.createTextNode(`${slice.percent.toFixed(1)}% of the chart`));
+      document.createTextNode(t("{share}% of the chart", { share: slice.percent.toFixed(1) })));
     tooltip.hidden = false;
     // place the tooltip just outside the middle of the slice
     const boxRectangle = chartBox.getBoundingClientRect(), scale = boxRectangle.width / 200;

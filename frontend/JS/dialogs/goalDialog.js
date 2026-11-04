@@ -10,6 +10,7 @@ import { callApi } from "../core/apiClient.js";
 import { appState } from "../core/appState.js";
 import { loadAllData } from "../core/dataRefresh.js";
 import { createCategoryIcon } from "../core/categoryIcons.js";
+import { t, tp } from "../core/i18n.js";
 
 let goalBeingEdited = null; // null when adding a new one
 
@@ -17,9 +18,10 @@ let goalBeingEdited = null; // null when adding a new one
 function describeMonths(months) {
   const rounded = Math.max(1, Math.round(months));
   const years = Math.floor(rounded / 12), rest = rounded % 12;
-  const monthText = (count) => `${count} month${count === 1 ? "" : "s"}`;
-  if (!years) return `about ${monthText(rounded)}`;
-  return `about ${years} year${years === 1 ? "" : "s"}${rest ? ` and ${monthText(rest)}` : ""}`;
+  const monthText = (count) => tp(count, "{count} month", "{count} months");
+  if (!years) return t("about {time}", { time: monthText(rounded) });
+  const yearText = tp(years, "{count} year", "{count} years");
+  return t("about {time}", { time: rest ? t("{years} and {months}", { years: yearText, months: monthText(rest) }) : yearText });
 }
 
 // One row per expense category: [✓] Coffee  [ 60,00 ] € a month
@@ -27,10 +29,10 @@ function describeMonths(months) {
 function describeSuggestionSource(suggested) {
   if (!suggested) return "";
   const skipped = suggested.skipped_goal_months
-    ? ` (${suggested.skipped_goal_months} goal month${suggested.skipped_goal_months === 1 ? "" : "s"} left out)` : "";
-  if (suggested.based_on === "months") return `average of ${suggested.months} month${suggested.months === 1 ? "" : "s"}${skipped}`;
-  if (suggested.based_on === "goal") return `same as ${suggested.goal_name} (no month without a goal yet)`;
-  return `${suggested.days} day${suggested.days === 1 ? "" : "s"} of records, scaled: rough`;
+    ? " " + tp(suggested.skipped_goal_months, "({count} goal month left out)", "({count} goal months left out)") : "";
+  if (suggested.based_on === "months") return tp(suggested.months, "average of {count} month", "average of {count} months") + skipped;
+  if (suggested.based_on === "goal") return t("same as {name} (no month without a goal yet)", { name: suggested.goal_name });
+  return tp(suggested.days, "{count} day of records, scaled: rough", "{count} days of records, scaled: rough");
 }
 
 // One row per expense category: [✓] Coffee            [ 60,00 ] €/month
@@ -53,25 +55,25 @@ function fillCategoryRows(suggestion, goal) {
     const baselineInput = createElement("input", "goal-baseline");
     Object.assign(baselineInput, { type: "number", step: "0.01", min: "0", inputMode: "decimal", disabled: !isChosen });
     baselineInput.value = isChosen ? chosenById.get(category.id) : (suggested?.monthly_average ?? 0);
-    baselineInput.setAttribute("aria-label", `${category.name}: what it normally costs a month`);
+    baselineInput.setAttribute("aria-label", t("{name}: what it normally costs a month", { name: category.name }));
     tickBox.addEventListener("change", () => { baselineInput.disabled = !tickBox.checked; });
     const name = createElement("span", "goal-category-name", category.name);
     // the suggestion stays readable under the name, whatever is typed in the box
-    const suggestedAmount = suggested ? `suggested ${euroFormatter.format(suggested.monthly_average)}` : "";
+    const suggestedAmount = suggested ? t("suggested {amount}", { amount: euroFormatter.format(suggested.monthly_average) }) : "";
     const source = isChosen
       ? (!suggested ? ""
-        : suggested.based_on === "goal" ? "no month without a goal yet: nothing to compare with" // it would only repeat this goal's own number
-        : `netto suggests ${euroFormatter.format(suggested.monthly_average)} (${describeSuggestionSource(suggested)})`)
+        : suggested.based_on === "goal" ? t("no month without a goal yet: nothing to compare with") // it would only repeat this goal's own number
+        : t("netto suggests {amount} ({source})", { amount: euroFormatter.format(suggested.monthly_average), source: describeSuggestionSource(suggested) }))
       : [suggestedAmount, describeSuggestionSource(suggested)].filter(Boolean).join(" · ");
     if (source) name.append(" ", createElement("small", "hint goal-baseline-source", source)); // the space: still readable where the line doesn't break
-    row.append(tickBox, createCategoryIcon(category, "category-icon small"), name, baselineInput, createElement("span", "hint", "€/month"));
+    row.append(tickBox, createCategoryIcon(category, "category-icon small"), name, baselineInput, createElement("span", "hint", t("€/month")));
     return row;
   }));
 
   elementById("goal-baseline-note").textContent = goal
-    ? "Baselines as you set them when you made the goal. Changing one changes every month already counted."
-    : "Suggested from what each category cost in recent months when no goal was cutting back on it. "
-      + "If you've been holding back anyway, type over them with what you'd normally spend. Fixed once saved.";
+    ? t("Baselines as you set them when you made the goal. Changing one changes every month already counted.")
+    : t("Suggested from what each category cost in recent months when no goal was cutting back on it. "
+      + "If you've been holding back anyway, type over them with what you'd normally spend. Fixed once saved.");
 }
 
 // The form's values in the shape the API expects
@@ -94,11 +96,11 @@ function updatePreview() {
   const preview = elementById("goal-preview");
   goal.target = Number(elementById("goal-form").target.value); // what's shown: the price, once it's bought
   if (!(goal.target > 0) || !(baselineTotal > 0)) {
-    preview.textContent = goal.categories.length ? "" : "Tick the categories you'll cut back on.";
+    preview.textContent = goal.categories.length ? "" : t("Tick the categories you'll cut back on.");
     return;
   }
-  preview.textContent = `Cutting back from ${euroFormatter.format(baselineTotal)} a month: spending nothing there takes `
-    + `${describeMonths(goal.target / baselineTotal)}, half of it ${describeMonths(goal.target / (baselineTotal / 2))}.`;
+  preview.textContent = t("Cutting back from {amount} a month: spending nothing there takes {time}, half of it {halfTime}.",
+    { amount: euroFormatter.format(baselineTotal), time: describeMonths(goal.target / baselineTotal), halfTime: describeMonths(goal.target / (baselineTotal / 2)) });
 }
 
 // goal: one from GET /savings-goals, or nothing for a new one
@@ -106,16 +108,16 @@ export async function openGoalEditor(goal = null) {
   goalBeingEdited = goal;
   const form = elementById("goal-form");
   form.reset();
-  elementById("goal-title").textContent = goal ? `Edit ${goal.name}` : "New goal";
-  elementById("goal-submit").textContent = goal ? "Save changes" : "Add goal";
+  elementById("goal-title").textContent = goal ? t("Edit {name}", { name: goal.name }) : t("New goal");
+  elementById("goal-submit").textContent = goal ? t("Save changes") : t("Add goal");
   elementById("goal-delete").hidden = !goal;
   elementById("goal-error").textContent = "";
   form.name.value = goal?.name ?? "";
   // bought: the target is the purchase's price, set by netto; the one you planned is kept for if it's unlinked
   form.target.value = goal?.target ?? "";
   form.target.disabled = Boolean(goal?.purchase);
-  form.target.previousElementSibling.textContent = goal?.purchase ? "Target (€): the price you paid" : "Target (€)";
-  form.target.title = goal?.purchase ? "The price of the linked purchase: unlink it to change the target" : "";
+  form.target.previousElementSibling.textContent = goal?.purchase ? t("Target (€): the price you paid") : t("Target (€)");
+  form.target.title = goal?.purchase ? t("The price of the linked purchase: unlink it to change the target") : "";
   form.start_date.value = goal?.start_date ?? getTodayAsLocalDate();
 
   let suggestion = { categories: [] };
@@ -146,7 +148,7 @@ async function saveGoal(event) {
 
 async function deleteGoalBeingEdited() {
   const goal = goalBeingEdited;
-  if (!goal || !confirm(`Delete the goal "${goal.name}"?\n\nNo transaction changes: only the goal and its progress go.`)) return;
+  if (!goal || !confirm(t("Delete the goal \"{name}\"?", { name: goal.name }) + "\n\n" + t("No transaction changes: only the goal and its progress go."))) return;
   try {
     await callApi(`/savings-goals/${goal.id}`, { method: "DELETE" });
   } catch (error) {

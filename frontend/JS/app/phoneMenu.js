@@ -10,6 +10,7 @@
 import { elementById } from "../core/domHelpers.js";
 import { setPrivacyMode, isPrivacyModeOn } from "../settings/privacyMode.js";
 import { isPhoneScreen } from "../core/phoneFeatures.js";
+import { t } from "../core/i18n.js";
 
 const SWIPE_TO_CLOSE_PIXELS = 60;
 const PULL_TO_RELOAD_PIXELS = 80;   // how far to pull down from the top of the page before letting go reloads
@@ -60,7 +61,7 @@ function showPrivacyState() {
   const hidden = isPrivacyModeOn();
   const button = elementById("phone-privacy-button");
   button.classList.toggle("active", hidden);
-  button.setAttribute("aria-label", hidden ? "Show amounts" : "Hide amounts");
+  button.setAttribute("aria-label", hidden ? t("Show amounts") : t("Hide amounts"));
 }
 
 // Pull to refresh: on a phone, at the very top of a page (no dialog open), a finger pulled down far enough and then
