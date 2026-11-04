@@ -626,6 +626,7 @@ export const ITALIAN = {
   "Backup restored: {accounts} accounts, {investments} investments, {categories} categories, {transactions} transactions, {tags} tags.": "Backup ripristinato: {accounts} conti, {investments} investimenti, {categories} categorie, {transactions} transazioni, {tags} etichette.",
   "Could not make the backup": "Impossibile creare il backup",
   "Your backup is ready": "Il tuo backup è pronto",
+  "Backup saved in Downloads": "Backup salvato in Download",
   "Save": "Salva",
   "Backup not saved: {reason}": "Backup non salvato: {reason}",
   "Last backup saved {day}.": "Ultimo backup salvato {day}.",
@@ -920,7 +921,9 @@ export const ITALIAN = {
   "\"), so losing this Mac doesn't lose the data": "\"), così perdere questo Mac non fa perdere i dati",
   "Your data is kept only on this device. Save a backup now and then: on an iPhone choose": "I tuoi dati sono tenuti solo su questo dispositivo. Salva un backup ogni tanto: su iPhone scegli",
   "Save to Files → iCloud Drive": "Salva su File → iCloud Drive",
-  "(it remembers the folder next time).": "(la prossima volta si ricorda la cartella).",
+  "(it remembers the folder next time). On Android it goes in": "(la prossima volta si ricorda la cartella). Su Android finisce in",
+  "Downloads": "Download",
+  "(My Files).": "(I miei file).",
   "Save backup…": "Salva backup…",
   "Restore backup (JSON)…": "Ripristina un backup (JSON)…",
   // the transaction window

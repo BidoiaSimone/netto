@@ -3,7 +3,7 @@
 //
 // The PWA (runsWithoutServer) has no Mac and no backups folder: the data is only on this device. "Save backup…"
 // makes the same JSON and hands it to the share sheet, where the iPhone offers Save to Files → iCloud Drive (a web
-// page can't choose a folder itself); without a share sheet it's a normal download. When it was last saved is kept
+// page can't choose a folder itself); on Android, or without a share sheet, it's a normal download (Downloads). When it was last saved is kept
 // on this device, and after BACKUP_REMINDER_DAYS without one a reminder offers to save it in one tap.
 
 import { elementById } from "../core/domHelpers.js";
@@ -104,16 +104,25 @@ async function makeBackupFile() {
   return new File([JSON.stringify(answer.body, null, 2)], fileName, { type: "application/json" });
 }
 
+// Android's browsers (Chrome, Samsung Internet) fetch a download after the tap is over, through their download
+// manager: a link revoked right away, or one not in the page, ends up as "download failed". So it stays a minute.
 function downloadFile(file) {
-  const link = Object.assign(document.createElement("a"), { href: URL.createObjectURL(file), download: file.name });
+  const link = Object.assign(document.createElement("a"), { href: URL.createObjectURL(file), download: file.name, hidden: true });
+  document.body.append(link);
   link.click();
-  setTimeout(() => URL.revokeObjectURL(link.href), 0);
+  link.remove();
+  setTimeout(() => URL.revokeObjectURL(link.href), 60000);
 }
 
-// The share sheet when there is one (iPhone: Save to Files), a download otherwise. True when it was saved.
+// On Android a download lands in Downloads (My Files), which is what's wanted; its share sheet has no "save as a file",
+// and it refuses .json files anyway (Chrome and Samsung Internet only share images, PDFs, text…)
+const isAndroid = /Android/i.test(navigator.userAgent);
+
+// The share sheet on the iPhone (Save to Files), a download otherwise. True when it was saved.
 async function handOverBackupFile(file) {
-  if (!navigator.canShare?.({ files: [file] })) {
+  if (isAndroid || !navigator.canShare?.({ files: [file] })) {
     downloadFile(file);
+    if (isAndroid) showToast(t("Backup saved in Downloads"));
     return true;
   }
   try {
