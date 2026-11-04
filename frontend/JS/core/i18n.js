@@ -1,6 +1,6 @@
 // ---- netto's languages: English (as written in the code) and Italian ----
 // The language is chosen in Settings > Language and kept per device (localStorage "language"), like the theme:
-// the Mac can stay in English while a phone is in Italian. Changing it reloads the page, so everything is drawn
+// the Mac can stay in English while a phone is in Italian. Until one is chosen, netto follows the device's language. Changing it reloads the page, so everything is drawn
 // again in the new language.
 //
 // English is the key: the code and Home.html are written in English, and core/italian.js says what each English text
@@ -21,12 +21,24 @@ import { ITALIAN, ITALIAN_PATTERNS } from "./italian.js";
 export const LANGUAGES = ["en", "it"];
 const STORAGE_KEY = "language";
 
+// Nothing chosen yet on this device: the phone's (or computer's) own language, Italian if it's Italian, else English.
+// themeBeforeFirstPaint.js decides the same way, before anything is drawn.
+export function getPhoneLanguage() {
+  try {
+    const preferred = navigator.languages?.[0] ?? navigator.language ?? "";
+    return preferred.toLowerCase().startsWith("it") ? "it" : "en";
+  } catch {
+    return "en";
+  }
+}
+
+// The language chosen in Settings > Language, or the phone's when none was chosen
 export function getSavedLanguage() {
   try {
     const saved = localStorage.getItem(STORAGE_KEY);
-    return LANGUAGES.includes(saved) ? saved : "en";
+    return LANGUAGES.includes(saved) ? saved : getPhoneLanguage();
   } catch {
-    return "en";
+    return getPhoneLanguage();
   }
 }
 

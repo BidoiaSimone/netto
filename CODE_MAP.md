@@ -350,7 +350,8 @@ One codebase, two ways to run it. `npm start` / `npm run dev` is the full netto,
 ## Languages: English and Italian
 
 Settings > Language picks English or Italiano, per device (localStorage, like the theme), so a phone can be in Italian
-while the Mac stays in English. Everything is written in English, and the English is the key:
+while the Mac stays in English. Until one is picked, a device follows its own language (`navigator.languages`):
+Italian if it's Italian, English otherwise. Everything is written in English, and the English is the key:
 
 - **Home.html** stays in English; at startup `translatePage()` (core/i18n.js) looks up each of its texts and its
   placeholder / title / aria-label attributes in `core/italian.js`. In Italian, `themeBeforeFirstPaint.js` keeps the

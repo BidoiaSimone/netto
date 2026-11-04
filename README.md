@@ -15,8 +15,8 @@ No accounts, no cloud service holding your numbers.
 - **Goals, Statements, Forecast, Year in review** — planning and looking back (Statements includes Italian tax estimates)
 - **Backups** — automatic daily copies, an optional iCloud Drive copy, and a full JSON export / restore
 
-Money is stored as integer cents, so totals never drift. netto speaks English and Italian (Settings > Language,
-per device).
+Money is stored as integer cents, so totals never drift. netto speaks English and Italian: it follows the device's language,
+and Settings > Language changes it on each device.
 
 ## Ways to run it
 

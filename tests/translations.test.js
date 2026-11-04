@@ -149,3 +149,29 @@ test("every pattern of the server's messages is a whole message, and its Italian
     for (const [, number] of italian.matchAll(/\$(\d)/g)) assert.ok(Number(number) <= parts, `${pattern}: $${number} isn't one of its ${parts} parts`);
   }
 });
+
+// ---------- the language a device starts in ----------
+
+// i18n.js as a device with nothing chosen in Settings, whose own language is `deviceLanguages`
+async function loadI18nOnADevice(deviceLanguages, savedLanguage = null) {
+  const italianSource = read("JS/core/italian.js");
+  const source = read("JS/core/i18n.js")
+    .replace(/^import \{ ITALIAN, ITALIAN_PATTERNS \} from "\.\/italian\.js";$/m, () => italianSource.replace(/^export /gm, ""));
+  globalThis.localStorage = { getItem: () => savedLanguage, setItem() {} };
+  Object.defineProperty(globalThis, "navigator", { value: { languages: deviceLanguages, language: deviceLanguages[0] }, configurable: true });
+  // a different URL each time, or the module loaded before would come back
+  return import("data:text/javascript," + encodeURIComponent(`${source}\n// ${deviceLanguages.join()} ${savedLanguage}`));
+}
+
+test("nothing chosen in Settings: a phone in Italian starts in Italian, any other in English", async () => {
+  assert.equal((await loadI18nOnADevice(["it-IT", "en-US"])).language, "it");
+  assert.equal((await loadI18nOnADevice(["it"])).language, "it");
+  assert.equal((await loadI18nOnADevice(["en-GB", "it-IT"])).language, "en"); // the first one decides
+  assert.equal((await loadI18nOnADevice(["de-DE"])).language, "en");
+  assert.equal((await loadI18nOnADevice([])).language, "en");
+});
+
+test("what's chosen in Settings wins over the phone's language", async () => {
+  assert.equal((await loadI18nOnADevice(["it-IT"], "en")).language, "en");
+  assert.equal((await loadI18nOnADevice(["en-US"], "it")).language, "it");
+});
