@@ -1,132 +1,89 @@
 # netto
 
-A personal money tracker: accounts, transactions, investments and net worth, with budgets, goals, forecasts and
-year-in-review on top. Your data stays yours — a SQLite database on your Mac, or in your own browser with the PWA.
-No accounts, no cloud service holding your numbers.
+A personal money tracker: your accounts, what comes in and goes out, investments and net worth, with budgets, goals
+and a look back at each month and year. Your data stays yours: it lives on your phone (or your Mac), with no account
+to make and no cloud service holding your numbers.
+
+**Open it: <https://bidoiasimone.github.io/netto/>**
 
 ## What it does
 
-- **Home** — net worth at a glance, split into liquid, invested and immobilized, plus the latest transactions
-- **Transactions & Recurring** — income, expenses and transfers, with tags, categories, foreign currencies and
-  rules that post themselves when due
-- **Assets** — every account and its balance, with reconciliation reminders
-- **Investments** — trades, holdings, live prices (Yahoo Finance) in euros, returns, target allocation
-- **Insights** — this month, budgets, spending by category, trends, money flows, FIRE number
-- **Goals, Statements, Forecast, Year in review** — planning and looking back (Statements includes Italian tax estimates)
-- **Backups** — automatic daily copies, an optional iCloud Drive copy, and a full JSON export / restore
+- **Home**: your net worth at a glance (what you can spend, what's invested, what's tied up in things like a car),
+  today's spending, one-tap buttons for what you add most often, and a short wrap-up at the start of each month
+- **Transactions**: income, expenses and money moved between your own accounts, with categories, tags (a trip, a
+  project) and amounts paid in other currencies
+- **Recurring**: rent, salary, subscriptions… added by themselves when they're due
+- **Assets**: every account with what it holds; count what's really there now and then and netto fixes the difference
+- **Insights**: this month so far and where it's heading, budgets, spending by category, what each tag cost
+- **Categories**: your own, each with an icon and colour, and a monthly budget if you want one
+- **Investments**: your funds and shares at today's prices, what you gained, and where to put new money
+- **Goals, Statements, Forecast, Year in review** (on a computer): saving up for something by spending less,
+  full statements with Italian tax estimates, where your money is heading, and your year in a few cards
 
-Money is stored as integer cents, so totals never drift. netto speaks English and Italian: it follows the device's language,
-and Settings > Language changes it on each device.
+netto speaks **English and Italian**: it follows your device's language, and Settings → Language changes it.
 
-## Use it on your phone
+## On your phone
 
-netto is published on GitHub Pages: **<https://bidoiasimone.github.io/netto/>**
-
-Nothing to install from a store and no account to make: the whole app, data included, runs inside your phone's browser.
-
-1. **Open the link** on the phone: Safari on an iPhone, Chrome on Android.
-2. **Add it to the Home Screen**, so it opens like an app, full screen and offline:
+1. **Open <https://bidoiasimone.github.io/netto/>** on the phone: Safari on an iPhone, Chrome on Android.
+2. **Add it to the Home Screen**, so it opens like an app, full screen, even offline:
    - iPhone: the Share button → **Add to Home Screen** → Add
    - Android: the ⋮ menu → **Add to Home screen** (or **Install app**)
-3. **Open netto from its icon** from then on. On an iPhone the icon and Safari keep separate data, so using both
-   would give you two separate nettos.
-4. **Start:** Assets → **+ Add account or asset** (cash, a current account… with what each holds today), then the
-   round **+** adds income and expenses.
+3. **Always open netto from its icon.** On an iPhone the icon and Safari keep separate data, so using both would give
+   you two separate nettos.
+4. **Start:** Assets → **+ Add account or asset** (your cash, your current account… with what each holds today). Then
+   the round **+** adds income and expenses.
 
-Good to know:
+Nothing to install from a store, and nothing to sign up for.
 
-- **Your data stays on the phone.** No server and no cloud: nobody else can see it, and nothing moves it to another
-  device. That also means **back it up now and then**: Settings → **Save backup…** → on an iPhone, *Save to Files →
-  iCloud Drive*. netto reminds you when it's been a while. **Restore backup (JSON)…** brings a backup back (also one
-  made on the Mac).
-- **Don't use a private tab**, and on an iPhone keep *Block All Cookies* off (Settings → Apps → Safari): otherwise the
-  browser doesn't let netto keep anything, and it says so at the top of the page.
-- **Language:** netto opens in Italian on a phone set to Italian, in English otherwise. Settings → Language changes it.
-- **The phone shows the essentials** (Home, Transactions, Recurring, Insights, Categories, Assets, Investments,
-  Settings). Settings → On this phone → **Everything** shows every page, as on the Mac.
-- **Updates come by themselves:** every change to `main` is published, and the app switches to the new version the
-  next time it's opened.
-- **Investment prices** come from Yahoo Finance through a small price proxy; without a connection the app still works,
-  and shows the last prices it had.
+- **The phone shows the essentials**: Home, Transactions, Recurring, Insights, Categories, Assets, Investments and
+  Settings. Settings → On this phone → **Everything** shows every page.
+- **Hide amounts**: the eye button at the top hides every amount, for when someone's looking over your shoulder.
+  netto opens with them hidden; Settings → Hide again after… decides when they hide again by themselves.
+- **New versions come by themselves**: the app switches to the latest one when you open it.
+- **Investment prices** come from Yahoo Finance; without a connection netto still works and shows the last prices it
+  had.
 
-## Ways to run it
+## Your data and backups
 
-| | Where the app runs | Where the data lives |
-| --- | --- | --- |
-| **On a Mac** (`npm start`) | Express on `localhost:3000` | `backend/db/money.db` |
-| **netto light** (`npm run light`) | Express on `localhost:3002`, fewer pages | `backend/db/light.db` |
-| **PWA** ([on GitHub Pages](https://bidoiasimone.github.io/netto/), or `npm run pwa:build`) | entirely in the browser, installable on a phone | the browser's private storage (OPFS) |
+**Everything stays on your device.** Nothing is sent anywhere: nobody else can see your numbers, and nothing copies
+them to your other devices either. So:
 
-### On a Mac
+- **Save a backup now and then**: Settings → **Save backup…** → on an iPhone, *Save to Files → iCloud Drive*. netto
+  reminds you when it's been a while.
+- **Restore backup (JSON)…** in Settings brings a backup back, on the same phone or a new one (a backup made with netto
+  on a Mac works too). It replaces everything that's there.
+- **Don't use a private tab**, and on an iPhone keep *Block All Cookies* off (Settings → Apps → Safari). Otherwise the
+  browser won't let netto keep anything, and netto says so at the top of the page.
+- Deleting netto from the Home Screen, or clearing Safari's website data, deletes its data too: keep a recent backup.
 
-Requires Node.js (developed on 24, which the PWA workflow also uses).
+## On a Mac
+
+netto can also run on a Mac, with its data in a file there, automatic daily backups (and a copy in iCloud Drive), and
+every page.
+
+It needs [Node.js](https://nodejs.org). In a Terminal, in netto's folder:
 
 ```bash
 npm install
+```
+
+```bash
 npm start
 ```
 
-Then open <http://localhost:3000>. `npm run dev` restarts the server when backend code changes.
-
-To keep it running in the background (starts at login, restarts if it crashes):
+then open <http://localhost:3000>. To keep it running in the background, starting by itself at login:
 
 ```bash
 bash scripts/service.sh install
 ```
 
-`scripts/service.sh` also takes `status`, `log`, `restart`, `stop`, `start` and `uninstall`.
-`scripts/autosync.sh install` keeps the checkout in sync with GitHub and reloads open pages.
+(`bash scripts/service.sh status` says whether it's running; `stop`, `start` and `uninstall` do what they say.)
 
-### As a PWA
+Settings → **Download backup (JSON)** makes a backup you can open in netto on the phone too.
 
-Published at <https://bidoiasimone.github.io/netto/> by `.github/workflows/deploy-pwa.yml` on every push to `main`
-(see [Use it on your phone](#use-it-on-your-phone)). The same frontend and backend code, with no server: the backend is bundled into a Web Worker running SQLite
-compiled to WebAssembly, and investment prices come through a small Cloudflare Worker.
+## Making changes to netto
 
-```bash
-npm run pwa:preview        # build and serve on http://localhost:4173/HTML/Home.html
-```
-
-How it's built, published and how the price proxy is deployed: [pwa/README.md](pwa/README.md).
-
-## Project layout
-
-```
-backend/
-  config/       settings, account kinds, currencies, tax rates, paths
-  db/           connection, numbered migrations, maintenance tools
-  server/       Express app: routes → validation → services
-frontend/
-  HTML/Home.html  the single page
-  CSS/            one file per topic, in load order
-  JS/             core helpers, pages, dialogs, charts, settings
-pwa/            browser build, browser stand-ins for Node modules, price proxy
-scripts/        launchd service, autosync, launcher
-tests/          node --test suites
-```
-
-[CODE_MAP.md](CODE_MAP.md) explains where everything lives and why, file by file.
-
-## Commands
-
-| Command | What it does |
-| --- | --- |
-| `npm start` | start the server |
-| `npm run dev` | start it with auto-reload (nodemon) |
-| `npm test` | run every test in `tests/` |
-| `npm run light` | start netto light |
-| `npm run light:demo` | fill an empty `light.db` with made-up months |
-| `npm run db:print` | print the database tables |
-| `npm run db:clear -- --yes` | delete **all** data |
-| `npm run pwa:build` | build the PWA into `dist/pwa` |
-| `npm run pwa:preview` | build and serve the PWA locally |
-| `npm run pwa:proxy:deploy` | deploy the price proxy to Cloudflare |
-
-## Your data
-
-- `money.db`, its backups and downloaded JSON backups are git-ignored — never commit them.
-- Every schema change is a new migration; a copy of the database is saved before one runs.
-- The server only answers requests from its own host, and doesn't write amounts or descriptions to its log.
+How it's built, the commands, the tests and where everything lives: [DEVELOPMENT.md](DEVELOPMENT.md).
 
 ## License
 
