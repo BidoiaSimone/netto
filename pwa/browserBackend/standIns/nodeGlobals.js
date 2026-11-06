@@ -13,3 +13,9 @@ const withUnref = (browserTimer) => (...args) => {
 };
 globalThis.setTimeout = withUnref(globalThis.setTimeout.bind(globalThis));
 globalThis.setInterval = withUnref(globalThis.setInterval.bind(globalThis));
+// setImmediate ("run this once the current work is done") is Node-only: Safari throws "Can't find variable: setImmediate".
+// A zero-delay timeout runs at the same point for the backend's purposes: after the synchronous work in hand has ended.
+if (typeof globalThis.setImmediate !== "function") {
+  globalThis.setImmediate = (fn, ...args) => globalThis.setTimeout(fn, 0, ...args); // already carries unref()
+  globalThis.clearImmediate = (immediate) => clearTimeout(immediate);
+}
