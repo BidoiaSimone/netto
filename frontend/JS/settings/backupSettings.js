@@ -2,15 +2,16 @@
 // (The "Download backup (JSON)" button is a plain link to /export in Home.html.)
 //
 // The PWA (runsWithoutServer) has no Mac and no backups folder: the data is only on this device. "Save backup…"
-// makes the same JSON and hands it to the share sheet, where the iPhone offers Save to Files → iCloud Drive (a web
-// page can't choose a folder itself); on Android, or without a share sheet, it's a normal download (Downloads). When it was last saved is kept
-// on this device, and after BACKUP_REMINDER_DAYS without one a reminder offers to save it in one tap.
+// hands the same JSON to the share sheet, where the iPhone offers Save to Files → iCloud Drive (a web page can't
+// choose a folder itself); on Android, or without a share sheet, it's a normal download (Downloads). The file is kept
+// ready beforehand, so it's handed over within the tap (see "a backup kept ready"). When it was last saved is kept on
+// this device, and after BACKUP_REMINDER_DAYS without one a reminder offers to save it in one tap.
 
 import { elementById } from "../core/domHelpers.js";
 import { getTodayAsLocalDate } from "../core/formatting.js";
 import { callApi } from "../core/apiClient.js";
 import { isLightEdition, runsWithoutServer } from "../core/edition.js";
-import { callLocalApi } from "../core/localApi.js";
+import { callLocalApi, countOfChangesSent } from "../core/localApi.js";
 import { showToast } from "../core/toast.js";
 
 const BACKUPS_FOLDER = isLightEdition ? "backend/db/light-backups" : "backend/db/backups"; // netto light keeps its own (config/projectPaths.js)
@@ -37,7 +38,10 @@ function describeBackupDay(savedAt) {
 
 // When the last automatic daily backup was made (services/automaticDailyBackups.js on the server)
 export async function loadBackupStatus() {
-  if (runsWithoutServer) return renderBackupStatusOfThisDevice();
+  if (runsWithoutServer) {
+    if (isSettingsOpen()) prepareBackup(); // after a change, so the ready one is new again
+    return renderBackupStatusOfThisDevice();
+  }
   const backupStatus = await callApi("/backups");
   renderOffsiteStatus(backupStatus.offsite);
   const statusLine = elementById("backup-status");
@@ -104,25 +108,69 @@ async function makeBackupFile() {
   return new File([JSON.stringify(answer.body, null, 2)], fileName, { type: "application/json" });
 }
 
-// Android's browsers (Chrome, Samsung Internet) fetch a download after the tap is over, through their download
-// manager: a link revoked right away, or one not in the page, ends up as "download failed". So it stays a minute.
-function downloadFile(file) {
-  const link = Object.assign(document.createElement("a"), { href: URL.createObjectURL(file), download: file.name, hidden: true });
-  document.body.append(link);
-  link.click();
-  link.remove();
-  setTimeout(() => URL.revokeObjectURL(link.href), 60000);
-}
-
 // On Android a download lands in Downloads (My Files), which is what's wanted; its share sheet has no "save as a file",
 // and it refuses .json files anyway (Chrome and Samsung Internet only share images, PDFs, text…)
 const isAndroid = /Android/i.test(navigator.userAgent);
 
-// The share sheet on the iPhone (Save to Files), a download otherwise. True when it was saved.
-async function handOverBackupFile(file) {
-  if (isAndroid || !navigator.canShare?.({ files: [file] })) {
-    downloadFile(file);
-    if (isAndroid) showToast(t("Backup saved in Downloads"));
+// The file as a data: link, for Android (see downloadBackup); null past MAX_DATA_LINK_LENGTH
+const MAX_DATA_LINK_LENGTH = 2e6; // Chrome refuses longer links
+function readAsDataLink(file) {
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result.length <= MAX_DATA_LINK_LENGTH ? reader.result : null);
+    reader.onerror = () => resolve(null);
+    reader.readAsDataURL(file);
+  });
+}
+
+// ---- a backup kept ready ----
+// A browser lets a page download a file or open the share sheet only right after a tap. Making the backup first (a
+// trip to the backend's worker) can take longer than that: Safari then refuses the share sheet, and Chrome and Samsung
+// Internet count the download as an "automatic" one, which they block or ask about, and once refused, refuse for good.
+// So the backup is made beforehand (when Settings is open, when the reminder shows) and handed over within the tap.
+// It's remade whenever a change was sent since (core/localApi.js counts them), so it's never out of date.
+let readyBackup = null; // { madeAfterChange, file, dataLink, ready: Promise }
+
+function prepareBackup() {
+  if (readyBackup && readyBackup.madeAfterChange === countOfChangesSent()) return readyBackup;
+  const backup = { madeAfterChange: countOfChangesSent(), file: null, dataLink: null };
+  backup.ready = makeBackupFile().then(async (file) => {
+    if (isAndroid) backup.dataLink = await readAsDataLink(file);
+    backup.file = file;
+  });
+  backup.ready.catch(() => { if (readyBackup === backup) readyBackup = null; }); // tried again next time
+  readyBackup = backup;
+  return backup;
+}
+
+const isSettingsOpen = () => location.hash === "#settings";
+
+// ---- handing it over ----
+
+// Android's browsers fetch a download through their download manager, after the tap is over: a blob: link must still
+// be there by then (so it's in the page, and lives a minute), and older Samsung Internet can fail on blob: links at
+// all. A data: link holds the file itself, so there's nothing left to fetch: Android gets one when the file isn't too big.
+function downloadBackup(backup) {
+  const href = backup.dataLink || URL.createObjectURL(backup.file);
+  const link = Object.assign(document.createElement("a"), { href, download: backup.file.name, hidden: true });
+  document.body.append(link);
+  link.click();
+  link.remove();
+  if (!backup.dataLink) setTimeout(() => URL.revokeObjectURL(href), 60000);
+}
+
+// Must be called within a tap. Resolves true when the backup was saved, false when it wasn't or we can't tell yet.
+async function handOverBackup(backup) {
+  const { file } = backup;
+  if (isAndroid) {
+    // The page can't see whether the browser really downloaded it (a site whose downloads are blocked gets no error),
+    // so it's noted as saved only when the person says it arrived
+    downloadBackup(backup);
+    askWhetherTheDownloadArrived();
+    return false;
+  }
+  if (!navigator.canShare?.({ files: [file] })) {
+    downloadBackup(backup); // a computer: the browser shows its downloads
     return true;
   }
   try {
@@ -131,13 +179,33 @@ async function handOverBackupFile(file) {
   } catch (error) {
     if (error.name === "AbortError") return false; // closed the share sheet
     if (error.name === "NotAllowedError") {
-      // Safari wants the share sheet opened right after a tap, and making the file took too long: one more tap
-      showToast(t("Your backup is ready"), [{ label: t("Save"), onClick: () => handOverBackupFile(file).then(noteBackupSaved) }], 15000);
+      offerToSaveWithOneMoreTap(backup); // Safari didn't count it as right after the tap after all
       return false;
     }
     throw error;
   }
 }
+
+// The tap came before the backup was ready, so it no longer counts: a button to tap once it is
+function offerToSaveWithOneMoreTap(backup) {
+  showToast(t("Your backup is ready"), [{ label: t("Save"), onClick: () => handOverBackup(backup).then(noteBackupSaved, showSaveError) }], 15000);
+}
+
+function askWhetherTheDownloadArrived() {
+  showToast(t("Downloading the backup into Downloads. Did it arrive?"), [
+    { label: t("Yes"), onClick: () => noteBackupSaved(true) },
+    { label: t("No"), onClick: explainBlockedDownloads },
+  ], 30000);
+}
+
+// What a browser that blocked the download needs (Chrome: ⋮ → Settings → Site settings; Samsung Internet: ≡ → Settings → Sites and downloads)
+function explainBlockedDownloads() {
+  alert(t("The browser didn't let netto download the file.") + "\n\n"
+    + t("In the browser's settings, find the site settings for this page and allow Downloads (Chrome: Automatic downloads), then press Save backup again.") + "\n\n"
+    + t("Still nothing? Check that the browser may store files: Android Settings → Apps → the browser → Permissions."));
+}
+
+const showSaveError = (error) => showErrorMessage(t("Backup not saved: {reason}", { reason: error.message }));
 
 function noteBackupSaved(wasSaved) {
   if (!wasSaved) return;
@@ -146,11 +214,14 @@ function noteBackupSaved(wasSaved) {
 }
 
 async function saveBackupFromThisDevice() {
+  const backup = prepareBackup();
+  if (backup.file) return handOverBackup(backup).then(noteBackupSaved, showSaveError); // ready: still within the tap
   try {
-    noteBackupSaved(await handOverBackupFile(await makeBackupFile()));
+    await backup.ready;
   } catch (error) {
-    showErrorMessage(t("Backup not saved: {reason}", { reason: error.message }));
+    return showSaveError(error);
   }
+  offerToSaveWithOneMoreTap(backup);
 }
 
 // Settings: when the last one was saved; and, past BACKUP_REMINDER_DAYS, the reminder (once a visit, not after "Later" today)
@@ -167,6 +238,7 @@ async function renderBackupStatusOfThisDevice() {
   const accounts = await callApi("/accounts").catch(() => []);
   if (!accounts.length) return; // nothing to lose yet
   reminderShownThisVisit = true;
+  prepareBackup(); // ready by the time "Save backup" is tapped
   showToast(savedAt ? t("No backup for {count} days", { count: daysSince(savedAt) }) : t("Your data is only on this device"), [
     { label: t("Save backup"), onClick: saveBackupFromThisDevice },
     { label: t("Later"), onClick: () => writeStored(REMINDER_SNOOZED_KEY, getTodayAsLocalDate()) },
@@ -175,6 +247,10 @@ async function renderBackupStatusOfThisDevice() {
 
 export function initializeBackupSettings() {
   elementById("save-backup").addEventListener("click", saveBackupFromThisDevice);
+  if (runsWithoutServer) {
+    window.addEventListener("hashchange", () => { if (isSettingsOpen()) prepareBackup(); });
+    elementById("save-backup").addEventListener("pointerdown", () => prepareBackup()); // a head start
+  }
   elementById("backup-offsite-toggle").addEventListener("change", async (event) => {
     try {
       await saveAppSetting("backup_copy_offsite", event.target.checked ? 1 : 0);

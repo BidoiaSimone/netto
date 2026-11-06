@@ -32,9 +32,15 @@ const warnThatNothingIsKept = () => {
   warning.hidden = false;
 };
 
+// How many changes (anything but GET) were sent so far: a backup made earlier is out of date once this moves on
+// (settings/backupSettings.js keeps one ready, so "Save backup…" can hand it over within the tap)
+let changesSent = 0;
+export const countOfChangesSent = () => changesSent;
+
 // { method, path, body } -> { status, headers, body }, like an HTTP answer
 export function callLocalApi(method, path, body) {
   if (!apiWorker) startApiWorker();
+  if (method !== "GET") changesSent++;
   const id = nextRequestId++;
   return new Promise((resolve) => {
     waitingRequests.set(id, resolve);
